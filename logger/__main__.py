@@ -6,7 +6,7 @@ from loguru import logger
 
 
 def generate_random_log():
-    log_level = random.choice(['info', 'warning', 'error'])
+    log_level = random.choice(["info", "warning", "error"])
 
     # Choose the appropriate logger function based on the log level
     log_function = getattr(logger, log_level, logger.info)
@@ -33,8 +33,12 @@ def generate_logs(num_lines, total_runtime):
 
 
 @click.command()
-@click.option('--num-lines', type=int, default=10, help='Number of log lines to generate')
-@click.option('--total-runtime', type=float, default=10, help='Approx total runtime in seconds')
+@click.option(
+    "--num-lines", type=int, default=10, help="Number of log lines to generate"
+)
+@click.option(
+    "--total-runtime", type=float, default=10, help="Approx total runtime in seconds"
+)
 def main(num_lines, total_runtime):
     generate_logs(num_lines, total_runtime)
 
