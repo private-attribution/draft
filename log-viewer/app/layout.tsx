@@ -14,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={clsx(inter.className, "h-full")}>
-        <div className="min-h-full bg-slate-100">
+        <div className="min-h-full bg-slate-100 dark:bg-slate-900">
           <Header />
           <div className="py-10">
             <main>
