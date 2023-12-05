@@ -1,7 +1,10 @@
-import subprocess
-import threading
 import asyncio
 from pathlib import Path
+import psutil
+import subprocess
+import threading
+import time
+from typing import Dict, Tuple
 from haikunator import Haikunator
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +22,7 @@ app.add_middleware(
 )
 
 # Dictionary to store process information
-processes = {}
+processes: Dict[str, Tuple[subprocess.Popen, float]] = {}
 
 log_path = Path("tmp/logs")
 log_path.mkdir(exist_ok=True)
@@ -37,7 +40,7 @@ def gen_process_complete_semaphore_path(process_id):
 
 def log_process_stodout(process_id):
     logger.debug(process_id)
-    process = processes.get(process_id)
+    process, _ = processes.get(process_id, (None, None))
     logger.debug(process)
 
     if process is None:
@@ -57,6 +60,7 @@ def log_process_stodout(process_id):
         process_logger.info(line.rstrip("\n"))
     complete_semaphore = gen_process_complete_semaphore_path(process_id)
     complete_semaphore.touch()
+    del processes[process_id]
 
 
 @app.get("/")
@@ -75,9 +79,10 @@ async def start():
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
     )
+    start_time = time.time()
 
     # Store process information
-    processes[process_id] = process
+    processes[process_id] = (process, start_time)
     logger.info(f"process started: {process_id=}")
 
     # Start a new thread to tail logs to the file
@@ -94,7 +99,7 @@ async def start():
 @app.websocket("/ws/status/{process_id}")
 async def status_websocket(websocket: WebSocket, process_id: str):
     complete_semaphore = gen_process_complete_semaphore_path(process_id)
-    process = processes.get(process_id)
+    process, _ = processes.get(process_id, (None, None))
     await websocket.accept()
     try:
         if complete_semaphore.exists():
@@ -118,7 +123,9 @@ async def status_websocket(websocket: WebSocket, process_id: str):
 async def logs_websocket(websocket: WebSocket, process_id: str):
     log_file_path = gen_log_file_path(process_id)
     complete_semaphore = gen_process_complete_semaphore_path(process_id)
-    process = processes.get(process_id)
+    process, _ = processes.get(process_id, (None, None))
+
+    await websocket.accept()
 
     while process is not None and not log_file_path.exists():
         logger.warning(f"{process_id=} started. log file does not yet exist. waiting.")
@@ -126,23 +133,62 @@ async def logs_websocket(websocket: WebSocket, process_id: str):
 
     if process is None and not log_file_path.exists():
         logger.warning(f"{process_id=} does not exist.")
-        return
+        await websocket.close()
+    else:
+        try:
+            with open(log_file_path, "r") as log_file:
+                if complete_semaphore.exists():
+                    logger.info(f"{process_id=} complete. sending all logs.")
+                    for line in log_file:
+                        await websocket.send_text(line)
+                else:
+                    logger.info(f"{process_id=} running. tailing log file.")
+                    while not complete_semaphore.exists():
+                        line = log_file.readline()
+                        if not line:
+                            await asyncio.sleep(0.1)
+                        else:
+                            await websocket.send_text(line)
+            await websocket.close()
+        except WebSocketDisconnect:
+            pass
+
+
+@app.websocket("/ws/stats/{process_id}")
+async def stats_websocket(websocket: WebSocket, process_id: str):
+    process, start_time = processes.get(process_id, (None, None))
+    complete_semaphore = gen_process_complete_semaphore_path(process_id)
 
     await websocket.accept()
-    try:
-        with open(log_file_path, "r") as log_file:
-            if complete_semaphore.exists():
-                logger.info(f"{process_id=} complete. sending all logs.")
-                for line in log_file:
-                    await websocket.send_text(line)
-            else:
-                logger.info(f"{process_id=} running. tailing log file.")
-                while not complete_semaphore.exists():
-                    line = log_file.readline()
-                    if not line:
-                        await asyncio.sleep(0.1)
-                    else:
-                        await websocket.send_text(line)
+
+    if process is None or complete_semaphore.exists():
+        logger.warning(f"{process_id=} is not running.")
         await websocket.close()
-    except WebSocketDisconnect:
-        pass
+
+    else:
+        pid = process.pid
+        process_psutil = psutil.Process(pid)
+        try:
+            while process.poll() is None:
+                try:
+                    run_time = time.time() - start_time
+                    logger.info(f"{run_time=}")
+                    cpu_percent = process_psutil.cpu_percent()
+                    logger.info(f"{cpu_percent=}")
+                    memory_info = process_psutil.memory_info()
+                    logger.info(f"{memory_info=}")
+                    await websocket.send_json(
+                        {
+                            "run_time": run_time,
+                            "cpu_percent": cpu_percent,
+                            "memory_info": memory_info,
+                            "timestamp": time.time(),
+                        }
+                    )
+                    await asyncio.sleep(1)
+                except psutil.NoSuchProcess:
+                    break
+            await websocket.close()
+
+        except WebSocketDisconnect:
+            pass

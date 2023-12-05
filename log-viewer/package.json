@@ -12,10 +12,13 @@
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
     "axios": "^1.6.2",
+    "chartjs-adapter-spacetime": "^1.0.1",
     "clsx": "^2.0.0",
     "next": "14.0.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18",
+    "spacetime": "^7.4.8"
   },
   "devDependencies": {
     "@types/node": "^20",
