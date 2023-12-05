@@ -9,9 +9,13 @@ from haikunator import Haikunator
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from app.words import nouns, adjectives
 
 app = FastAPI()
-haikunator = Haikunator()
+haikunator = Haikunator(
+    nouns=nouns,
+    adjectives=adjectives,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -74,7 +78,7 @@ async def start():
         "/Users/eriktaubeneck/workspace/remote-runner/.venv/bin/python",
         "/Users/eriktaubeneck/workspace/remote-runner/logger",
     ]
-    process_id = str(haikunator.haikunate(token_length=0))
+    process_id = str(haikunator.haikunate(token_length=4))
 
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
