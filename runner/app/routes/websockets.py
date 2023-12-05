@@ -3,8 +3,8 @@ import asyncio
 import psutil
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
-from app.processes import processes
-from app.logging import (
+from ..processes import processes
+from ..logging import (
     gen_process_complete_semaphore_path,
     gen_log_file_path,
 )

@@ -1,11 +1,11 @@
 from pathlib import Path
 from loguru import logger
-from app.processes import processes
+from .processes import processes
 
-log_path = Path("tmp/logs")
-log_path.mkdir(exist_ok=True)
-complete_semaphore_path = Path("tmp/complete_semaphore")
-complete_semaphore_path.mkdir(exist_ok=True)
+log_path = Path("runner/tmp/logs")
+log_path.mkdir(exist_ok=True, parents=True)
+complete_semaphore_path = Path("runner/tmp/complete_semaphore")
+complete_semaphore_path.mkdir(exist_ok=True, parents=True)
 
 
 def gen_log_file_path(process_id):
