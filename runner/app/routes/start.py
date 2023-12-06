@@ -1,8 +1,9 @@
 import subprocess
 import threading
 import time
+from typing import Annotated
 from loguru import logger
-from fastapi import APIRouter
+from fastapi import APIRouter, Form
 from haikunator import Haikunator
 from ..processes import processes
 from ..words import nouns, adjectives
@@ -44,11 +45,21 @@ def start_process(cmd):
     return process_id
 
 
-@router.post("/")
-def demo_logger():
+@router.post("/demo-logger")
+def demo_logger(
+    num_lines: Annotated[int, Form()],
+    total_runtime: Annotated[int, Form()],
+):
+    logger.info("here")
+    logger.info(f"{num_lines=}")
+    logger.info(f"{total_runtime=}")
     cmd = [
         ".venv/bin/python",
         "logger",
+        "--num-lines",
+        str(num_lines),
+        "--total-runtime",
+        str(total_runtime),
     ]
     process_id = start_process(cmd)
     return {"message": "Process started successfully", "process_id": process_id}
