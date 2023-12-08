@@ -67,14 +67,14 @@ class Paths:
             self.test_data_path = Path(self.test_data_path)
 
 
-def echo_result(success_msg, returncode, failure_message=None):
+def process_result(success_msg, returncode, failure_message=None):
     if returncode == 0:
         click.echo(click.style(success_msg, fg="green"))
     else:
         click.echo(click.style("Failure!", blink=True, bold=True, bg="red", fg="white"))
         if failure_message is not None:
             click.echo(click.style(failure_message, bold=True, bg="red", fg="white"))
-        raise Exception("Process failed")
+        raise SystemExit(1)
 
 
 class PopenContextManager:
@@ -108,16 +108,16 @@ def _clone(local_ipa_path, exists_ok):
     # setup
     if local_ipa_path.exists():
         if exists_ok:
-            echo_result(f"{local_ipa_path=} exists. Skipping clone.", 0)
+            process_result(f"{local_ipa_path=} exists. Skipping clone.", 0)
             return
         else:
-            echo_result("", 1, f"Run in isolated mode and {local_ipa_path=} exists.")
+            process_result("", 1, f"Run in isolated mode and {local_ipa_path=} exists.")
 
     command = Command(
         cmd=f"git clone https://github.com/private-attribution/ipa.git {local_ipa_path}"
     )
     result = command.run_blocking()
-    echo_result("Success: IPA cloned.", result.returncode)
+    process_result("Success: IPA cloned.", result.returncode)
 
 
 @cli.command()
@@ -137,13 +137,13 @@ def clone(local_ipa_path, exists_ok):
 def _checkout_branch(branch):
     command = Command(cmd="git -C ipa fetch --all")
     result = command.run_blocking()
-    echo_result("Success: upstream fetched.", result.returncode)
+    process_result("Success: upstream fetched.", result.returncode)
     command = Command(cmd=f"git -C ipa checkout {branch}")
     result = command.run_blocking()
-    echo_result(f"Success: {branch} checked out.", result.returncode)
+    process_result(f"Success: {branch} checked out.", result.returncode)
     command = Command(cmd="git -C ipa pull")
     result = command.run_blocking()
-    echo_result("Success: fast forwarded.", result.returncode)
+    process_result("Success: fast forwarded.", result.returncode)
 
 
 @cli.command()
@@ -160,7 +160,7 @@ def _compile(local_ipa_path):
         compact-gate stall-detection" --release"""
     )
     result = command.run_blocking()
-    echo_result("Success: IPA compiled.", result.returncode)
+    process_result("Success: IPA compiled.", result.returncode)
 
 
 @cli.command("compile")
@@ -179,7 +179,7 @@ def _generate_test_config(local_ipa_path, config_path):
     """
     )
     result = command.run_blocking()
-    echo_result("Success: Test config created.", result.returncode)
+    process_result("Success: Test config created.", result.returncode)
 
     # HACK to move the public keys into <config_path>/pub
     # to match expected format on server
@@ -241,7 +241,7 @@ def _setup_helper(branch, local_ipa_path, config_path, isolated):
 
     if helper_binary_path.exists():
         if isolated:
-            echo_result(
+            process_result(
                 "", 1, f"Run in isolated mode and {helper_binary_path=} exists."
             )
         else:
@@ -251,7 +251,7 @@ def _setup_helper(branch, local_ipa_path, config_path, isolated):
 
     if config_path.exists():
         if isolated:
-            echo_result("", 1, f"Run in isolated mode and {config_path=} exists.")
+            process_result("", 1, f"Run in isolated mode and {config_path=} exists.")
         else:
             shutil.rmtree(config_path)
 
@@ -340,7 +340,7 @@ def _generate_test_data(size, test_data_path):
         with open(output_file, "w") as output:
             output.write(command_output)
 
-    echo_result("Success: Test data created.", process.returncode)
+    process_result("Success: Test data created.", process.returncode)
     return output_file
 
 
@@ -366,7 +366,7 @@ def _start_ipa(
     """
     )
     result = command.run_blocking()
-    echo_result("Success: IPA complete.", result.returncode)
+    process_result("Success: IPA complete.", result.returncode)
 
 
 @cli.command()
