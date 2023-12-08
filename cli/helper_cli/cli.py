@@ -18,61 +18,39 @@ class Role(int, Enum):
     HELPER_3 = 3
 
 
-def option_wrapper(option):
-    def wrapper(f):
-        return option(f)
-
-    return wrapper
-
-
 class Option(Enum):
     LOCAL_IPA_PATH = member(
-        option_wrapper(
-            click.option("--local_ipa_path", type=click.Path(), default=None)
-        )
+        click.option("--local_ipa_path", type=click.Path(), default=None)
     )
+
     LOCAL_IPA_PATH_EXISTS = member(
-        option_wrapper(
-            click.option("--local_ipa_path", type=click.Path(exists=True), default=None)
-        )
+        click.option("--local_ipa_path", type=click.Path(exists=True), default=None)
     )
     LOCAL_IPA_PATH_NOT_EXISTS = member(
-        option_wrapper(
-            click.option(
-                "--local_ipa_path", type=click.Path(exists=False), default=None
-            )
-        )
+        click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
     )
     BRANCH = member(
-        option_wrapper(
-            click.option("--branch", type=str, default="main", show_default=True)
-        )
+        click.option("--branch", type=str, default="main", show_default=True)
     )
     CONFIG_PATH = member(
-        option_wrapper(
-            click.option(
-                "--config_path", type=click.Path(), default=None, show_default=True
-            )
+        click.option(
+            "--config_path", type=click.Path(), default=None, show_default=True
         )
     )
     CONFIG_PATH_EXISTS = member(
-        option_wrapper(
-            click.option(
-                "--config_path",
-                type=click.Path(exists=True),
-                default=None,
-                show_default=True,
-            )
+        click.option(
+            "--config_path",
+            type=click.Path(exists=True),
+            default=None,
+            show_default=True,
         )
     )
     CONFIG_PATH_NOT_EXISTS = member(
-        option_wrapper(
-            click.option(
-                "--config_path",
-                type=click.Path(exists=False),
-                default=None,
-                show_default=True,
-            )
+        click.option(
+            "--config_path",
+            type=click.Path(exists=False),
+            default=None,
+            show_default=True,
         )
     )
 
@@ -101,11 +79,6 @@ helpers: dict[Role, Helper] = {
     Role.HELPER_2: Helper(role=Role.HELPER_2, helper_port=7432, sidecar_port=8432),
     Role.HELPER_3: Helper(role=Role.HELPER_3, helper_port=7433, sidecar_port=8433),
 }
-
-
-DEFAULT_IPA_PATH = Path("ipa")
-DEFAULT_CONFIG_PATH = DEFAULT_IPA_PATH / Path("test_data/config")
-DEFAULT_TEST_DATA = DEFAULT_IPA_PATH / Path("test_data/input")
 
 
 @dataclass
@@ -183,7 +156,7 @@ def _clone(local_ipa_path, exists_ok):
 
 
 @cli.command()
-@Option.LOCAL_IPA_PATH
+@click.option("--local_ipa_path", type=click.Path(), default=None)
 @click.option(
     "--exists-ok",
     is_flag=True,
@@ -226,7 +199,7 @@ def _compile(local_ipa_path):
 
 
 @cli.command("compile")
-@Option.LOCAL_IPA_PATH
+@Option.LOCAL_IPA_PATH_EXISTS
 def compile_command(local_ipa_path):
     local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
     _compile(local_ipa_path)
