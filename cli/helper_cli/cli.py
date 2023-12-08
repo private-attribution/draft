@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, member
 import itertools
 import os
 from pathlib import Path
@@ -16,6 +16,68 @@ class Role(int, Enum):
     HELPER_1 = 1
     HELPER_2 = 2
     HELPER_3 = 3
+
+
+def option_wrapper(option):
+    def wrapper(f):
+        return option(f)
+
+    return wrapper
+
+
+class Option(Enum):
+    LOCAL_IPA_PATH = member(
+        option_wrapper(
+            click.option("--local_ipa_path", type=click.Path(), default=None)
+        )
+    )
+    LOCAL_IPA_PATH_EXISTS = member(
+        option_wrapper(
+            click.option("--local_ipa_path", type=click.Path(exists=True), default=None)
+        )
+    )
+    LOCAL_IPA_PATH_NOT_EXISTS = member(
+        option_wrapper(
+            click.option(
+                "--local_ipa_path", type=click.Path(exists=False), default=None
+            )
+        )
+    )
+    BRANCH = member(
+        option_wrapper(
+            click.option("--branch", type=str, default="main", show_default=True)
+        )
+    )
+    CONFIG_PATH = member(
+        option_wrapper(
+            click.option(
+                "--config_path", type=click.Path(), default=None, show_default=True
+            )
+        )
+    )
+    CONFIG_PATH_EXISTS = member(
+        option_wrapper(
+            click.option(
+                "--config_path",
+                type=click.Path(exists=True),
+                default=None,
+                show_default=True,
+            )
+        )
+    )
+    CONFIG_PATH_NOT_EXISTS = member(
+        option_wrapper(
+            click.option(
+                "--config_path",
+                type=click.Path(exists=False),
+                default=None,
+                show_default=True,
+            )
+        )
+    )
+
+    def __call__(self, *args, **kwargs):
+        return self.value(*args, **kwargs)
 
 
 @dataclass
@@ -121,7 +183,7 @@ def _clone(local_ipa_path, exists_ok):
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(), default=None)
+@Option.LOCAL_IPA_PATH
 @click.option(
     "--exists-ok",
     is_flag=True,
@@ -164,7 +226,7 @@ def _compile(local_ipa_path):
 
 
 @cli.command("compile")
-@click.option("--local_ipa_path", type=click.Path(), default=None)
+@Option.LOCAL_IPA_PATH
 def compile_command(local_ipa_path):
     local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
     _compile(local_ipa_path)
@@ -193,8 +255,8 @@ def _generate_test_config(local_ipa_path, config_path):
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
-@click.option("--config_path", type=click.Path(exists=False), default=None)
+@Option.LOCAL_IPA_PATH_EXISTS
+@Option.CONFIG_PATH_NOT_EXISTS
 def generate_test_config(local_ipa_path, config_path):
     paths = Paths(repo_path=local_ipa_path, config_path=config_path)
     local_ipa_path, config_path = paths.repo_path, paths.config_path
@@ -224,8 +286,8 @@ def _start_helper(local_ipa_path, config_path, identity):
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
-@click.option("--config_path", type=click.Path(exists=True), default=None)
+@Option.LOCAL_IPA_PATH_EXISTS
+@Option.CONFIG_PATH_EXISTS
 @click.argument("identity")
 def start_helper(local_ipa_path, config_path, identity):
     paths = Paths(repo_path=local_ipa_path, config_path=config_path)
@@ -261,9 +323,9 @@ def _setup_helper(branch, local_ipa_path, config_path, isolated):
 
 
 @cli.command()
-@click.option("--branch", type=str, default="main", show_default=True)
-@click.option("--local_ipa_path", type=click.Path(), default=None)
-@click.option("--config_path", type=click.Path(), default=None)
+@Option.BRANCH
+@Option.LOCAL_IPA_PATH
+@Option.CONFIG_PATH
 @click.option(
     "--isolated/--repeatable",
     default=True,
@@ -278,9 +340,9 @@ def setup_helper(branch, local_ipa_path, config_path, isolated):
 
 
 @cli.command()
-@click.option("--branch", type=str, default="main", show_default=True)
-@click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
-@click.option("--config_path", type=click.Path(exists=False), default=None)
+@Option.BRANCH
+@Option.LOCAL_IPA_PATH_NOT_EXISTS
+@Option.CONFIG_PATH_NOT_EXISTS
 @click.argument("identity")
 def start_isolated_helper(branch, local_ipa_path, config_path, identity):
     paths = Paths(repo_path=local_ipa_path, config_path=config_path)
@@ -370,10 +432,10 @@ def _start_ipa(
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
+@Option.LOCAL_IPA_PATH_NOT_EXISTS
 @click.option("--max-breakdown-key", required=False, type=int, default=256)
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
-@click.option("--config_path", type=click.Path(exists=True), default=None)
+@Option.CONFIG_PATH_EXISTS
 @click.argument("test_data_file", type=click.Path(exists=True))
 def start_ipa(
     local_ipa_path, max_breakdown_key, per_user_credit_cap, config_path, test_data_file
@@ -396,21 +458,17 @@ def _cleanup(local_ipa_path):
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(exists=True), default=None)
+@Option.LOCAL_IPA_PATH_EXISTS
 def cleanup(local_ipa_path):
     local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
     _cleanup(local_ipa_path)
 
 
 @cli.command()
-@click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
-@click.option("--branch", type=str, default="main", show_default=True)
-@click.option(
-    "--config_path", type=click.Path(exists=False), default=None, show_default=True
-)
-@click.option(
-    "--test_data_path", type=click.Path(exists=False), default=None, show_default=True
-)
+@Option.LOCAL_IPA_PATH
+@Option.BRANCH
+@Option.CONFIG_PATH
+@click.option("--test_data_path", type=click.Path(), default=None, show_default=True)
 @click.option("--size", type=int, default=1000, show_default=True)
 @click.option("--max-breakdown-key", type=int, default=256, show_default=True)
 @click.option("--per-user-credit-cap", type=int, default=16, show_default=True)
