@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, FormEvent } from "react";
-import axios from "axios";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import JobStartedAlert from "../alert";
+import { RemoteServers } from "./servers";
 
 export default function Page() {
   const [jobId, setJobId] = useState(null);
@@ -15,7 +15,7 @@ export default function Page() {
       // Send a POST request to start the process
       console.log("sending post");
       const formData = new FormData(event.currentTarget);
-      const response = await fetch("http://localhost:8000/start/demo-logger", {
+      const response = await fetch(RemoteServers.DemoLogger.startPath, {
         method: "POST",
         body: formData,
       });
