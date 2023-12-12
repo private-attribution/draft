@@ -8,6 +8,7 @@ from haikunator import Haikunator
 from ..processes import processes
 from ..words import nouns, adjectives
 from ..logging import log_process_stdout
+from ..settings import settings
 
 
 router = APIRouter(

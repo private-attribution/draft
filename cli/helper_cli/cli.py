@@ -183,7 +183,7 @@ def generate_test_data(size, test_data_path):
 @Option.LOCAL_IPA_PATH_NOT_EXISTS
 @click.option("--max-breakdown-key", required=False, type=int, default=256)
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
-@Option.CONFIG_PATH_EXISTS
+@Option.CONFIG_PATH
 @click.option("--size", type=int, default=1000)
 @click.option("--test_data_path", type=click.Path(), default=None)
 def start_isolated_ipa(
@@ -211,11 +211,13 @@ def start_isolated_ipa(
 
 
 @cli.command()
-@Option.LOCAL_IPA_PATH_NOT_EXISTS
+@Option.LOCAL_IPA_PATH_EXISTS
 @click.option("--max-breakdown-key", required=False, type=int, default=256)
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
 @Option.CONFIG_PATH_EXISTS
-@click.argument("test_data_file", type=click.Path(exists=True))
+@click.option(
+    "--test_data_file", required=True, type=click.Path(exists=True), default=None
+)
 def start_ipa(
     local_ipa_path, max_breakdown_key, per_user_credit_cap, config_path, test_data_file
 ):

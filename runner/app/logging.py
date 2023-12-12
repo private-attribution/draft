@@ -1,10 +1,11 @@
 from pathlib import Path
 from loguru import logger
 from .processes import processes
+from .settings import settings
 
-log_path = Path("runner/tmp/logs")
+log_path = settings.root_path / Path("logs")
 log_path.mkdir(exist_ok=True, parents=True)
-complete_semaphore_path = Path("runner/tmp/complete_semaphore")
+complete_semaphore_path = settings.root_path / Path("complete_semaphore")
 complete_semaphore_path.mkdir(exist_ok=True, parents=True)
 
 

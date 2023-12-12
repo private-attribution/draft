@@ -188,6 +188,7 @@ def start_helper_sidecar_cmd(role: Role) -> Command:
     env = {
         **os.environ,
         "ROLE": str(role.value),
+        "ROOT_PATH": f"tmp/runner/{role.value}",
         "UVICORN_PORT": str(helper.sidecar_port),
     }
     return Command(cmd=cmd, env=env)
