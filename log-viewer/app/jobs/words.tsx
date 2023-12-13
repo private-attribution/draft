@@ -1,5 +1,4 @@
-nouns = """
-ace
+const nounsString: string = `ace
 ache
 acid
 acme
@@ -2874,11 +2873,9 @@ zip
 zit
 zone
 zoo
-zoom
-""".splitlines()
+zoom`;
 
-adjectives = """
-able
+const adjectivesString: string = `able
 about
 above
 abuzz
@@ -3887,5 +3884,8 @@ zany
 zero
 zesty
 zippy
-zonal
-""".splitlines()
+zonal`;
+
+export const nouns: string[] = nounsString.split("\n");
+
+export const adjectives: string[] = adjectivesString.split("\n");

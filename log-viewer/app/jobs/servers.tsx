@@ -1,10 +1,15 @@
 class RemoteServer {
   private baseURL: URL;
-  startPath: URL;
+  private baseStartPath: string;
 
   constructor(baseURL: URL, startPath: string) {
     this.baseURL = baseURL;
-    this.startPath = new URL(startPath, this.baseURL);
+    this.baseStartPath = startPath;
+  }
+
+  startPath(id: string): URL {
+    const startPathURL = new URL(`${this.baseStartPath}/${id}`, this.baseURL);
+    return startPathURL;
   }
 
   logsWebSocketURL(id: string): URL {

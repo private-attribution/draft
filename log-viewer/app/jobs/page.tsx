@@ -4,24 +4,28 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import JobStartedAlert from "../alert";
 import { RemoteServers } from "./servers";
+import NewJobId from "./haikunator";
 
 export default function Page() {
-  const [jobId, setJobId] = useState(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const router = useRouter();
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      const newJobId = NewJobId();
+      setJobId(newJobId);
       // Send a POST request to start the process
       console.log("sending post");
       const formData = new FormData(event.currentTarget);
-      const response = await fetch(RemoteServers.DemoLogger.startPath, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        RemoteServers.DemoLogger.startPath(newJobId),
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
       const data = await response.json();
-      const newJobId = data.process_id;
-      setJobId(newJobId);
 
       await new Promise((f) => setTimeout(f, 1000));
 
