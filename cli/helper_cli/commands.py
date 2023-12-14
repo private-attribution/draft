@@ -1,13 +1,18 @@
+import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
 import itertools
+import json
 import os
 from pathlib import Path
 import subprocess
 import shlex
 import shutil
+import tomllib
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
 import click
+import websockets
 
 
 class Role(int, Enum):
@@ -20,14 +25,15 @@ class Role(int, Enum):
 @dataclass
 class Helper:
     role: Role
-    helper_port: int
     sidecar_port: int
+    helper_port: Optional[int] = None
 
 
 helpers: dict[Role, Helper] = {
-    Role.HELPER_1: Helper(role=Role.HELPER_1, helper_port=7431, sidecar_port=8431),
-    Role.HELPER_2: Helper(role=Role.HELPER_2, helper_port=7432, sidecar_port=8432),
-    Role.HELPER_3: Helper(role=Role.HELPER_3, helper_port=7433, sidecar_port=8433),
+    Role.COORDINATOR: Helper(role=Role.COORDINATOR, sidecar_port=17430),
+    Role.HELPER_1: Helper(role=Role.HELPER_1, helper_port=7431, sidecar_port=17431),
+    Role.HELPER_2: Helper(role=Role.HELPER_2, helper_port=7432, sidecar_port=17432),
+    Role.HELPER_3: Helper(role=Role.HELPER_3, helper_port=7433, sidecar_port=17433),
 }
 
 
@@ -222,10 +228,55 @@ def _generate_test_data(size, test_data_path):
     return output_file
 
 
-def _start_ipa(
-    local_ipa_path, max_breakdown_key, per_user_credit_cap, config_path, test_data_file
+async def wait_for_status(helper_url, job_id):
+    url = urlunparse(helper_url._replace(scheme="ws", path=f"/ws/status/{job_id}"))
+    async with websockets.connect(url) as websocket:
+        while True:
+            status_json = await websocket.recv()
+            status_data = json.loads(status_json)
+            status = status_data.get("status")
+            match status:
+                case "running":
+                    return
+                case "not-found":
+                    raise Exception(f"{job_id=} doesn't exists.")
+
+            print(f"Current status for {url=}: {status_data.get('status')}")
+
+            # Add a delay before checking again
+            await asyncio.sleep(1)
+
+
+async def wait_for_helpers(helper_urls, job_id):
+    tasks = [
+        asyncio.create_task(wait_for_status(url, "running")) for url in helper_urls
+    ]
+    completed, _ = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+    for task in completed:
+        task.result()
+    return
+
+
+async def _start_ipa(
+    local_ipa_path,
+    max_breakdown_key,
+    per_user_credit_cap,
+    config_path,
+    test_data_file,
+    job_id,
 ):
     network_file = Path(config_path) / Path("network.toml")
+    with open(network_file, "rb") as f:
+        network_data = tomllib.load(f)
+    network_file_urls = [
+        urlparse(f"http://{peer['url']}") for peer in network_data["peers"]
+    ]
+    helper_urls = [
+        url._replace(netloc=f"{url.hostname}:{url.port+10000}")
+        for url in network_file_urls
+    ]
+    await wait_for_helpers(helper_urls, job_id)
+
     command = Command(
         cmd=f"""
     ipa/target/release/report_collector --network {network_file}

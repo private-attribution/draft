@@ -1,11 +1,21 @@
+import asyncio
 from dataclasses import dataclass
 from enum import Enum, member
+from functools import wraps
 from pathlib import Path
 import subprocess
 import time
 from typing import Optional
 import click
 from . import commands
+
+
+def coro(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+
+    return wrapper
 
 
 class Option(Enum):
@@ -179,6 +189,7 @@ def generate_test_data(size, test_data_path):
 
 
 @cli.command()
+@coro
 @Option.BRANCH
 @Option.LOCAL_IPA_PATH_NOT_EXISTS
 @click.option("--max-breakdown-key", required=False, type=int, default=256)
@@ -186,7 +197,7 @@ def generate_test_data(size, test_data_path):
 @Option.CONFIG_PATH
 @click.option("--size", type=int, default=1000)
 @click.option("--test_data_path", type=click.Path(), default=None)
-def start_isolated_ipa(
+async def start_isolated_ipa(
     branch,
     local_ipa_path,
     max_breakdown_key,
@@ -201,7 +212,7 @@ def start_isolated_ipa(
     test_data_file = commands._generate_test_data(
         size=size, test_data_path=test_data_path
     )
-    commands._start_ipa(
+    await commands._start_ipa(
         local_ipa_path,
         max_breakdown_key,
         per_user_credit_cap,
@@ -211,6 +222,7 @@ def start_isolated_ipa(
 
 
 @cli.command()
+@coro
 @Option.LOCAL_IPA_PATH_EXISTS
 @click.option("--max-breakdown-key", required=False, type=int, default=256)
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
@@ -218,17 +230,24 @@ def start_isolated_ipa(
 @click.option(
     "--test_data_file", required=True, type=click.Path(exists=True), default=None
 )
-def start_ipa(
-    local_ipa_path, max_breakdown_key, per_user_credit_cap, config_path, test_data_file
+@click.option("--job_id", required=True, type=str)
+async def start_ipa(
+    local_ipa_path,
+    max_breakdown_key,
+    per_user_credit_cap,
+    config_path,
+    test_data_file,
+    job_id,
 ):
     paths = Paths(repo_path=local_ipa_path, config_path=config_path)
     local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._start_ipa(
+    await commands._start_ipa(
         local_ipa_path,
         max_breakdown_key,
         per_user_credit_cap,
         config_path,
         test_data_file,
+        job_id,
     )
 
 
@@ -240,6 +259,7 @@ def cleanup(local_ipa_path):
 
 
 @cli.command()
+@coro
 @Option.LOCAL_IPA_PATH
 @Option.BRANCH
 @Option.CONFIG_PATH
@@ -254,7 +274,7 @@ def cleanup(local_ipa_path):
     Isolated expects repo to not exist, and will clean it up at completion.
     Repeatable will not cleanup, and will not write new files that aren't required.""",
 )
-def demo_ipa(
+async def demo_ipa(
     local_ipa_path,
     branch,
     config_path,
@@ -288,7 +308,7 @@ def demo_ipa(
     with (commands.PopenContextManager(_commands),):
         # allow helpers to start
         time.sleep(3)
-        commands._start_ipa(
+        await commands._start_ipa(
             local_ipa_path=local_ipa_path,
             max_breakdown_key=max_breakdown_key,
             per_user_credit_cap=per_user_credit_cap,
