@@ -18,14 +18,20 @@ export default function Page() {
       // Send a POST request to start the process
       console.log("sending post");
       const formData = new FormData(event.currentTarget);
-      const response = await fetch(
-        RemoteServers.DemoLogger.startPath(newJobId),
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-      const data = await response.json();
+      for (const remoteServer of Object.values(RemoteServers)) {
+        const response = await fetch(
+          remoteServer.startDemoLoggerPath(newJobId),
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+        const data = await response.json();
+        console.log(remoteServer);
+        console.log(data);
+      }
+
+      // const data = await response.json();
 
       await new Promise((f) => setTimeout(f, 1000));
 

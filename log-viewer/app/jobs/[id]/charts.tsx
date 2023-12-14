@@ -12,6 +12,7 @@ import {
   TimeScale,
   ChartOptions,
 } from "chart.js";
+import { StatsDataPoint, RemoteServer, StatsByRemoteServer } from "../servers";
 
 ChartJS.register(
   LineElement,
@@ -22,19 +23,20 @@ ChartJS.register(
   TimeScale,
 );
 
-export interface StatsDataPoint {
-  timestamp: string;
-  memoryUsage: number;
-  cpuUsage: number;
-}
-
-export function StatsComponent({ stats }: { stats: StatsDataPoint[] }) {
-  const memoryTimestamps = stats.map(
+export function StatsComponent({
+  stats,
+  remoteServer,
+}: {
+  stats: StatsByRemoteServer;
+  remoteServer: RemoteServer;
+}) {
+  const _stats = stats[remoteServer.remoteServerName];
+  const memoryTimestamps = _stats.map(
     (entry: StatsDataPoint) => entry.timestamp,
   );
 
-  const memoryValues = stats.map((entry: StatsDataPoint) => entry.memoryUsage);
-  const cpuValues = stats.map((entry: StatsDataPoint) => entry.cpuUsage);
+  const memoryValues = _stats.map((entry: StatsDataPoint) => entry.memoryUsage);
+  const cpuValues = _stats.map((entry: StatsDataPoint) => entry.cpuUsage);
 
   const memoryChartData = {
     labels: memoryTimestamps,
@@ -112,15 +114,23 @@ export function StatsComponent({ stats }: { stats: StatsDataPoint[] }) {
   };
 
   return (
-    <div className="md:flex">
-      <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
-        {memoryChartData && (
-          <Line data={memoryChartData} options={memoryChartOptions} />
-        )}
+    <>
+      <h2 className="w-full px-2 text-md font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-md sm:tracking-tight">
+        {remoteServer.toString()} Server
+      </h2>
+
+      <div className="md:flex">
+        <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
+          {memoryChartData && (
+            <Line data={memoryChartData} options={memoryChartOptions} />
+          )}
+        </div>
+        <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
+          {cpuChartData && (
+            <Line data={cpuChartData} options={cpuChartOptions} />
+          )}
+        </div>
       </div>
-      <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
-        {cpuChartData && <Line data={cpuChartData} options={cpuChartOptions} />}
-      </div>
-    </div>
+    </>
   );
 }
