@@ -15,7 +15,7 @@ import click
 import websockets
 
 
-class Role(int, Enum):
+class Role(Enum):
     COORDINATOR = 0
     HELPER_1 = 1
     HELPER_2 = 2

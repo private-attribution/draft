@@ -13,9 +13,23 @@ export interface ServerLog {
 }
 
 export enum Status {
-  Complete,
-  InProgress,
-  NotFound,
+  STARTING = "STARTING",
+  COMPILING = "COMPILING",
+  WAITING_TO_START = "WAITING_TO_START",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETE = "COMPLETE",
+  NOT_FOUND = "NOT_FOUND",
+  CRASHED = "CRASHED",
+  UNKNOWN = "UNKNOWN",
+}
+
+function getStatusFromString(statusString: string): Status {
+  const status: Status = statusString as Status;
+  if (Object.values(Status).includes(status)) {
+    return status;
+  } else {
+    return Status.UNKNOWN;
+  }
 }
 
 export interface StatsDataPoint {
@@ -28,25 +42,28 @@ export type StatusByRemoteServer = {
   [key in RemoteServerNames]: Status | null;
 };
 
-export const initialStatus: StatusByRemoteServer = Object.fromEntries(
-  Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
-);
+export const initialStatusByRemoteServer: StatusByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
+  );
 
 export type StatsByRemoteServer = {
   [key in RemoteServerNames]: StatsDataPoint[];
 };
 
-export const initialStats: StatsByRemoteServer = Object.fromEntries(
-  Object.values(RemoteServerNames).map((serverName) => [[serverName], []]),
-);
+export const initialStatsByRemoteServer: StatsByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], []]),
+  );
 
 export type RunTimeByRemoteServer = {
   [key in RemoteServerNames]: number | null;
 };
 
-export const initialRunTime: RunTimeByRemoteServer = Object.fromEntries(
-  Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
-);
+export const initialRunTimeByRemoteServer: RunTimeByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
+  );
 
 export class RemoteServer {
   private baseURL: URL;
@@ -130,20 +147,9 @@ export class RemoteServer {
     };
 
     ws.onmessage = (event) => {
-      switch (JSON.parse(event.data).status) {
-        case "complete": {
-          updateStatus(Status.Complete);
-          break;
-        }
-        case "in-progress": {
-          updateStatus(Status.InProgress);
-          break;
-        }
-        case "not-found": {
-          updateStatus(Status.NotFound);
-          break;
-        }
-      }
+      const statusString: string = JSON.parse(event.data).status;
+      const status = getStatusFromString(statusString);
+      updateStatus(status);
     };
 
     ws.onclose = (event) => {

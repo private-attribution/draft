@@ -8,15 +8,16 @@ import {
   LogViewer,
 } from "./components";
 import {
+  Status,
   ServerLog,
   RemoteServer,
   RemoteServers,
   StatusByRemoteServer,
   StatsByRemoteServer,
   RunTimeByRemoteServer,
-  initialStatus,
-  initialStats,
-  initialRunTime,
+  initialStatusByRemoteServer,
+  initialStatsByRemoteServer,
+  initialRunTimeByRemoteServer,
 } from "../servers";
 import { StatsComponent } from "./charts";
 
@@ -26,9 +27,12 @@ export default function Jobs({ params }: { params: { id: string } }) {
   const [statsHidden, setStatsHidden] = useState<boolean>(false);
 
   const [logs, setLogs] = useState<ServerLog[]>([]);
-  const [status, setStatus] = useState<StatusByRemoteServer>(initialStatus);
-  const [stats, setStats] = useState<StatsByRemoteServer>(initialStats);
-  const [runTime, setRunTime] = useState<RunTimeByRemoteServer>(initialRunTime);
+  const [statusByRemoteServer, setStatusByRemoteServer] =
+    useState<StatusByRemoteServer>(initialStatusByRemoteServer);
+  const [statsByRemoteServer, setStatsByRemoteServer] =
+    useState<StatsByRemoteServer>(initialStatsByRemoteServer);
+  const [runTimeByRemoteServer, setRunTimeByRemoteServer] =
+    useState<RunTimeByRemoteServer>(initialRunTimeByRemoteServer);
 
   function flipLogsHidden() {
     setLogsHidden(!logsHidden);
@@ -42,11 +46,14 @@ export default function Jobs({ params }: { params: { id: string } }) {
     let webSockets: WebSocket[] = [];
     for (const remoteServer of Object.values(RemoteServers)) {
       const loggingWs = remoteServer.openLogSocket(params.id, setLogs);
-      const statusWs = remoteServer.openStatusSocket(params.id, setStatus);
+      const statusWs = remoteServer.openStatusSocket(
+        params.id,
+        setStatusByRemoteServer,
+      );
       const statsWs = remoteServer.openStatsSocket(
         params.id,
-        setStats,
-        setRunTime,
+        setStatsByRemoteServer,
+        setRunTimeByRemoteServer,
       );
       webSockets = [...webSockets, loggingWs, statusWs, statsWs];
     }
@@ -64,37 +71,85 @@ export default function Jobs({ params }: { params: { id: string } }) {
         Job Details: {params.id}
       </h2>
 
-      <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-white dark:bg-slate-950 shadow mt-10">
-        <button onClick={flipStatsHidden} className="w-full h-full">
+      <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
+        <button
+          onClick={flipStatsHidden}
+          className="w-full h-full border-b border-gray-300 dark:border-gray-700"
+        >
           <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={statsHidden} />
-              <div className="pl-2">Stats</div>
+              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900">
+                Stats
+              </h3>
             </div>
+            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {Object.values(RemoteServers).map(
+                (remoteServer: RemoteServer) => {
+                  const runTime =
+                    runTimeByRemoteServer[remoteServer.remoteServerName];
+                  const status =
+                    statusByRemoteServer[remoteServer.remoteServerName] ??
+                    Status.UNKNOWN;
 
-            {Object.values(RemoteServers).map((remoteServer: RemoteServer) => (
-              <RunTimePill
-                status={status}
-                runTime={runTime}
-                remoteServer={remoteServer}
-              />
-            ))}
+                  return (
+                    <div
+                      key={remoteServer.remoteServerName}
+                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow"
+                    >
+                      <dt className="truncate text-sm font-medium text-gray-500">
+                        {remoteServer.toString()} Run Time
+                      </dt>
+                      <dd>
+                        <RunTimePill status={status} runTime={runTime} />
+                      </dd>
+                    </div>
+                  );
+                },
+              )}
+            </dl>
           </div>
         </button>
         {!statsHidden &&
-          Object.values(RemoteServers).map((remoteServer: RemoteServer) => (
-            <StatsComponent stats={stats} remoteServer={remoteServer} />
-          ))}
+          Object.values(RemoteServers).map((remoteServer: RemoteServer) => {
+            const stats = statsByRemoteServer[remoteServer.remoteServerName];
+            return <StatsComponent stats={stats} remoteServer={remoteServer} />;
+          })}
 
-        <button onClick={flipLogsHidden} className="w-full h-full">
+        <button
+          onClick={flipLogsHidden}
+          className="w-full h-full border-b border-gray-300 dark:border-gray-700"
+        >
           <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={logsHidden} />
-              <div className="pl-2">Logs</div>
+              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900">
+                Logs
+              </h3>
             </div>
-            {Object.values(RemoteServers).map((remoteServer: RemoteServer) => (
-              <StatusPill status={status} remoteServer={remoteServer} />
-            ))}
+            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {Object.values(RemoteServers).map(
+                (remoteServer: RemoteServer) => {
+                  const status =
+                    statusByRemoteServer[remoteServer.remoteServerName] ??
+                    Status.UNKNOWN;
+
+                  return (
+                    <div
+                      key={remoteServer.remoteServerName}
+                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow"
+                    >
+                      <dt className="truncate text-sm font-medium text-gray-500">
+                        {remoteServer.remoteServerNameStr} Status
+                      </dt>
+                      <dd>
+                        <StatusPill status={status} />
+                      </dd>
+                    </div>
+                  );
+                },
+              )}
+            </dl>
           </div>
         </button>
         {!logsHidden && <LogViewer logs={logs} />}

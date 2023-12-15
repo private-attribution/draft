@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import clsx from "clsx";
 import { Line } from "react-chartjs-2";
 import "chartjs-adapter-spacetime";
 import {
@@ -26,17 +27,18 @@ ChartJS.register(
 export function StatsComponent({
   stats,
   remoteServer,
+  className = "",
 }: {
-  stats: StatsByRemoteServer;
+  stats: StatsDataPoint[];
   remoteServer: RemoteServer;
+  className?: string;
 }) {
-  const _stats = stats[remoteServer.remoteServerName];
-  const memoryTimestamps = _stats.map(
+  const memoryTimestamps = stats.map(
     (entry: StatsDataPoint) => entry.timestamp,
   );
 
-  const memoryValues = _stats.map((entry: StatsDataPoint) => entry.memoryUsage);
-  const cpuValues = _stats.map((entry: StatsDataPoint) => entry.cpuUsage);
+  const memoryValues = stats.map((entry: StatsDataPoint) => entry.memoryUsage);
+  const cpuValues = stats.map((entry: StatsDataPoint) => entry.cpuUsage);
 
   const memoryChartData = {
     labels: memoryTimestamps,
@@ -114,7 +116,7 @@ export function StatsComponent({
   };
 
   return (
-    <>
+    <div className={clsx(`w-full pt-2 bg-white dark:bg-slate-950`, className)}>
       <h2 className="w-full px-2 text-md font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-md sm:tracking-tight">
         {remoteServer.toString()} Server
       </h2>
@@ -131,6 +133,6 @@ export function StatsComponent({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

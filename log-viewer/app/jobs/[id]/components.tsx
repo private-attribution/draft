@@ -2,13 +2,7 @@ import React from "react";
 import { Source_Code_Pro } from "next/font/google";
 import clsx from "clsx";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import {
-  Status,
-  StatusByRemoteServer,
-  RunTimeByRemoteServer,
-  RemoteServer,
-  ServerLog,
-} from "../servers";
+import { Status, ServerLog } from "../servers";
 
 const sourceCodePro = Source_Code_Pro({ subsets: ["latin"] });
 
@@ -24,32 +18,33 @@ export function HiddenSectionChevron({
   );
 }
 
-export function StatusPill({
-  status,
-  remoteServer,
-}: {
-  status: StatusByRemoteServer;
-  remoteServer: RemoteServer;
-}) {
-  const _status = status[remoteServer.remoteServerName];
+type StatusClassNameMixinsType = {
+  [key in Status]: string;
+};
+
+const StatusClassNameMixins: StatusClassNameMixinsType = {
+  STARTING: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
+  COMPILING: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
+  WAITING_TO_START: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
+  IN_PROGRESS: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
+  COMPLETE: "bg-cyan-300 dark:bg-cyan-700",
+  NOT_FOUND: "bg-rose-300 dark:bg-rose-800",
+  CRASHED: "bg-rose-300 dark:bg-rose-800 animate-pulse",
+  UNKNOWN: "bg-rose-300 dark:bg-rose-800",
+};
+
+function StatusToTitleString(status: Status): string {
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+export function StatusPill({ status }: { status: Status }) {
   return (
-    <>
-      {_status === Status.Complete && (
-        <div className="rounded-full bg-cyan-300 dark:bg-cyan-700 px-2">
-          Completed
-        </div>
-      )}
-      {_status === Status.InProgress && (
-        <div className="animate-pulse rounded-full bg-emerald-300 dark:bg-emerald-700 px-2">
-          In Progress
-        </div>
-      )}
-      {_status === Status.NotFound && (
-        <div className="rounded-full bg-rose-300 dark:bg-rose-800 px-2">
-          Not Found
-        </div>
-      )}
-    </>
+    <div className={clsx(`rounded-full px-2`, StatusClassNameMixins[status])}>
+      {StatusToTitleString(status)}
+    </div>
   );
 }
 
@@ -70,39 +65,32 @@ function secondsToTime(e: number) {
 export function RunTimePill({
   status,
   runTime,
-  remoteServer,
 }: {
-  status: StatusByRemoteServer;
-  runTime: RunTimeByRemoteServer;
-  remoteServer: RemoteServer;
+  status: Status;
+  runTime: number | null;
 }) {
-  const _runTime = runTime[remoteServer.remoteServerName];
-  const _status = status[remoteServer.remoteServerName];
-  const runTimeStr = _runTime ? secondsToTime(_runTime) : "";
+  const runTimeStr = runTime ? secondsToTime(runTime) : "N/A";
   return (
-    <>
-      {_runTime && _status === Status.Complete && (
-        <div className="rounded-full bg-cyan-300 dark:bg-cyan-700 px-2">
-          {runTimeStr}
-        </div>
-      )}
-      {_runTime && _status === Status.InProgress && (
-        <div className="animate-pulse rounded-full bg-emerald-300 dark:bg-emerald-700 px-2">
-          {runTimeStr}
-        </div>
-      )}
-      {_runTime && _status === Status.NotFound && (
-        <div className="rounded-full bg-rose-300 dark:bg-rose-800 px-2">
-          {runTimeStr}
-        </div>
-      )}
-    </>
+    <div className={clsx(`rounded-full px-2`, StatusClassNameMixins[status])}>
+      {runTimeStr}
+    </div>
   );
 }
 
-export function LogViewer({ logs }: { logs: ServerLog[] }) {
+export function LogViewer({
+  logs,
+  className = "",
+}: {
+  logs: ServerLog[];
+  className?: string;
+}) {
   return (
-    <div className="w-full border-t border-gray-300 dark:border-gray-700 overflow-x-auto">
+    <div
+      className={clsx(
+        `w-full bg-white dark:bg-slate-950 overflow-x-auto`,
+        className,
+      )}
+    >
       <div className="px-4 py-5 sm:p-6">
         {logs.map((log, index) => (
           <div
