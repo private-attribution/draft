@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name="helper-cli",
+    name="draft",
     version="0.0.1",
-    py_modules=["helper_cli"],
+    py_modules=["draft"],
     install_requires=[
         "Click",
         "websockets",
@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "helper-cli = helper_cli.cli:cli",
+            "draft = sidecar.cli.cli:cli",
         ],
     },
 )

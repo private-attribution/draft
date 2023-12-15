@@ -94,7 +94,7 @@ class Query:
 queries: Dict[str, Query] = {}
 
 demo_logger_cmd = """
-.venv/bin/python logger --num-lines {num_lines} --total-runtime {total_runtime}
+.venv/bin/python sidecar/logger --num-lines {num_lines} --total-runtime {total_runtime}
 """
 
 

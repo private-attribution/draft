@@ -190,11 +190,11 @@ def _setup_helper(branch, local_ipa_path, config_path, isolated):
 
 def start_helper_sidecar_cmd(role: Role) -> Command:
     helper = helpers[role]
-    cmd = "uvicorn runner.app.main:app"
+    cmd = "uvicorn sidecar.app.main:app"
     env = {
         **os.environ,
         "ROLE": str(role.value),
-        "ROOT_PATH": f"tmp/runner/{role.value}",
+        "ROOT_PATH": f"tmp/sidecar/{role.value}",
         "UVICORN_PORT": str(helper.sidecar_port),
     }
     return Command(cmd=cmd, env=env)
@@ -227,10 +227,10 @@ def _start_all_helper_sidecar_local():
 
 
 def _start_local_dev():
-    command = Command(cmd="npm --prefix log-viewer install")
+    command = Command(cmd="npm --prefix server install")
     command.run_blocking()
 
-    command = Command(cmd="npm --prefix log-viewer run dev")
+    command = Command(cmd="npm --prefix server run dev")
     commands = [command] + _start_all_helper_sidecar_local_commands()
     start_commands_parallel(commands)
 

@@ -1,10 +1,9 @@
-# Remote Runner
+# DRAFT - Distributed Relay and Automation Facilitation Tool
 
-Remote runner is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains 3 sub-projects:
+draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains 2 components:
 
-1. helper-cli: a thin wrapper with handy cli commands for setting up and running the system
-2. log-viewer: a web front end that starts queries an displays logs from the MPC helper servers
-3. runner: a sidecar back end API that runs next to the IPA binary on helper servers
+1. draft-server: a web front end and service that starts queries an displays logs from the MPC helper servers
+2. draft-sidecar: a sidecar back end API that runs next to the IPA binary on helper servers. this include a CLI for setup and running.
 
 ## Get started
 
@@ -20,14 +19,14 @@ Setup:
 
 ```
 #Clone this repo
-git clone https://github.com/eriktaubeneck/remote-runner.git
-cd remote-runner
+git clone https://github.com/eriktaubeneck/draft.git
+cd draft
 
 # install helper-cli
-virtualenv .venv
+python -m virtualenv .venv
 source .venv/bin/activate
-pip install --editable cli
+pip install --editable .
 
 # start dev environment
-helper-cli start-local-dev
+draft start-local-dev
 ```
