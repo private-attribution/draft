@@ -113,7 +113,11 @@ export default function Jobs({ params }: { params: { id: string } }) {
         {!statsHidden &&
           Object.values(RemoteServers).map((remoteServer: RemoteServer) => {
             const stats = statsByRemoteServer[remoteServer.remoteServerName];
-            return <StatsComponent stats={stats} remoteServer={remoteServer} />;
+            return (
+              <div key={remoteServer.remoteServerName}>
+                <StatsComponent stats={stats} remoteServer={remoteServer} />
+              </div>
+            );
           })}
 
         <button
