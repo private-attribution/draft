@@ -11,9 +11,11 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
+    "@tailwindcss/forms": "^0.5.7",
     "axios": "^1.6.2",
     "chartjs-adapter-spacetime": "^1.0.1",
     "clsx": "^2.0.0",
+    "haikunator": "^2.1.2",
     "next": "14.0.3",
     "react": "^18",
     "react-chartjs-2": "^5.2.0",

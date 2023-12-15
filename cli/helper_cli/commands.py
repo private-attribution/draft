@@ -206,6 +206,35 @@ def _start_helper_sidecar(identity):
     command.run_blocking()
 
 
+def start_commands_parallel(commands: list[Command]):
+    with PopenContextManager(
+        commands, Popen_args={"stdout": subprocess.PIPE, "text": True}
+    ) as processes:
+        for process in processes:
+            process.wait()
+
+
+def _start_all_helper_sidecar_local_commands():
+    return [
+        start_helper_sidecar_cmd(helper.role)
+        for helper in helpers.values()
+    ]
+
+
+def _start_all_helper_sidecar_local():
+    commands = _start_all_helper_sidecar_local_commands()
+    start_commands_parallel(commands)
+
+
+def _start_local_dev():
+    command = Command(cmd="npm --prefix log-viewer install")
+    command.run_blocking()
+
+    command = Command(cmd="npm --prefix log-viewer run dev")
+    commands = [command] + _start_all_helper_sidecar_local_commands()
+    start_commands_parallel(commands)
+
+
 def _generate_test_data(size, test_data_path):
     test_data_path.mkdir(exist_ok=True)
     output_file = test_data_path / Path(f"events-{size}.txt")

@@ -167,16 +167,12 @@ def start_helper_sidecar(identity):
 
 @cli.command
 def start_all_helper_sidecar_local():
-    _commands = [
-        commands.start_helper_sidecar_cmd(helper.role)
-        for helper in commands.helpers.values()
-    ]
-    with commands.PopenContextManager(
-        _commands, Popen_args={"stdout": subprocess.PIPE, "text": True}
-    ) as processes:
-        for process in processes:
-            process.wait()
+    commands._start_all_helper_sidecar_local()
 
+
+@cli.command
+def start_local_dev():
+    commands._start_local_dev()
 
 @cli.command()
 @click.option("--size", type=int, default=1000)

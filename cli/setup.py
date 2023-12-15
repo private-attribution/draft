@@ -6,6 +6,14 @@ setup(
     py_modules=["helper_cli"],
     install_requires=[
         "Click",
+        "websockets",
+        "uvicorn",
+        "fastapi",
+        "psutil",
+        "loguru",
+        "pydantic_settings",
+        "python-multipart",
+        "mnemonic",
     ],
     entry_points={
         "console_scripts": [
