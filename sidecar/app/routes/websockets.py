@@ -4,7 +4,7 @@ import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 from websockets import ConnectionClosedOK
-from ..processes import queries, Status, gen_process_complete_semaphore_path
+from ..queries import queries, Status, gen_process_complete_semaphore_path
 from ..logging import gen_log_file_path
 
 router = APIRouter(
@@ -15,14 +15,14 @@ router = APIRouter(
 )
 
 
-@router.websocket("/status/{process_id}")
-async def status_websocket(websocket: WebSocket, process_id: str):
-    complete_semaphore = gen_process_complete_semaphore_path(process_id)
-    query = queries.get(process_id)
+@router.websocket("/status/{query_id}")
+async def status_websocket(websocket: WebSocket, query_id: str):
+    complete_semaphore = gen_process_complete_semaphore_path(query_id)
+    query = queries.get(query_id)
     await websocket.accept()
     try:
         if complete_semaphore.exists():
-            logger.info(f"{process_id=} Status: complete")
+            logger.info(f"{query_id=} Status: complete")
             await websocket.send_json({"status": Status.COMPLETE.name})
         elif query is not None:
             while not complete_semaphore.exists():
@@ -30,37 +30,37 @@ async def status_websocket(websocket: WebSocket, process_id: str):
                 await websocket.send_json({"status": query.status.name})
             await websocket.send_json({"status": Status.COMPLETE.name})
         else:
-            logger.warning(f"{process_id=} Status: {Status.NOT_FOUND.name}")
+            logger.warning(f"{query_id=} Status: {Status.NOT_FOUND.name}")
             await websocket.send_json({"status": Status.NOT_FOUND.name})
         await websocket.close()
     except (WebSocketDisconnect, ConnectionClosedOK):
         pass
 
 
-@router.websocket("/logs/{process_id}")
-async def logs_websocket(websocket: WebSocket, process_id: str):
-    log_file_path = gen_log_file_path(process_id)
-    complete_semaphore = gen_process_complete_semaphore_path(process_id)
-    query = queries.get(process_id)
+@router.websocket("/logs/{query_id}")
+async def logs_websocket(websocket: WebSocket, query_id: str):
+    log_file_path = gen_log_file_path(query_id)
+    complete_semaphore = gen_process_complete_semaphore_path(query_id)
+    query = queries.get(query_id)
 
     await websocket.accept()
 
     while query is not None and not log_file_path.exists():
-        logger.warning(f"{process_id=} started. log file does not yet exist. waiting.")
+        logger.warning(f"{query_id=} started. log file does not yet exist. waiting.")
         time.sleep(10)
 
     if query is None and not log_file_path.exists():
-        logger.warning(f"{process_id=} does not exist.")
+        logger.warning(f"{query_id=} does not exist.")
         await websocket.close()
     else:
         try:
             with open(log_file_path, "r") as log_file:
                 if complete_semaphore.exists():
-                    logger.info(f"{process_id=} complete. sending all logs.")
+                    logger.info(f"{query_id=} complete. sending all logs.")
                     for line in log_file:
                         await websocket.send_text(line)
                 else:
-                    logger.info(f"{process_id=} running. tailing log file.")
+                    logger.info(f"{query_id=} running. tailing log file.")
                     while not complete_semaphore.exists():
                         line = log_file.readline()
                         if not line:
@@ -72,15 +72,15 @@ async def logs_websocket(websocket: WebSocket, process_id: str):
             pass
 
 
-@router.websocket("/stats/{process_id}")
-async def stats_websocket(websocket: WebSocket, process_id: str):
-    query = queries.get(process_id)
-    complete_semaphore = gen_process_complete_semaphore_path(process_id)
+@router.websocket("/stats/{query_id}")
+async def stats_websocket(websocket: WebSocket, query_id: str):
+    query = queries.get(query_id)
+    complete_semaphore = gen_process_complete_semaphore_path(query_id)
 
     await websocket.accept()
 
     if query is None or complete_semaphore.exists():
-        logger.warning(f"{process_id=} is not running.")
+        logger.warning(f"{query_id=} is not running.")
         await websocket.close()
 
     else:

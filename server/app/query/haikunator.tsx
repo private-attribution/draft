@@ -6,6 +6,6 @@ const haikunator = new Haikunator({
   nouns: nouns,
 });
 
-export default function NewJobId(): string {
+export default function NewQueryId(): string {
   return haikunator.haikunate();
 }

@@ -276,8 +276,8 @@ def _generate_test_data(size, test_data_path, local_ipa_path):
     return output_file
 
 
-async def wait_for_status(helper_url, job_id):
-    url = urlunparse(helper_url._replace(scheme="ws", path=f"/ws/status/{job_id}"))
+async def wait_for_status(helper_url, query_id):
+    url = urlunparse(helper_url._replace(scheme="ws", path=f"/ws/status/{query_id}"))
     async with websockets.connect(url) as websocket:
         while True:
             status_json = await websocket.recv()
@@ -287,7 +287,7 @@ async def wait_for_status(helper_url, job_id):
                 case "IN_PROGRESS":
                     return
                 case "NOT_FOUND":
-                    raise Exception(f"{job_id=} doesn't exists.")
+                    raise Exception(f"{query_id=} doesn't exists.")
 
             print(f"Current status for {url=}: {status_data.get('status')}")
 
@@ -295,9 +295,9 @@ async def wait_for_status(helper_url, job_id):
             await asyncio.sleep(1)
 
 
-async def wait_for_helpers(helper_urls, job_id):
+async def wait_for_helpers(helper_urls, query_id):
     tasks = [
-        asyncio.create_task(wait_for_status(url, job_id)) for url in helper_urls
+        asyncio.create_task(wait_for_status(url, query_id)) for url in helper_urls
     ]
     completed, _ = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     for task in completed:
@@ -311,11 +311,11 @@ async def _start_ipa(
     per_user_credit_cap,
     config_path,
     test_data_file,
-    job_id=None,
+    query_id=None,
 ):
     network_file = Path(config_path) / Path("network.toml")
     report_collector_exe = Path(local_ipa_path) / Path("target/release/report_collector")
-    if job_id:
+    if query_id:
         with open(network_file, "rb") as f:
             network_data = tomllib.load(f)
         network_file_urls = [
@@ -325,7 +325,7 @@ async def _start_ipa(
             url._replace(netloc=f"{url.hostname}:{url.port+10000}")
             for url in network_file_urls
         ]
-        await wait_for_helpers(helper_urls, job_id)
+        await wait_for_helpers(helper_urls, query_id)
 
     command = Command(
         cmd=f"""

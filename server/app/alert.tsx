@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
-export default function JobStartedAlert({ jobId }: { jobId: string }) {
+export default function QueryStartedAlert({ queryId }: { queryId: string }) {
   return (
     <div className="rounded-md bg-green-50 p-4">
       <div className="flex">
@@ -13,7 +13,8 @@ export default function JobStartedAlert({ jobId }: { jobId: string }) {
         </div>
         <div className="ml-3">
           <p className="text-sm font-medium text-green-800">
-            Successfully started Job: {jobId}. Redirecting to /jobs/{jobId}.{" "}
+            Successfully started Query: {queryId}. Redirecting to /query/
+            {queryId}.{" "}
           </p>
         </div>
         <div className="ml-auto pl-3">

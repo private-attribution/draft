@@ -15,8 +15,8 @@ complete_semaphore_path = settings.root_path / Path("complete_semaphore")
 complete_semaphore_path.mkdir(exist_ok=True, parents=True)
 
 
-def gen_process_complete_semaphore_path(process_id):
-    return complete_semaphore_path / Path(f"{process_id}")
+def gen_process_complete_semaphore_path(query_id):
+    return complete_semaphore_path / Path(f"{query_id}")
 
 
 class Status(Enum):
@@ -139,7 +139,7 @@ draft start-ipa
   --max-breakdown-key {max_breakdown_key}
   --per-user-credit-cap {per_user_credit_cap}
   --test_data_file {test_data_file}
-  --job_id {query_id}
+  --query_id {query_id}
 """
 
 QuerySteps: Dict[str, list[Step]] = {

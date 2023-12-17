@@ -6,8 +6,8 @@ log_path = settings.root_path / Path("logs")
 log_path.mkdir(exist_ok=True, parents=True)
 
 
-def gen_log_file_path(process_id):
-    return log_path / Path(f"{process_id}.log")
+def gen_log_file_path(query_id):
+    return log_path / Path(f"{query_id}.log")
 
 
 def log_process_stdout(query_id, process):

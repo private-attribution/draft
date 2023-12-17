@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Form
-from ..processes import QuerySteps, Query
+from ..queries import QuerySteps, Query
 from ..settings import settings
 
 
@@ -13,14 +13,14 @@ router = APIRouter(
 )
 
 
-@router.post("/demo-logger/{process_id}")
+@router.post("/demo-logger/{query_id}")
 def demo_logger(
-    process_id: str,
+    query_id: str,
     num_lines: Annotated[int, Form()],
     total_runtime: Annotated[int, Form()],
 ):
     query = Query(
-        query_id=process_id,
+        query_id=query_id,
         steps=QuerySteps["demo-logger"],
     )
     query.run_in_thread(
@@ -28,17 +28,17 @@ def demo_logger(
         total_runtime=total_runtime,
     )
 
-    return {"message": "Process started successfully", "process_id": process_id}
+    return {"message": "Process started successfully", "query_id": query_id}
 
 
-@router.post("/ipa-helper/{process_id}")
-def start_ipa_helper(process_id: str):
+@router.post("/ipa-helper/{query_id}")
+def start_ipa_helper(query_id: str):
     role = settings.role
     if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
 
     query = Query(
-        query_id=process_id,
+        query_id=query_id,
         steps=QuerySteps["ipa-helper"],
     )
     local_ipa_path = settings.root_path / Path("ipa")
@@ -50,19 +50,19 @@ def start_ipa_helper(process_id: str):
         identity=role.value,
     )
 
-    return {"message": "Process started successfully", "process_id": process_id}
+    return {"message": "Process started successfully", "query_id": query_id}
 
 
-@router.post("/ipa-query/{process_id}")
+@router.post("/ipa-query/{query_id}")
 def start_ipa_test_query(
-    process_id: str,
+    query_id: str,
 ):
     role = settings.role
     if role != role.COORDINATOR:
         raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
 
     query = Query(
-        query_id=process_id,
+        query_id=query_id,
         steps=QuerySteps["ipa-coordinator"],
     )
     size = 1000
@@ -81,7 +81,7 @@ def start_ipa_test_query(
         per_user_credit_cap=per_user_credit_cap,
         test_data_path=test_data_path,
         test_data_file=test_data_file,
-        query_id=process_id
+        query_id=query_id
     )
 
-    return {"message": "Process started successfully", "process_id": process_id}
+    return {"message": "Process started successfully", "query_id": query_id}

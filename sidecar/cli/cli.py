@@ -233,14 +233,14 @@ async def start_isolated_ipa(
 @click.option(
     "--test_data_file", required=True, type=click.Path(exists=True), default=None
 )
-@click.option("--job_id", required=False, type=str, default=None)
+@click.option("--query_id", required=False, type=str, default=None)
 async def start_ipa(
     local_ipa_path,
     max_breakdown_key,
     per_user_credit_cap,
     config_path,
     test_data_file,
-    job_id,
+    query_id,
 ):
     paths = Paths(repo_path=local_ipa_path, config_path=config_path)
     local_ipa_path, config_path = paths.repo_path, paths.config_path
@@ -250,7 +250,7 @@ async def start_ipa(
         per_user_credit_cap,
         config_path,
         test_data_file,
-        job_id,
+        query_id,
     )
 
 

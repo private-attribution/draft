@@ -21,7 +21,7 @@ import {
 } from "../servers";
 import { StatsComponent } from "./charts";
 
-export default function Jobs({ params }: { params: { id: string } }) {
+export default function Query({ params }: { params: { id: string } }) {
   // display controls
   const [logsHidden, setLogsHidden] = useState<boolean>(false);
   const [statsHidden, setStatsHidden] = useState<boolean>(false);
@@ -68,7 +68,7 @@ export default function Jobs({ params }: { params: { id: string } }) {
   return (
     <>
       <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
-        Job Details: {params.id}
+        Query Details: {params.id}
       </h2>
 
       <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
