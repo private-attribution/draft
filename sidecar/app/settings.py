@@ -18,6 +18,7 @@ def gen_path(v: Any) -> Path:
 
 class Settings(BaseSettings):
     root_path: Annotated[Path, BeforeValidator(gen_path)]
+    config_path: Annotated[Path, BeforeValidator(gen_path)]
     role: Role
 
 

@@ -94,16 +94,24 @@ def _clone(local_ipa_path, exists_ok):
     process_result("Success: IPA cloned.", result.returncode)
 
 
-def _checkout_branch(branch):
-    command = Command(cmd="git -C ipa fetch --all")
+def _checkout_branch(local_ipa_path, branch):
+    command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
     result = command.run_blocking()
     process_result("Success: upstream fetched.", result.returncode)
-    command = Command(cmd=f"git -C ipa checkout {branch}")
+    command = Command(cmd=f"git -C {local_ipa_path} checkout {branch}")
     result = command.run_blocking()
     process_result(f"Success: {branch} checked out.", result.returncode)
-    command = Command(cmd="git -C ipa pull")
+    command = Command(cmd=f"git -C {local_ipa_path} pull")
     result = command.run_blocking()
     process_result("Success: fast forwarded.", result.returncode)
+
+
+def _checkout_commit(local_ipa_path, commit_hash):
+    command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
+    result = command.run_blocking()
+    process_result("Success: upstream fetched.", result.returncode)
+    command = Command(cmd=f"git -C {local_ipa_path} checkout {commit_hash}")
+    result = command.run_blocking()
 
 
 def _compile(local_ipa_path):
@@ -118,11 +126,15 @@ def _compile(local_ipa_path):
 
 
 def _generate_test_config(local_ipa_path, config_path):
+    ports = " ".join(
+        str(helper.helper_port) for helper in helpers.values()
+        if helper.role != Role.COORDINATOR
+    )
     command = Command(
         cmd=f"""
     {local_ipa_path}/target/release/helper test-setup
     --output-dir {config_path}
-    --ports {" ".join(str(helper.helper_port) for helper in helpers.values())}
+    --ports {ports}
     """
     )
     result = command.run_blocking()
@@ -145,8 +157,9 @@ def start_helper_process_cmd(
     identity = role.value
     helper = helpers[role]
     port = helper.helper_port
+    helper_exe = local_ipa_path / Path("target/release/helper")
     cmd = f"""
-    {local_ipa_path}/target/release/helper --network {config_path}/network.toml
+    {helper_exe} --network {config_path}/network.toml
     --identity {identity} --tls-cert {config_path}/pub/h{identity}.pem
     --tls-key {config_path}/h{identity}.key --port {port}
     --mk-public-key {config_path}/pub/h{identity}_mk.pub
@@ -161,9 +174,12 @@ def _start_helper(local_ipa_path, config_path, identity):
     command.run_blocking()
 
 
-def _setup_helper(branch, local_ipa_path, config_path, isolated):
+def _setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
     _clone(local_ipa_path=local_ipa_path, exists_ok=(not isolated))
-    _checkout_branch(branch=branch)
+    if commit_hash:
+        _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
+    else:
+        _checkout_branch(local_ipa_path=local_ipa_path, branch=branch)
 
     helper_binary_path = local_ipa_path / Path("target/release/helper")
 
@@ -179,13 +195,14 @@ def _setup_helper(branch, local_ipa_path, config_path, isolated):
 
     if config_path.exists():
         if isolated:
-            process_result("", 1, f"Run in isolated mode and {config_path=} exists.")
+            pass
         else:
             shutil.rmtree(config_path)
-
-    config_path.mkdir(parents=True)
-
-    _generate_test_config(local_ipa_path=local_ipa_path, config_path=config_path)
+            config_path.mkdir(parents=True)
+            _generate_test_config(local_ipa_path=local_ipa_path, config_path=config_path)
+    else:
+        config_path.mkdir(parents=True)
+        _generate_test_config(local_ipa_path=local_ipa_path, config_path=config_path)
 
 
 def start_helper_sidecar_cmd(role: Role) -> Command:
@@ -195,6 +212,7 @@ def start_helper_sidecar_cmd(role: Role) -> Command:
         **os.environ,
         "ROLE": str(role.value),
         "ROOT_PATH": f"tmp/sidecar/{role.value}",
+        "CONFIG_PATH": "local_dev/config/",
         "UVICORN_PORT": str(helper.sidecar_port),
     }
     return Command(cmd=cmd, env=env)
@@ -235,12 +253,13 @@ def _start_local_dev():
     start_commands_parallel(commands)
 
 
-def _generate_test_data(size, test_data_path):
-    test_data_path.mkdir(exist_ok=True)
+def _generate_test_data(size, test_data_path, local_ipa_path):
+    test_data_path.mkdir(exist_ok=True, parents=True)
     output_file = test_data_path / Path(f"events-{size}.txt")
+    manifest_path = local_ipa_path / Path("Cargo.toml")
     command = Command(
         cmd=f"""
-    cargo run --manifest-path=ipa/Cargo.toml --release --bin report_collector
+    cargo run --manifest-path={manifest_path} --release --bin report_collector
     --features="clap cli test-fixture" -- gen-ipa-inputs -n {size}
     --max-breakdown-key 256 --report-filter all --max-trigger-value 7 --seed 123
     """
@@ -265,9 +284,9 @@ async def wait_for_status(helper_url, job_id):
             status_data = json.loads(status_json)
             status = status_data.get("status")
             match status:
-                case "running":
+                case "IN_PROGRESS":
                     return
-                case "not-found":
+                case "NOT_FOUND":
                     raise Exception(f"{job_id=} doesn't exists.")
 
             print(f"Current status for {url=}: {status_data.get('status')}")
@@ -278,7 +297,7 @@ async def wait_for_status(helper_url, job_id):
 
 async def wait_for_helpers(helper_urls, job_id):
     tasks = [
-        asyncio.create_task(wait_for_status(url, "running")) for url in helper_urls
+        asyncio.create_task(wait_for_status(url, job_id)) for url in helper_urls
     ]
     completed, _ = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     for task in completed:
@@ -292,23 +311,25 @@ async def _start_ipa(
     per_user_credit_cap,
     config_path,
     test_data_file,
-    job_id,
+    job_id=None,
 ):
     network_file = Path(config_path) / Path("network.toml")
-    with open(network_file, "rb") as f:
-        network_data = tomllib.load(f)
-    network_file_urls = [
-        urlparse(f"http://{peer['url']}") for peer in network_data["peers"]
-    ]
-    helper_urls = [
-        url._replace(netloc=f"{url.hostname}:{url.port+10000}")
-        for url in network_file_urls
-    ]
-    await wait_for_helpers(helper_urls, job_id)
+    report_collector_exe = Path(local_ipa_path) / Path("target/release/report_collector")
+    if job_id:
+        with open(network_file, "rb") as f:
+            network_data = tomllib.load(f)
+        network_file_urls = [
+            urlparse(f"http://{peer['url']}") for peer in network_data["peers"]
+        ]
+        helper_urls = [
+            url._replace(netloc=f"{url.hostname}:{url.port+10000}")
+            for url in network_file_urls
+        ]
+        await wait_for_helpers(helper_urls, job_id)
 
     command = Command(
         cmd=f"""
-    ipa/target/release/report_collector --network {network_file}
+    {report_collector_exe} --network {network_file}
     --input-file {test_data_file} oprf-ipa --max-breakdown-key {max_breakdown_key}
     --per-user-credit-cap {per_user_credit_cap} --plaintext-match-keys
     """

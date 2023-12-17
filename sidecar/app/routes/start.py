@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Form
 from ..processes import QuerySteps, Query
@@ -30,29 +31,57 @@ def demo_logger(
     return {"message": "Process started successfully", "process_id": process_id}
 
 
-@router.post("/start-ipa-helper/{process_id}")
+@router.post("/ipa-helper/{process_id}")
 def start_ipa_helper(process_id: str):
     role = settings.role
-    if not role or role.COORDINATOR:
+    if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
-    cmd = f"""
-    .venv/bin/helper-cli start-isolated-helper {settings.role.value}
-    """
-    # start_process(shlex.split(cmd), process_id=process_id)
+
+    query = Query(
+        query_id=process_id,
+        steps=QuerySteps["ipa-helper"],
+    )
+    local_ipa_path = settings.root_path / Path("ipa")
+    query.run_in_thread(
+        local_ipa_path=local_ipa_path,
+        config_path=settings.config_path,
+        branch="main",
+        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+        identity=role.value,
+    )
+
     return {"message": "Process started successfully", "process_id": process_id}
 
 
-@router.post("/start-ipa-query/{process_id}")
+@router.post("/ipa-query/{process_id}")
 def start_ipa_test_query(
     process_id: str,
-    size: Annotated[int, Form()],
 ):
     role = settings.role
-    if not role or not role.COORDINATOR:
-        raise Exception("Cannot start query without coordinator role.")
+    if role != role.COORDINATOR:
+        raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
 
-    cmd = """
-    .venv/bin/helper-cli start-isolated-ipa
-    """
-    # start_process(shlex.split(cmd), process_id=process_id)
+    query = Query(
+        query_id=process_id,
+        steps=QuerySteps["ipa-coordinator"],
+    )
+    size = 1000
+    max_breakdown_key = 256
+    per_user_credit_cap = 16
+    local_ipa_path = settings.root_path / Path("ipa")
+    test_data_path = local_ipa_path / Path("test_data/input")
+    test_data_file = test_data_path / Path(f"events-{size}.txt")
+    query.run_in_thread(
+        local_ipa_path=local_ipa_path,
+        config_path=settings.config_path,
+        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+        branch="main",
+        size=size,
+        max_breakdown_key=max_breakdown_key,
+        per_user_credit_cap=per_user_credit_cap,
+        test_data_path=test_data_path,
+        test_data_file=test_data_file,
+        query_id=process_id
+    )
+
     return {"message": "Process started successfully", "process_id": process_id}

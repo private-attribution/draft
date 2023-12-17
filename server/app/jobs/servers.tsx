@@ -80,6 +80,14 @@ export class RemoteServer {
     return new URL(`/start/demo-logger/${id}`, this.baseURL);
   }
 
+  startIPAHelperPath(id: string): URL {
+    return new URL(`/start/ipa-helper/${id}`, this.baseURL);
+  }
+
+  startIPAQueryPath(id: string): URL {
+    return new URL(`/start/ipa-query/${id}`, this.baseURL);
+  }
+
   logsWebSocketURL(id: string): URL {
     const webSocketURL = new URL(`/ws/logs/${id}`, this.baseURL);
     webSocketURL.protocol = "ws";

@@ -3,6 +3,7 @@ import psutil
 import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
+from websockets import ConnectionClosedOK
 from ..processes import queries, Status, gen_process_complete_semaphore_path
 from ..logging import gen_log_file_path
 
@@ -26,14 +27,13 @@ async def status_websocket(websocket: WebSocket, process_id: str):
         elif query is not None:
             while not complete_semaphore.exists():
                 await asyncio.sleep(1)
-                logger.info(f"{process_id=} Status: {query.status}")
                 await websocket.send_json({"status": query.status.name})
             await websocket.send_json({"status": Status.COMPLETE.name})
         else:
             logger.warning(f"{process_id=} Status: {Status.NOT_FOUND.name}")
             await websocket.send_json({"status": Status.NOT_FOUND.name})
         await websocket.close()
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, ConnectionClosedOK):
         pass
 
 
@@ -47,7 +47,7 @@ async def logs_websocket(websocket: WebSocket, process_id: str):
 
     while query is not None and not log_file_path.exists():
         logger.warning(f"{process_id=} started. log file does not yet exist. waiting.")
-        asyncio.sleep(1)
+        time.sleep(10)
 
     if query is None and not log_file_path.exists():
         logger.warning(f"{process_id=} does not exist.")
@@ -68,7 +68,7 @@ async def logs_websocket(websocket: WebSocket, process_id: str):
                         else:
                             await websocket.send_text(line)
             await websocket.close()
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, ConnectionClosedOK):
             pass
 
 
@@ -90,11 +90,8 @@ async def stats_websocket(websocket: WebSocket, process_id: str):
             while query.current_process.poll() is None:
                 try:
                     run_time = query.run_time
-                    logger.info(f"{run_time=}")
                     cpu_percent = process_psutil.cpu_percent()
-                    logger.info(f"{cpu_percent=}")
                     memory_info = process_psutil.memory_info()
-                    logger.info(f"{memory_info=}")
                     await websocket.send_json(
                         {
                             "run_time": run_time,
@@ -108,5 +105,5 @@ async def stats_websocket(websocket: WebSocket, process_id: str):
                     break
             await websocket.close()
 
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, ConnectionClosedOK):
             pass
