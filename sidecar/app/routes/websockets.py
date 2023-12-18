@@ -24,7 +24,7 @@ async def use_websocket(websocket):
     except (WebSocketDisconnect, ConnectionClosedOK):
         pass
     finally:
-        websocket.close()
+        await websocket.close()
 
 
 @router.websocket("/status/{query_id}")
@@ -36,11 +36,11 @@ async def status_websocket(websocket: WebSocket, query_id: str):
             await websocket.send_json({"status": Status.NOT_FOUND.name})
         else:
             while not query.done:
-                logger.info(f"{query_id=} Status: {query.status.name}")
+                logger.debug(f"{query_id=} Status: {query.status.name}")
                 await websocket.send_json({"status": query.status.name})
                 await asyncio.sleep(1)
             else:
-                logger.info(f"{query_id=} Status: {query.status.name}")
+                logger.debug(f"{query_id=} Status: {query.status.name}")
                 await websocket.send_json({"status": query.status.name})
 
 

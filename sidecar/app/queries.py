@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
@@ -6,8 +8,8 @@ import subprocess
 import threading
 import time
 from typing import Dict, Optional
-from loguru import logger
-from .logging import log_process_stdout
+import loguru
+from loguru import logger as _logger
 from .settings import settings, Role
 
 
@@ -41,20 +43,28 @@ class Step:
     cmd: str
     status: Status
 
-    def run(self, **kwargs):
+    @contextmanager
+    def run(self):
         process = subprocess.Popen(
-            shlex.split(self.cmd.format(**kwargs)),
+            shlex.split(self.cmd),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
         )
-        return process
+        yield process
+        while process.poll() is None:
+            line = process.stdout.readline()
+            if not line:
+                continue
+            else:
+                self.query.logger.info(line.rstrip("\n"))
 
 
 @dataclass
 class Query:
     query_id: str
     role: Role = settings.role
+    logger: "Logger" = _logger
     _steps: Optional[list[Step]] = None
     _status: Status = field(init=False, default=Status.STARTING)
     start_time: Optional[float] = field(init=False, default=None)
@@ -62,7 +72,14 @@ class Query:
     current_process: Optional[subprocess.Popen] = field(init=False, default=None)
 
     def __post_init__(self):
-        logger.debug(f"adding new Query{self=}. all queries: {queries}")
+        self.logger = _logger.bind(task=self.query_id)
+        _logger.add(
+            self.log_file_path,
+            format=f"{self.role}: {{message}}",
+            filter=lambda record: record["extra"].get("task") == self.query_id,
+            enqueue=True,
+        )
+        self.logger.debug(f"adding new Query{self=}. all queries: {queries}")
         if queries.get(self.query_id) is not None:
             raise Exception(f"{self.query_id} already exists")
         self.log_file_path.touch()
@@ -96,7 +113,7 @@ class Query:
     def status(self, status: Status):
         self._status = status
         with self.status_file_path.open('w+') as f:
-            logger.debug(f"setting status: {status=}")
+            self.logger.debug(f"setting status: {status=}")
             f.write(str(status.name))
 
     @property
@@ -117,31 +134,29 @@ class Query:
     def status_file_path(self) -> Path:
         return status_semaphore_path / Path(f"{self.query_id}")
 
-    def run_in_thread(self, **kwargs):
+    def run_in_thread(self):
         thread = threading.Thread(
             target=self.run_all,
-            kwargs=kwargs,
             daemon=True,
         )
         thread.start()
 
-    def run_step(self, step, **kwargs):
+    def run_step(self, step):
         if self.status >= Status.COMPLETE:
-            logger.warning(f"Skipping {step=} run. Query has {self.status=}.")
+            self.logger.warning(f"Skipping {step=} run. Query has {self.status=}.")
             return
         self.status = step.status
-        logger.info(f"{self.status.name=}")
-        logger.info("Starting: " + step.cmd.format(**kwargs))
-        self.current_process = step.run(**kwargs)
-        log_process_stdout(self, self.current_process)
-        self.current_process.poll()
-        logger.info(f"Return code: {self.current_process.returncode}")
+        self.logger.info(f"{self.status.name=}")
+        self.logger.info("Starting: " + step.cmd)
+        with step.run() as process:
+            self.current_process = process
+        self.logger.info(f"Return code: {self.current_process.returncode}")
         if self.current_process.returncode != 0:
             self.crash()
 
     def crash(self):
         self.status = Status.CRASHED
-        logger.info("CRASHING!")
+        self.logger.info("CRASHING!")
         self.finish()
         raise Exception("CRASHED")
 
