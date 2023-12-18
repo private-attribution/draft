@@ -6,12 +6,8 @@ log_path = settings.root_path / Path("logs")
 log_path.mkdir(exist_ok=True, parents=True)
 
 
-def gen_log_file_path(query_id):
-    return log_path / Path(f"{query_id}.log")
-
-
-def log_process_stdout(query_id, process):
-    logger.debug(query_id)
+def log_process_stdout(query, process):
+    logger.debug(query)
     logger.debug(process)
 
     if process is None:
@@ -19,7 +15,7 @@ def log_process_stdout(query_id, process):
 
     process_logger = logger.bind(task="process_tail")
     logger.add(
-        gen_log_file_path(query_id),
+        query.log_file_path,
         format="{message}",
         filter=lambda record: record["extra"].get("task") == "process_tail",
         enqueue=True,
