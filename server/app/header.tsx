@@ -54,12 +54,12 @@ export default function Header() {
               </div>
               <div className="flex">
                 <div className="flex items-center">
-                  <Link href="/jobs">
+                  <Link href="/query">
                     <button
                       type="button"
                       className="ml-3 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
                     >
-                      Create New Job
+                      Create New Query
                     </button>
                   </Link>
                 </div>
@@ -83,7 +83,7 @@ export default function Header() {
                       <Menu.Button className="relative flex max-w-xs items-center rounded-full bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-700 focus:ring-offset-2">
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
-                        <Image
+                        <img
                           className="h-8 w-8 rounded-full"
                           src={user.imageUrl}
                           alt=""
@@ -157,7 +157,7 @@ export default function Header() {
             <div className="border-t border-gray-200 pb-3 pt-4">
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
-                  <Image
+                  <img
                     className="h-10 w-10 rounded-full"
                     src={user.imageUrl}
                     alt=""

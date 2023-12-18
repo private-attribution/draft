@@ -14,6 +14,7 @@ setup(
         "pydantic_settings",
         "python-multipart",
         "mnemonic",
+        "pyre-check",
     ],
     entry_points={
         "console_scripts": [

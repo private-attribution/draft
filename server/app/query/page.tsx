@@ -2,25 +2,27 @@
 import React, { useState, FormEvent } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import JobStartedAlert from "../alert";
-import { RemoteServers } from "./servers";
-import NewJobId from "./haikunator";
+import QueryStartedAlert from "../alert";
+import { RemoteServers, RemoteServerNames } from "./servers";
+import NewQueryId from "./haikunator";
 
 export default function Page() {
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [queryId, setQueryId] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleDemoLogsFormSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     try {
-      const newJobId = NewJobId();
-      setJobId(newJobId);
+      const newQueryId = NewQueryId();
+      setQueryId(newQueryId);
       // Send a POST request to start the process
       console.log("sending post");
       const formData = new FormData(event.currentTarget);
       for (const remoteServer of Object.values(RemoteServers)) {
         const response = await fetch(
-          remoteServer.startDemoLoggerPath(newJobId),
+          remoteServer.startDemoLoggerPath(newQueryId),
           {
             method: "POST",
             body: formData,
@@ -35,8 +37,44 @@ export default function Page() {
 
       await new Promise((f) => setTimeout(f, 1000));
 
-      // Redirect to /jobs/<job_id>
-      router.push(`/jobs/${newJobId}`);
+      // Redirect to /query/<newQueryId>
+      router.push(`/query/${newQueryId}`);
+    } catch (error) {
+      console.error("Error starting process:", error);
+    }
+  };
+
+  const handleIPAFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const newQueryId = NewQueryId();
+      setQueryId(newQueryId);
+      // Send a POST request to start the process
+      console.log("sending post");
+      const formData = new FormData(event.currentTarget);
+      for (const remoteServer of Object.values(RemoteServers)) {
+        let path: URL;
+        if (remoteServer.remoteServerName === RemoteServerNames.Coordinator) {
+          path = remoteServer.startIPAQueryPath(newQueryId);
+        } else {
+          path = remoteServer.startIPAHelperPath(newQueryId);
+        }
+
+        const response = await fetch(path, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+        console.log(remoteServer);
+        console.log(data);
+      }
+
+      // const data = await response.json();
+
+      await new Promise((f) => setTimeout(f, 1000));
+
+      // Redirect to /query/<newQueryId>
+      router.push(`/query/${newQueryId}`);
     } catch (error) {
       console.error("Error starting process:", error);
     }
@@ -44,26 +82,27 @@ export default function Page() {
 
   return (
     <>
-      {jobId && <JobStartedAlert jobId={jobId} />}
+      {queryId && <QueryStartedAlert queryId={queryId} />}
       <div className="md:flex md:items-center md:justify-between">
-        <DemoLogsForm handleFormSubmit={handleFormSubmit} />
+        <DemoLogsForm handleDemoLogsFormSubmit={handleDemoLogsFormSubmit} />
+        <IPAForm handleIPAFormSubmit={handleIPAFormSubmit} />
       </div>
     </>
   );
 }
 
 function DemoLogsForm({
-  handleFormSubmit,
+  handleDemoLogsFormSubmit,
 }: {
-  handleFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleDemoLogsFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <form
-      onSubmit={handleFormSubmit}
+      onSubmit={handleDemoLogsFormSubmit}
       className="rounded-md bg-slate-50 px-8 py-6"
     >
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-        Demo Logger Job
+        Demo Logger Query
       </h2>
       <SelectMenu
         id="num_lines"
@@ -85,7 +124,30 @@ function DemoLogsForm({
         type="submit"
         className="mt-4 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
       >
-        Start Job
+        Start Query
+      </button>
+    </form>
+  );
+}
+
+function IPAForm({
+  handleIPAFormSubmit,
+}: {
+  handleIPAFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form
+      onSubmit={handleIPAFormSubmit}
+      className="rounded-md bg-slate-50 px-8 py-6"
+    >
+      <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        IPA Query
+      </h2>
+      <button
+        type="submit"
+        className="mt-4 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+      >
+        Start Query
       </button>
     </form>
   );

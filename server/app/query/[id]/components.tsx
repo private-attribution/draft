@@ -100,7 +100,6 @@ export function LogViewer({
               sourceCodePro.className,
             )}
           >
-            {log.remoteServer.toString().slice(0, 11).padEnd(11, " ")}:{" "}
             {log.logLine}
           </div>
         ))}

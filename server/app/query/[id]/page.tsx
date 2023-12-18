@@ -21,10 +21,10 @@ import {
 } from "../servers";
 import { StatsComponent } from "./charts";
 
-export default function Jobs({ params }: { params: { id: string } }) {
+export default function Query({ params }: { params: { id: string } }) {
   // display controls
-  const [logsHidden, setLogsHidden] = useState<boolean>(false);
-  const [statsHidden, setStatsHidden] = useState<boolean>(false);
+  const [logsHidden, setLogsHidden] = useState<boolean>(true);
+  const [statsHidden, setStatsHidden] = useState<boolean>(true);
 
   const [logs, setLogs] = useState<ServerLog[]>([]);
   const [statusByRemoteServer, setStatusByRemoteServer] =
@@ -68,7 +68,7 @@ export default function Jobs({ params }: { params: { id: string } }) {
   return (
     <>
       <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
-        Job Details: {params.id}
+        Query Details: {params.id}
       </h2>
 
       <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
@@ -79,7 +79,7 @@ export default function Jobs({ params }: { params: { id: string } }) {
           <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={statsHidden} />
-              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900">
+              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900 dark:text-gray-100">
                 Stats
               </h3>
             </div>
@@ -95,9 +95,9 @@ export default function Jobs({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={remoteServer.remoteServerName}
-                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow"
+                      className="w-48 overflow-hidden rounded-lg bg-white dark:bg-slate-900 px-4 py-2 shadow"
                     >
-                      <dt className="truncate text-sm font-medium text-gray-500">
+                      <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-300">
                         {remoteServer.toString()} Run Time
                       </dt>
                       <dd>
@@ -127,7 +127,7 @@ export default function Jobs({ params }: { params: { id: string } }) {
           <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={logsHidden} />
-              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900">
+              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900 dark:text-gray-100">
                 Logs
               </h3>
             </div>
@@ -141,9 +141,9 @@ export default function Jobs({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={remoteServer.remoteServerName}
-                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow"
+                      className="w-48 overflow-hidden rounded-lg bg-white dark:bg-slate-900 px-4 py-2 shadow"
                     >
-                      <dt className="truncate text-sm font-medium text-gray-500">
+                      <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-300">
                         {remoteServer.remoteServerNameStr} Status
                       </dt>
                       <dd>

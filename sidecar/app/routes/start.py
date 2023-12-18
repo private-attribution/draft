@@ -1,6 +1,11 @@
+from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Form
-from ..processes import QuerySteps, Query
+from ..queries import (
+    DemoLoggerQuery,
+    IPACoordinatorQuery,
+    IPAHelperQuery
+)
 from ..settings import settings
 
 
@@ -12,47 +17,64 @@ router = APIRouter(
 )
 
 
-@router.post("/demo-logger/{process_id}")
+@router.post("/demo-logger/{query_id}")
 def demo_logger(
-    process_id: str,
+    query_id: str,
     num_lines: Annotated[int, Form()],
     total_runtime: Annotated[int, Form()],
 ):
-    query = Query(
-        query_id=process_id,
-        steps=QuerySteps["demo-logger"],
-    )
-    query.run_in_thread(
+    query = DemoLoggerQuery(
+        query_id=query_id,
         num_lines=num_lines,
         total_runtime=total_runtime,
     )
+    query.run_in_thread()
 
-    return {"message": "Process started successfully", "process_id": process_id}
+    return {"message": "Process started successfully", "query_id": query_id}
 
 
-@router.post("/start-ipa-helper/{process_id}")
-def start_ipa_helper(process_id: str):
+@router.post("/ipa-helper/{query_id}")
+def start_ipa_helper(query_id: str):
     role = settings.role
-    if not role or role.COORDINATOR:
+    if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
-    cmd = f"""
-    .venv/bin/helper-cli start-isolated-helper {settings.role.value}
-    """
-    # start_process(shlex.split(cmd), process_id=process_id)
-    return {"message": "Process started successfully", "process_id": process_id}
+
+    local_ipa_path = settings.root_path / Path("ipa")
+    query = IPAHelperQuery(
+        query_id=query_id,
+        local_ipa_path=local_ipa_path,
+        config_path=settings.config_path,
+        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+    )
+
+    query.run_in_thread()
+
+    return {"message": "Process started successfully", "query_id": query_id}
 
 
-@router.post("/start-ipa-query/{process_id}")
+@router.post("/ipa-query/{query_id}")
 def start_ipa_test_query(
-    process_id: str,
-    size: Annotated[int, Form()],
+    query_id: str,
 ):
     role = settings.role
-    if not role or not role.COORDINATOR:
-        raise Exception("Cannot start query without coordinator role.")
+    if role != role.COORDINATOR:
+        raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
 
-    cmd = """
-    .venv/bin/helper-cli start-isolated-ipa
-    """
-    # start_process(shlex.split(cmd), process_id=process_id)
-    return {"message": "Process started successfully", "process_id": process_id}
+    local_ipa_path = settings.root_path / Path("ipa")
+    test_data_path = local_ipa_path / Path("test_data/input")
+    size = 1000
+    query = IPACoordinatorQuery(
+        query_id=query_id,
+        local_ipa_path=local_ipa_path,
+        test_data_path=test_data_path,
+        test_data_file=test_data_path / Path(f"events-{size}.txt"),
+        config_path=settings.config_path,
+        size=size,
+        max_breakdown_key=256,
+        per_user_credit_cap=16,
+        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+    )
+
+    query.run_in_thread()
+
+    return {"message": "Process started successfully", "query_id": query_id}
