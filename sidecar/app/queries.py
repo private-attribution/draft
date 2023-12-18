@@ -1,5 +1,5 @@
+from __future__ import annotations
 from contextlib import contextmanager
-
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
@@ -9,7 +9,7 @@ import threading
 import time
 from typing import Dict, Optional
 import loguru
-from loguru import logger as _logger
+from .logger import logger as logger
 from .settings import settings, Role
 
 
@@ -64,7 +64,7 @@ class Step:
 class Query:
     query_id: str
     role: Role = settings.role
-    logger: "Logger" = _logger
+    logger: loguru.Logger = logger
     _steps: Optional[list[Step]] = None
     _status: Status = field(init=False, default=Status.STARTING)
     start_time: Optional[float] = field(init=False, default=None)
@@ -72,10 +72,10 @@ class Query:
     current_process: Optional[subprocess.Popen] = field(init=False, default=None)
 
     def __post_init__(self):
-        self.logger = _logger.bind(task=self.query_id)
-        _logger.add(
+        self.logger = logger.bind(task=self.query_id)
+        logger.add(
             self.log_file_path,
-            format=f"{self.role}: {{message}}",
+            format="{extra[role]}: {message}",
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
         )
@@ -112,7 +112,7 @@ class Query:
     @status.setter
     def status(self, status: Status):
         self._status = status
-        with self.status_file_path.open('w+') as f:
+        with self.status_file_path.open("w+") as f:
             self.logger.debug(f"setting status: {status=}")
             f.write(str(status.name))
 
@@ -201,7 +201,6 @@ class DemoLoggerQuery(Query):
                 query=self,
                 cmd=demo_logger_cmd,
                 status=Status.IN_PROGRESS,
-
             )
         ]
         super().__post_init__()
@@ -256,7 +255,6 @@ class IPACoordinatorQuery(Query):
                 query=self,
                 cmd=ipa_generate_test_data_cmd,
                 status=Status.STARTING,
-
             ),
             IPAStep(
                 query=self,

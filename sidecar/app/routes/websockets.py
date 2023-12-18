@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 import psutil
 import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from loguru import logger
-from websockets import ConnectionClosedOK
+from websockets import ConnectionClosedOK, ConnectionClosedError
+from ..logger import logger
 from ..queries import Status, Query
 
 
@@ -21,7 +21,7 @@ async def use_websocket(websocket):
     await websocket.accept()
     try:
         yield websocket
-    except (WebSocketDisconnect, ConnectionClosedOK):
+    except (WebSocketDisconnect, ConnectionClosedOK, ConnectionClosedError):
         pass
     finally:
         await websocket.close()

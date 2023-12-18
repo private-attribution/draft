@@ -31,9 +31,7 @@ class Option(Enum):
     BRANCH = member(
         click.option("--branch", type=str, default="main", show_default=True)
     )
-    COMMIT_HASH = member(
-        click.option("--commit_hash", type=str, default=None)
-    )
+    COMMIT_HASH = member(click.option("--commit_hash", type=str, default=None))
     CONFIG_PATH = member(
         click.option(
             "--config_path", type=click.Path(), default=None, show_default=True
@@ -178,6 +176,7 @@ def start_all_helper_sidecar_local():
 @cli.command
 def start_local_dev():
     commands._start_local_dev()
+
 
 @cli.command()
 @click.option("--size", type=int, default=1000)
