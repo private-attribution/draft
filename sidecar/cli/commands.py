@@ -43,7 +43,12 @@ class Command:
     env: Optional[dict] = field(default_factory=lambda: {**os.environ})
 
     def run_blocking(self):
-        return subprocess.run(shlex.split(self.cmd), env=self.env)
+        return subprocess.run(
+            shlex.split(self.cmd),
+            env=self.env,
+            capture_output=True,
+            text=True,
+        )
 
 
 def process_result(success_msg, returncode, failure_message=None):
@@ -52,7 +57,7 @@ def process_result(success_msg, returncode, failure_message=None):
     else:
         click.echo(click.style("Failure!", blink=True, bold=True, bg="red", fg="white"))
         if failure_message is not None:
-            click.echo(click.style(failure_message, bold=True, bg="red", fg="white"))
+            click.echo(click.style(failure_message, bold=True))
         raise SystemExit(1)
 
 
@@ -91,54 +96,71 @@ def _clone(local_ipa_path, exists_ok):
         cmd=f"git clone https://github.com/private-attribution/ipa.git {local_ipa_path}"
     )
     result = command.run_blocking()
-    process_result("Success: IPA cloned.", result.returncode)
+    process_result("Success: IPA cloned.", result.returncode, result.stderr)
 
 
-def _checkout_branch(local_ipa_path, branch):
+def get_branch_commit_hash(local_ipa_path: Path, branch: str) -> str:
     command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
     result = command.run_blocking()
-    process_result("Success: upstream fetched.", result.returncode)
-    command = Command(cmd=f"git -C {local_ipa_path} checkout {branch}")
+    process_result("Success: upstream fetched.", result.returncode, result.stderr)
+    command = Command(cmd=f"git -C {local_ipa_path} rev-parse origin/{branch}")
     result = command.run_blocking()
-    process_result(f"Success: {branch} checked out.", result.returncode)
-    command = Command(cmd=f"git -C {local_ipa_path} pull")
-    result = command.run_blocking()
-    process_result("Success: fast forwarded.", result.returncode)
+    process_result(
+        f"Success: {branch} is at {result.stdout.strip()}.",
+        result.returncode,
+        result.stderr,
+    )
+    return result.stdout.strip()
 
 
-def _checkout_commit(local_ipa_path, commit_hash):
+def _checkout_commit(local_ipa_path: Path, commit_hash: str):
     command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
     result = command.run_blocking()
-    process_result("Success: upstream fetched.", result.returncode)
+    process_result("Success: upstream fetched.", result.returncode, result.stderr)
     command = Command(cmd=f"git -C {local_ipa_path} checkout {commit_hash}")
     result = command.run_blocking()
+    process_result(f"Success: Checked out {commit_hash}.", result.returncode)
 
 
-def _compile(local_ipa_path):
+def _checkout_branch(local_ipa_path: Path, branch: str):
+    commit_hash = get_branch_commit_hash(local_ipa_path, branch)
+    process_result(f"Checking out {branch} @ {commit_hash}", 0)
+    _checkout_commit(local_ipa_path, commit_hash)
+
+
+def _compile(
+    local_ipa_path: Path,
+    target_path: Path,
+    binary_name: str,
+    features: str,
+    default_features: bool,
+):
     manifest_path = local_ipa_path / Path("Cargo.toml")
     command = Command(
-        cmd=f"""cargo build --bin helper --manifest-path={manifest_path}
-        --no-default-features --features="web-app real-world-infra
-        compact-gate stall-detection" --release"""
+        cmd=f"""cargo build --bin {binary_name} --manifest-path={manifest_path}
+        --features="{features}" {'--no-default-features' if not default_features else ''}
+        --target-dir={target_path} --release"""
     )
+    print(command.cmd)
     result = command.run_blocking()
-    process_result("Success: IPA compiled.", result.returncode)
+    process_result("Success: IPA compiled.", result.returncode, result.stderr)
 
 
-def _generate_test_config(local_ipa_path, config_path):
+def _generate_test_config(helper_binary_path, config_path):
     ports = " ".join(
-        str(helper.helper_port) for helper in helpers.values()
+        str(helper.helper_port)
+        for helper in helpers.values()
         if helper.role != Role.COORDINATOR
     )
     command = Command(
         cmd=f"""
-    {local_ipa_path}/target/release/helper test-setup
-    --output-dir {config_path}
-    --ports {ports}
-    """
+        {helper_binary_path} test-setup
+        --output-dir {config_path}
+        --ports {ports}
+        """
     )
     result = command.run_blocking()
-    process_result("Success: Test config created.", result.returncode)
+    process_result("Success: Test config created.", result.returncode, result.stderr)
 
     # HACK to move the public keys into <config_path>/pub
     # to match expected format on server
@@ -152,14 +174,15 @@ def _generate_test_config(local_ipa_path, config_path):
 
 
 def start_helper_process_cmd(
-    local_ipa_path: Path, config_path: Path, role: Role
+    helper_binary_path: Path,
+    config_path: Path,
+    role: Role,
 ) -> Command:
     identity = role.value
     helper = helpers[role]
     port = helper.helper_port
-    helper_exe = local_ipa_path / Path("target/release/helper")
     cmd = f"""
-    {helper_exe} --network {config_path}/network.toml
+    {helper_binary_path} --network {config_path}/network.toml
     --identity {identity} --tls-cert {config_path}/pub/h{identity}.pem
     --tls-key {config_path}/h{identity}.key --port {port}
     --mk-public-key {config_path}/pub/h{identity}_mk.pub
@@ -168,20 +191,22 @@ def start_helper_process_cmd(
     return Command(cmd)
 
 
-def _start_helper(local_ipa_path, config_path, identity):
+def _start_helper(helper_binary_path, config_path, identity):
     role = Role(int(identity))
-    command = start_helper_process_cmd(local_ipa_path, config_path, role)
+    command = start_helper_process_cmd(helper_binary_path, config_path, role)
     command.run_blocking()
 
 
-def _setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
+def _setup_helper(
+    commit_hash: str,
+    local_ipa_path: Path,
+    config_path: Path,
+    target_path: Path,
+    helper_binary_path: Path,
+    isolated: bool,
+):
     _clone(local_ipa_path=local_ipa_path, exists_ok=(not isolated))
-    if commit_hash:
-        _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
-    else:
-        _checkout_branch(local_ipa_path=local_ipa_path, branch=branch)
-
-    helper_binary_path = local_ipa_path / Path("target/release/helper")
+    _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
 
     if helper_binary_path.exists():
         if isolated:
@@ -191,7 +216,13 @@ def _setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
         else:
             pass
     else:
-        _compile(local_ipa_path)
+        _compile(
+            local_ipa_path,
+            target_path,
+            "helper",
+            "web-app real-world-infra compact-gate stall-detection",
+            default_features=False,
+        )
 
     if config_path.exists():
         if isolated:
@@ -199,10 +230,45 @@ def _setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
         else:
             shutil.rmtree(config_path)
             config_path.mkdir(parents=True)
-            _generate_test_config(local_ipa_path=local_ipa_path, config_path=config_path)
+            _generate_test_config(
+                helper_binary_path=helper_binary_path,
+                config_path=config_path,
+            )
     else:
         config_path.mkdir(parents=True)
-        _generate_test_config(local_ipa_path=local_ipa_path, config_path=config_path)
+        _generate_test_config(
+            helper_binary_path=helper_binary_path,
+            config_path=config_path,
+        )
+
+
+def _setup_coordinator(
+    commit_hash: str,
+    local_ipa_path: Path,
+    target_path: Path,
+    report_collector_binary_path: Path,
+    isolated: bool,
+):
+    _clone(local_ipa_path=local_ipa_path, exists_ok=(not isolated))
+    _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
+
+    if report_collector_binary_path.exists():
+        if isolated:
+            process_result(
+                "",
+                1,
+                f"Run in isolated mode and {report_collector_binary_path=} exists.",
+            )
+        else:
+            pass
+    else:
+        _compile(
+            local_ipa_path,
+            target_path,
+            "report_collector",
+            "clap cli test-fixture",
+            default_features=True,
+        )
 
 
 def start_helper_sidecar_cmd(role: Role) -> Command:
@@ -233,10 +299,7 @@ def start_commands_parallel(commands: list[Command]):
 
 
 def _start_all_helper_sidecar_local_commands():
-    return [
-        start_helper_sidecar_cmd(helper.role)
-        for helper in helpers.values()
-    ]
+    return [start_helper_sidecar_cmd(helper.role) for helper in helpers.values()]
 
 
 def _start_all_helper_sidecar_local():
@@ -253,15 +316,21 @@ def _start_local_dev():
     start_commands_parallel(commands)
 
 
-def _generate_test_data(size, test_data_path, local_ipa_path):
+def _generate_test_data(
+    size: int,
+    max_breakdown_key: int,
+    max_trigger_value: int,  # 7
+    test_data_path: Path,
+    local_ipa_path: Path,
+    report_collector_binary_path: Path,
+):
     test_data_path.mkdir(exist_ok=True, parents=True)
     output_file = test_data_path / Path(f"events-{size}.txt")
-    manifest_path = local_ipa_path / Path("Cargo.toml")
     command = Command(
         cmd=f"""
-    cargo run --manifest-path={manifest_path} --release --bin report_collector
-    --features="clap cli test-fixture" -- gen-ipa-inputs -n {size}
-    --max-breakdown-key 256 --report-filter all --max-trigger-value 7 --seed 123
+    {report_collector_binary_path} gen-ipa-inputs -n {size}
+    --max-breakdown-key {max_breakdown_key} --report-filter all
+    --max-trigger-value {max_trigger_value} --seed 123
     """
     )
     with PopenContextManager(
@@ -272,7 +341,7 @@ def _generate_test_data(size, test_data_path, local_ipa_path):
         with open(output_file, "w") as output:
             output.write(command_output)
 
-    process_result("Success: Test data created.", process.returncode)
+    process_result("Success: Test data created.", process.returncode, process.stderr)
     return output_file
 
 
@@ -296,9 +365,7 @@ async def wait_for_status(helper_url, query_id):
 
 
 async def wait_for_helpers(helper_urls, query_id):
-    tasks = [
-        asyncio.create_task(wait_for_status(url, query_id)) for url in helper_urls
-    ]
+    tasks = [asyncio.create_task(wait_for_status(url, query_id)) for url in helper_urls]
     completed, _ = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     for task in completed:
         task.result()
@@ -306,15 +373,15 @@ async def wait_for_helpers(helper_urls, query_id):
 
 
 async def _start_ipa(
-    local_ipa_path,
-    max_breakdown_key,
-    per_user_credit_cap,
-    config_path,
-    test_data_file,
+    local_ipa_path: Path,
+    config_path: Path,
+    test_data_file: Path,
+    report_collector_binary_path: Path,
+    max_breakdown_key: int,
+    per_user_credit_cap: int,
     query_id=None,
 ):
     network_file = Path(config_path) / Path("network.toml")
-    report_collector_exe = Path(local_ipa_path) / Path("target/release/report_collector")
     if query_id:
         with open(network_file, "rb") as f:
             network_data = tomllib.load(f)
@@ -329,13 +396,15 @@ async def _start_ipa(
 
     command = Command(
         cmd=f"""
-    {report_collector_exe} --network {network_file}
+    {report_collector_binary_path} --network {network_file}
     --input-file {test_data_file} oprf-ipa --max-breakdown-key {max_breakdown_key}
     --per-user-credit-cap {per_user_credit_cap} --plaintext-match-keys
     """
     )
     result = command.run_blocking()
-    process_result("Success: IPA complete.", result.returncode)
+    process_result(
+        "Success: IPA complete.", result.returncode, result.stderr, result.stderr
+    )
 
 
 def _cleanup(local_ipa_path):

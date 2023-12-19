@@ -1,11 +1,12 @@
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, member
 from functools import wraps
 from pathlib import Path
 import time
 from typing import Optional
 import click
+import click_pathlib
 from . import commands
 
 
@@ -19,14 +20,18 @@ def coro(f):
 
 class Option(Enum):
     LOCAL_IPA_PATH = member(
-        click.option("--local_ipa_path", type=click.Path(), default=None)
+        click.option("--local_ipa_path", type=click_pathlib.Path(), default=None)
     )
 
     LOCAL_IPA_PATH_EXISTS = member(
-        click.option("--local_ipa_path", type=click.Path(exists=True), default=None)
+        click.option(
+            "--local_ipa_path", type=click_pathlib.Path(exists=True), default=None
+        )
     )
     LOCAL_IPA_PATH_NOT_EXISTS = member(
-        click.option("--local_ipa_path", type=click.Path(exists=False), default=None)
+        click.option(
+            "--local_ipa_path", type=click_pathlib.Path(exists=False), default=None
+        )
     )
     BRANCH = member(
         click.option("--branch", type=str, default="main", show_default=True)
@@ -34,13 +39,13 @@ class Option(Enum):
     COMMIT_HASH = member(click.option("--commit_hash", type=str, default=None))
     CONFIG_PATH = member(
         click.option(
-            "--config_path", type=click.Path(), default=None, show_default=True
+            "--config_path", type=click_pathlib.Path(), default=None, show_default=True
         )
     )
     CONFIG_PATH_EXISTS = member(
         click.option(
             "--config_path",
-            type=click.Path(exists=True),
+            type=click_pathlib.Path(exists=True),
             default=None,
             show_default=True,
         )
@@ -48,8 +53,26 @@ class Option(Enum):
     CONFIG_PATH_NOT_EXISTS = member(
         click.option(
             "--config_path",
-            type=click.Path(exists=False),
+            type=click_pathlib.Path(exists=False),
             default=None,
+            show_default=True,
+        )
+    )
+    MAX_BREAKDOWN_KEY = member(
+        click.option(
+            "--max-breakdown-key",
+            type=int,
+            required=False,
+            default=256,
+            show_default=True,
+        )
+    )
+    MAX_TRIGGER_VALUE = member(
+        click.option(
+            "--max-trigger-value",
+            type=int,
+            required=False,
+            default=7,
             show_default=True,
         )
     )
@@ -60,15 +83,16 @@ class Option(Enum):
 
 @dataclass
 class Paths:
-    repo_path: Optional[Path] = None
+    branch: str
+    commit_hash: str
+    repo_path: Path
     config_path: Optional[Path] = None
     test_data_path: Optional[Path] = None
+    target_path: Optional[Path] = field(init=False, default=None)
+    helper_binary_path: Optional[Path] = field(init=False, default=None)
+    report_collector_binary_path: Optional[Path] = field(init=False, default=None)
 
     def __post_init__(self):
-        if not self.repo_path:
-            self.repo_path = Path("ipa")
-        else:
-            self.repo_path = Path(self.repo_path)
         if not self.config_path:
             self.config_path = self.repo_path / Path("test_data/config")
         else:
@@ -77,6 +101,16 @@ class Paths:
             self.test_data_path = self.repo_path / Path("test_data/input")
         else:
             self.test_data_path = Path(self.test_data_path)
+        if self.branch and not self.commit_hash:
+            self.commit_hash = commands.get_branch_commit_hash(
+                self.repo_path, self.branch
+            )
+        if self.commit_hash:
+            self.target_path = self.repo_path / Path(f"target-{self.commit_hash}")
+            self.helper_binary_path = self.target_path / Path("release/helper")
+            self.report_collector_binary_path = self.target_path / Path(
+                "release/report_collector"
+            )
 
 
 @click.group()
@@ -94,7 +128,6 @@ def cli():
     help="Prevent warning and skip if path exists.",
 )
 def clone(local_ipa_path, exists_ok):
-    local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
     commands._clone(local_ipa_path, exists_ok)
 
 
@@ -106,29 +139,62 @@ def checkout_branch(local_ipa_path, branch):
 
 
 @cli.command("compile")
+@Option.BRANCH
+@Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_EXISTS
-def compile_command(local_ipa_path):
-    local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
-    commands._compile(local_ipa_path)
+def compile_command(
+    branch: str,
+    commit_hash: str,
+    local_ipa_path: Path,
+):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    if paths.target_path is None:
+        raise Exception(
+            f"Cannot compile without target directory specified. "
+            f"Maybe {branch=} or {commit_hash=} are unset."
+        )
+    commands._compile(local_ipa_path=paths.repo_path, target_path=paths.target_path)
 
 
 @cli.command()
+@Option.BRANCH
+@Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_EXISTS
 @Option.CONFIG_PATH_NOT_EXISTS
-def generate_test_config(local_ipa_path, config_path):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
-    local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._generate_test_config(local_ipa_path, config_path)
+def generate_test_config(
+    branch: str,
+    commit_hash: str,
+    local_ipa_path: Path,
+    config_path: Path,
+):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    commands._generate_test_config(paths.helper_binary_path, paths.config_path)
 
 
 @cli.command()
+@Option.BRANCH
+@Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_EXISTS
 @Option.CONFIG_PATH_EXISTS
 @click.argument("identity")
-def start_helper(local_ipa_path, config_path, identity):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
+def start_helper(branch, commit_hash, local_ipa_path, config_path, identity):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._start_helper(local_ipa_path, config_path, identity)
+    commands._start_helper(paths.helper_binary_path, paths.config_path, identity)
 
 
 @cli.command()
@@ -143,10 +209,62 @@ def start_helper(local_ipa_path, config_path, identity):
     Isolated expects repo to not exist, and will clean it up at completion.
     Repeatable will not cleanup, and will not write new files that aren't required.""",
 )
-def setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
+def setup_helper(
+    branch: str,
+    commit_hash: str,
+    local_ipa_path: Path,
+    config_path: Path,
+    isolated: bool,
+):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated)
+    commands._setup_helper(
+        commit_hash,
+        paths.repo_path,
+        paths.config_path,
+        paths.target_path,
+        paths.helper_binary_path,
+        isolated,
+    )
+
+
+@cli.command()
+@Option.BRANCH
+@Option.COMMIT_HASH
+@Option.LOCAL_IPA_PATH
+@Option.CONFIG_PATH
+@click.option(
+    "--isolated/--repeatable",
+    default=True,
+    help="""
+    Isolated expects repo to not exist, and will clean it up at completion.
+    Repeatable will not cleanup, and will not write new files that aren't required.""",
+)
+def setup_coordinator(
+    branch: str,
+    commit_hash: str,
+    local_ipa_path: Path,
+    config_path: Path,
+    isolated: bool,
+):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    commands._setup_coordinator(
+        commit_hash,
+        paths.repo_path,
+        paths.target_path,
+        paths.report_collector_binary_path,
+        isolated,
+    )
 
 
 @cli.command()
@@ -156,10 +274,25 @@ def setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated):
 @Option.CONFIG_PATH_NOT_EXISTS
 @click.argument("identity")
 def start_isolated_helper(branch, commit_hash, local_ipa_path, config_path, identity):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
-    local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._setup_helper(branch, commit_hash, local_ipa_path, config_path, True)
-    commands._start_helper(local_ipa_path, config_path, identity)
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    commands._setup_helper(
+        commit_hash,
+        paths.repo_path,
+        paths.config_path,
+        paths.target_path,
+        paths.helper_binary_path,
+        True,
+    )
+    commands._start_helper(
+        paths.helper_binary_path,
+        paths.config_path,
+        identity,
+    )
 
 
 @cli.command
@@ -179,13 +312,36 @@ def start_local_dev():
 
 
 @cli.command()
+@Option.BRANCH
+@Option.COMMIT_HASH
 @click.option("--size", type=int, default=1000)
-@click.option("--test_data_path", type=click.Path(), default=None)
+@Option.MAX_BREAKDOWN_KEY
+@Option.MAX_TRIGGER_VALUE
+@click.option("--test_data_path", type=click_pathlib.Path(), default=None)
 @Option.LOCAL_IPA_PATH_EXISTS
-def generate_test_data(size, test_data_path, local_ipa_path):
-    paths = Paths(test_data_path=test_data_path)
-    test_data_path = paths.test_data_path
-    commands._generate_test_data(size, test_data_path, local_ipa_path)
+def generate_test_data(
+    branch: str,
+    commit_hash: str,
+    size: int,
+    max_breakdown_key: int,
+    max_trigger_value: int,
+    test_data_path: Path,
+    local_ipa_path: Path,
+):
+    paths = Paths(
+        repo_path=local_ipa_path,
+        test_data_path=test_data_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    commands._generate_test_data(
+        size,
+        max_breakdown_key,
+        max_trigger_value,
+        paths.test_data_path,
+        paths.repo_path,
+        paths.report_collector_binary_path,
+    )
 
 
 @cli.command()
@@ -193,62 +349,95 @@ def generate_test_data(size, test_data_path, local_ipa_path):
 @Option.BRANCH
 @Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_NOT_EXISTS
-@click.option("--max-breakdown-key", required=False, type=int, default=256)
+@Option.MAX_BREAKDOWN_KEY
+@Option.MAX_TRIGGER_VALUE
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
 @Option.CONFIG_PATH
 @click.option("--size", type=int, default=1000)
-@click.option("--test_data_path", type=click.Path(), default=None)
+@click.option("--test_data_path", type=click_pathlib.Path(), default=None)
 async def start_isolated_ipa(
     branch,
     commit_hash,
     local_ipa_path,
     max_breakdown_key,
+    max_trigger_value,
     per_user_credit_cap,
     config_path,
     size,
     test_data_path,
 ):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
-    local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._setup_helper(branch, commit_hash, local_ipa_path, config_path, True)
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
+    commands._setup_helper(
+        branch,
+        commit_hash,
+        paths.repo_path,
+        paths.config_path,
+        paths.target_path,
+        paths.helper_binary_path,
+        True,
+    )
     test_data_file = commands._generate_test_data(
-        size=size, test_data_path=test_data_path
+        size,
+        max_breakdown_key,
+        max_trigger_value,
+        paths.test_data_path,
+        paths.repo_path,
+        paths.report_collector_binary_path,
     )
     await commands._start_ipa(
-        local_ipa_path,
+        paths.repo_path,
+        paths.config_path,
+        test_data_file,
+        paths.report_collector_binary_path,
         max_breakdown_key,
         per_user_credit_cap,
-        config_path,
-        test_data_file,
     )
 
 
 @cli.command()
 @coro
 @Option.LOCAL_IPA_PATH_EXISTS
-@click.option("--max-breakdown-key", required=False, type=int, default=256)
+@Option.BRANCH
+@Option.COMMIT_HASH
+@Option.MAX_BREAKDOWN_KEY
 @click.option("--per-user-credit-cap", required=False, type=int, default=16)
 @Option.CONFIG_PATH_EXISTS
 @click.option(
-    "--test_data_file", required=True, type=click.Path(exists=True), default=None
+    "--test_data_file",
+    required=True,
+    type=click_pathlib.Path(exists=True),
+    default=None,
 )
-@click.option("--query_id", required=False, type=str, default=None)
+@click.option("--query_id", required=True, type=str, default=None)
 async def start_ipa(
-    local_ipa_path,
-    max_breakdown_key,
-    per_user_credit_cap,
-    config_path,
-    test_data_file,
-    query_id,
+    local_ipa_path: Path,
+    branch: str,
+    commit_hash: str,
+    max_breakdown_key: int,
+    per_user_credit_cap: int,
+    config_path: Path,
+    test_data_file: Path,
+    query_id: str,
 ):
-    paths = Paths(repo_path=local_ipa_path, config_path=config_path)
+    paths = Paths(
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        branch=branch,
+        commit_hash=commit_hash,
+    )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
     await commands._start_ipa(
-        local_ipa_path,
+        paths.repo_path,
+        paths.config_path,
+        test_data_file,
+        paths.report_collector_binary_path,
         max_breakdown_key,
         per_user_credit_cap,
-        config_path,
-        test_data_file,
         query_id,
     )
 
@@ -256,7 +445,6 @@ async def start_ipa(
 @cli.command()
 @Option.LOCAL_IPA_PATH_EXISTS
 def cleanup(local_ipa_path):
-    local_ipa_path = Paths(repo_path=local_ipa_path).repo_path
     commands._cleanup(local_ipa_path)
 
 
@@ -266,9 +454,12 @@ def cleanup(local_ipa_path):
 @Option.BRANCH
 @Option.COMMIT_HASH
 @Option.CONFIG_PATH
-@click.option("--test_data_path", type=click.Path(), default=None, show_default=True)
+@click.option(
+    "--test_data_path", type=click_pathlib.Path(), default=None, show_default=True
+)
 @click.option("--size", type=int, default=1000, show_default=True)
-@click.option("--max-breakdown-key", type=int, default=256, show_default=True)
+@Option.MAX_BREAKDOWN_KEY
+@Option.MAX_TRIGGER_VALUE
 @click.option("--per-user-credit-cap", type=int, default=16, show_default=True)
 @click.option(
     "--isolated/--repeatable",
@@ -285,22 +476,35 @@ async def demo_ipa(
     test_data_path,
     size,
     max_breakdown_key,
+    max_trigger_value,
     per_user_credit_cap,
     isolated,
 ):
     paths = Paths(
-        repo_path=local_ipa_path, config_path=config_path, test_data_path=test_data_path
+        repo_path=local_ipa_path,
+        config_path=config_path,
+        test_data_path=test_data_path,
+        branch=branch,
+        commit_hash=commit_hash,
     )
-    local_ipa_path, config_path, test_data_path = (
+
+    commands._setup_helper(
+        branch,
+        commit_hash,
         paths.repo_path,
         paths.config_path,
-        paths.test_data_path,
+        paths.target_path,
+        paths.helper_binary_path,
+        isolated,
     )
 
-    commands._setup_helper(branch, commit_hash, local_ipa_path, config_path, isolated)
-
     test_data_file = commands._generate_test_data(
-        size=size, test_data_path=test_data_path
+        size,
+        max_breakdown_key,
+        max_trigger_value,
+        paths.test_data_path,
+        paths.repo_path,
+        paths.report_collector_binary_path,
     )
 
     _commands = [
@@ -313,11 +517,12 @@ async def demo_ipa(
         # allow helpers to start
         time.sleep(3)
         await commands._start_ipa(
-            local_ipa_path=local_ipa_path,
-            max_breakdown_key=max_breakdown_key,
-            per_user_credit_cap=per_user_credit_cap,
-            test_data_file=test_data_file,
-            config_path=config_path,
+            paths.repo_path,
+            paths.config_path,
+            test_data_file,
+            paths.report_collector_binary_path,
+            max_breakdown_key,
+            per_user_credit_cap,
         )
 
     if isolated:

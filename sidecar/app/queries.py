@@ -219,31 +219,38 @@ class IPACoordinatorQuery(Query):
     config_path: Path
     size: int
     max_breakdown_key: int
+    max_trigger_value: int
     per_user_credit_cap: int
     branch: Optional[str] = None
     commit_hash: Optional[str] = None
 
     def __post_init__(self):
-        ipa_compile_cmd = f"""
-        draft setup-helper --local_ipa_path {self.local_ipa_path}
-        {' --branch ' + self.branch if self.branch else ''}
-        {' --commit_hash ' + self.commit_hash if self.commit_hash else ''}
-        --repeatable
-        """
-        ipa_generate_test_data_cmd = f"""
-        draft generate-test-data --size {self.size}
-        --test_data_path {self.test_data_path}
-        --local_ipa_path {self.local_ipa_path}
-        """
-        ipa_start_ipa_cmd = f"""
-        draft start-ipa
-        --local_ipa_path {self.local_ipa_path}
-        --config_path {self.config_path}
-        --max-breakdown-key {self.max_breakdown_key}
-        --per-user-credit-cap {self.per_user_credit_cap}
-        --test_data_file {self.test_data_file}
-        --query_id {self.query_id}
-        """
+        ipa_compile_cmd = (
+            f"draft setup-coordinator --local_ipa_path {self.local_ipa_path}"
+            f"{' --branch ' + self.branch if self.branch else ''}"
+            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f" --repeatable"
+        )
+        ipa_generate_test_data_cmd = (
+            f"draft generate-test-data --size {self.size}"
+            f"{' --branch ' + self.branch if self.branch else ''}"
+            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f" --max-breakdown-key {self.max_breakdown_key}"
+            f" --max-trigger-value {self.max_trigger_value}"
+            f" --test_data_path {self.test_data_path}"
+            f" --local_ipa_path {self.local_ipa_path}"
+        )
+        ipa_start_ipa_cmd = (
+            f"draft start-ipa"
+            f"{' --branch ' + self.branch if self.branch else ''}"
+            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f" --local_ipa_path {self.local_ipa_path}"
+            f" --config_path {self.config_path}"
+            f" --max-breakdown-key {self.max_breakdown_key}"
+            f" --per-user-credit-cap {self.per_user_credit_cap}"
+            f" --test_data_file {self.test_data_file}"
+            f" --query_id {self.query_id}"
+        )
 
         self._steps = [
             IPAStep(
@@ -273,17 +280,19 @@ class IPAHelperQuery(Query):
     commit_hash: Optional[str] = None
 
     def __post_init__(self):
-        ipa_compile_cmd = f"""
-        draft setup-helper --local_ipa_path {self.local_ipa_path}
-        {' --branch ' + self.branch if self.branch else ''}
-        {' --commit_hash ' + self.commit_hash if self.commit_hash else ''}
-        --repeatable
-        """
+        ipa_compile_cmd = (
+            f"draft setup-helper --local_ipa_path {self.local_ipa_path}"
+            f"{' --branch ' + self.branch if self.branch else ''}"
+            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f" --repeatable"
+        )
 
-        ipa_start_helper_cmd = f"""
-        draft start-helper --local_ipa_path {self.local_ipa_path}
-        --config_path {self.config_path} {self.role.value}
-        """
+        ipa_start_helper_cmd = (
+            f"draft start-helper --local_ipa_path {self.local_ipa_path}"
+            f"{' --branch ' + self.branch if self.branch else ''}"
+            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f" --config_path {self.config_path} {self.role.value}"
+        )
 
         self._steps = [
             IPAStep(

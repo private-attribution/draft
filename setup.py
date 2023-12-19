@@ -6,6 +6,7 @@ setup(
     py_modules=["draft"],
     install_requires=[
         "Click",
+        "click-pathlib",
         "websockets",
         "uvicorn",
         "fastapi",

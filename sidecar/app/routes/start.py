@@ -1,11 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 from fastapi import APIRouter, Form
-from ..queries import (
-    DemoLoggerQuery,
-    IPACoordinatorQuery,
-    IPAHelperQuery
-)
+from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import settings
 
 
@@ -71,6 +67,7 @@ def start_ipa_test_query(
         config_path=settings.config_path,
         size=size,
         max_breakdown_key=256,
+        max_trigger_value=7,
         per_user_credit_cap=16,
         commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
     )
