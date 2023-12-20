@@ -1,6 +1,5 @@
 import asyncio
 from dataclasses import dataclass, field
-from enum import Enum
 import itertools
 import json
 import os
@@ -8,33 +7,11 @@ from pathlib import Path
 import subprocess
 import shlex
 import shutil
-import tomllib
 from typing import Optional
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlunparse
 import click
 import websockets
-
-
-class Role(Enum):
-    COORDINATOR = 0
-    HELPER_1 = 1
-    HELPER_2 = 2
-    HELPER_3 = 3
-
-
-@dataclass
-class Helper:
-    role: Role
-    sidecar_port: int
-    helper_port: Optional[int] = None
-
-
-helpers: dict[Role, Helper] = {
-    Role.COORDINATOR: Helper(role=Role.COORDINATOR, sidecar_port=17430),
-    Role.HELPER_1: Helper(role=Role.HELPER_1, helper_port=7431, sidecar_port=17431),
-    Role.HELPER_2: Helper(role=Role.HELPER_2, helper_port=7432, sidecar_port=17432),
-    Role.HELPER_3: Helper(role=Role.HELPER_3, helper_port=7433, sidecar_port=17433),
-}
+from ..app.helpers import Role, load_helpers_from_network_config
 
 
 @dataclass
@@ -43,12 +20,15 @@ class Command:
     env: Optional[dict] = field(default_factory=lambda: {**os.environ})
 
     def run_blocking(self):
-        return subprocess.run(
+        result = subprocess.run(
             shlex.split(self.cmd),
             env=self.env,
             capture_output=True,
             text=True,
         )
+        print(result.stderr)
+        print(result.stdout)
+        return result
 
 
 def process_result(success_msg, returncode, failure_message=None):
@@ -179,6 +159,8 @@ def start_helper_process_cmd(
     role: Role,
 ) -> Command:
     identity = role.value
+    network_config = Path(config_path) / Path("network.toml")
+    helpers = load_helpers_from_network_config(network_config)
     helper = helpers[role]
     port = helper.helper_port
     cmd = f"""
@@ -226,8 +208,6 @@ def _setup_helper(
 
     if config_path.exists():
         if isolated:
-            pass
-        else:
             shutil.rmtree(config_path)
             config_path.mkdir(parents=True)
             _generate_test_config(
@@ -271,22 +251,24 @@ def _setup_coordinator(
         )
 
 
-def start_helper_sidecar_cmd(role: Role) -> Command:
+def start_helper_sidecar_cmd(role: Role, config_path: Path) -> Command:
+    network_config = Path(config_path) / Path("network.toml")
+    helpers = load_helpers_from_network_config(network_config)
     helper = helpers[role]
     cmd = "uvicorn sidecar.app.main:app"
     env = {
         **os.environ,
         "ROLE": str(role.value),
         "ROOT_PATH": f"tmp/sidecar/{role.value}",
-        "CONFIG_PATH": "local_dev/config/",
+        "CONFIG_PATH": config_path,
         "UVICORN_PORT": str(helper.sidecar_port),
     }
     return Command(cmd=cmd, env=env)
 
 
-def _start_helper_sidecar(identity):
+def _start_helper_sidecar(identity: int, config_path: Path):
     role = Role(int(identity))
-    command = start_helper_sidecar_cmd(role)
+    command = start_helper_sidecar_cmd(role, config_path)
     command.run_blocking()
 
 
@@ -298,28 +280,33 @@ def start_commands_parallel(commands: list[Command]):
             process.wait()
 
 
-def _start_all_helper_sidecar_local_commands():
-    return [start_helper_sidecar_cmd(helper.role) for helper in helpers.values()]
+def _start_all_helper_sidecar_local_commands(config_path: Path):
+    network_config = Path(config_path) / Path("network.toml")
+    helpers = load_helpers_from_network_config(network_config)
+    return [
+        start_helper_sidecar_cmd(helper.role, config_path)
+        for helper in helpers.values()
+    ]
 
 
-def _start_all_helper_sidecar_local():
-    commands = _start_all_helper_sidecar_local_commands()
+def _start_all_helper_sidecar_local(config_path: Path):
+    commands = _start_all_helper_sidecar_local_commands(config_path)
     start_commands_parallel(commands)
 
 
-def _start_local_dev():
+def _start_local_dev(config_path: Path):
     command = Command(cmd="npm --prefix server install")
     command.run_blocking()
 
     command = Command(cmd="npm --prefix server run dev")
-    commands = [command] + _start_all_helper_sidecar_local_commands()
+    commands = [command] + _start_all_helper_sidecar_local_commands(config_path)
     start_commands_parallel(commands)
 
 
 def _generate_test_data(
     size: int,
     max_breakdown_key: int,
-    max_trigger_value: int,  # 7
+    max_trigger_value: int,
     test_data_path: Path,
     local_ipa_path: Path,
     report_collector_binary_path: Path,
@@ -381,30 +368,26 @@ async def _start_ipa(
     per_user_credit_cap: int,
     query_id=None,
 ):
-    network_file = Path(config_path) / Path("network.toml")
+    network_config = Path(config_path) / Path("network.toml")
+    helpers = load_helpers_from_network_config(network_config)
     if query_id:
-        with open(network_file, "rb") as f:
-            network_data = tomllib.load(f)
-        network_file_urls = [
-            urlparse(f"http://{peer['url']}") for peer in network_data["peers"]
-        ]
         helper_urls = [
-            url._replace(netloc=f"{url.hostname}:{url.port+10000}")
-            for url in network_file_urls
+            helper.sidecar_url
+            for helper in helpers.values()
+            if helper != Role.COORDINATOR
         ]
         await wait_for_helpers(helper_urls, query_id)
 
     command = Command(
         cmd=f"""
-    {report_collector_binary_path} --network {network_file}
+    {report_collector_binary_path} --network {network_config}
     --input-file {test_data_file} oprf-ipa --max-breakdown-key {max_breakdown_key}
     --per-user-credit-cap {per_user_credit_cap} --plaintext-match-keys
     """
     )
     result = command.run_blocking()
-    process_result(
-        "Success: IPA complete.", result.returncode, result.stderr, result.stderr
-    )
+
+    process_result("Success: IPA complete.", result.returncode, result.stderr)
 
 
 def _cleanup(local_ipa_path):
