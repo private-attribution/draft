@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from pathlib import Path
 from enum import IntEnum
-from urllib.parse import urlparse, ParseResult
+from pathlib import Path
+from urllib.parse import ParseResult, urlparse
+
 import tomllib
 
 

@@ -1,7 +1,8 @@
-import click
 import random
-import time
 import sys
+import time
+
+import click
 import mnemonic
 from loguru import logger
 

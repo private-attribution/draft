@@ -1,6 +1,7 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, Annotated
+from typing import Annotated, Any
+
 from pydantic.functional_validators import BeforeValidator
 from pydantic_settings import BaseSettings
 

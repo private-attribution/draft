@@ -1,6 +1,8 @@
 import sys
+
 from loguru import logger
-from .settings import settings, Role
+
+from .settings import Role, settings
 
 logger.remove()
 max_role_str_len = max(len(role.name) for role in Role)

@@ -1,12 +1,13 @@
 import asyncio
-from contextlib import asynccontextmanager
-import psutil
 import time
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from websockets import ConnectionClosedOK, ConnectionClosedError
-from ..logger import logger
-from ..queries import Status, Query
+from contextlib import asynccontextmanager
 
+import psutil
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from websockets import ConnectionClosedError, ConnectionClosedOK
+
+from ..logger import logger
+from ..queries import Query, Status
 
 router = APIRouter(
     prefix="/ws",

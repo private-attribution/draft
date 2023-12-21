@@ -1,9 +1,10 @@
 from pathlib import Path
 from typing import Annotated
+
 from fastapi import APIRouter, Form
+
 from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import settings
-
 
 router = APIRouter(
     prefix="/start",

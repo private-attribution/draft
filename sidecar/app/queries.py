@@ -1,17 +1,19 @@
 from __future__ import annotations
-from contextlib import contextmanager
-from dataclasses import dataclass, field
-from enum import IntEnum, auto
-from pathlib import Path
+
 import shlex
 import subprocess
 import threading
 import time
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+from enum import IntEnum, auto
+from pathlib import Path
 from typing import Dict, Optional
-import loguru
-from .logger import logger as logger
-from .settings import settings, Role
 
+import loguru
+
+from .logger import logger as logger
+from .settings import Role, settings
 
 complete_semaphore_path = settings.root_path / Path("complete_semaphore")
 complete_semaphore_path.mkdir(exist_ok=True, parents=True)
