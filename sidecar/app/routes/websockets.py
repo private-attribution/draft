@@ -40,9 +40,9 @@ async def status_websocket(websocket: WebSocket, query_id: str):
                 logger.debug(f"{query_id=} Status: {query.status.name}")
                 await websocket.send_json({"status": query.status.name})
                 await asyncio.sleep(1)
-            else:
-                logger.debug(f"{query_id=} Status: {query.status.name}")
-                await websocket.send_json({"status": query.status.name})
+
+            logger.debug(f"{query_id=} Status: {query.status.name}")
+            await websocket.send_json({"status": query.status.name})
 
 
 @router.websocket("/logs/{query_id}")
@@ -54,7 +54,7 @@ async def logs_websocket(websocket: WebSocket, query_id: str):
             logger.warning(f"{query_id=} does not exist.")
             return
 
-        with open(query.log_file_path, "r") as log_file:
+        with open(query.log_file_path, "r", encoding="utf8") as log_file:
             if query.done:
                 logger.info(f"{query_id=} complete. sending all logs.")
                 for line in log_file:

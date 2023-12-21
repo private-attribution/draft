@@ -27,6 +27,7 @@ class Command:
             env=self.env,
             capture_output=True,
             text=True,
+            check=False,
         )
         print(result.stderr)
         print(result.stdout)
@@ -44,18 +45,18 @@ def process_result(success_msg, returncode, failure_message=None):
 
 
 class PopenContextManager:
-    def __init__(self, commands: list[Command], Popen_args=None):
+    def __init__(self, commands: list[Command], popen_args=None):
         self.commands = commands
-        if Popen_args is not None:
-            self.Popen_args = Popen_args
+        self.processes = []
+        if popen_args is not None:
+            self.popen_args = popen_args
         else:
-            self.Popen_args = {}
+            self.popen_args = {}
 
     def __enter__(self):
-        self.processes = []
         for command in self.commands:
             process = subprocess.Popen(
-                shlex.split(command.cmd), env=command.env, **self.Popen_args
+                shlex.split(command.cmd), env=command.env, **self.popen_args
             )
             self.processes.append(process)
         return self.processes
@@ -71,8 +72,7 @@ def _clone(local_ipa_path, exists_ok):
         if exists_ok:
             process_result(f"{local_ipa_path=} exists. Skipping clone.", 0)
             return
-        else:
-            process_result("", 1, f"Run in isolated mode and {local_ipa_path=} exists.")
+        process_result("", 1, f"Run in isolated mode and {local_ipa_path=} exists.")
 
     command = Command(
         cmd=f"git clone https://github.com/private-attribution/ipa.git {local_ipa_path}"
@@ -128,12 +128,7 @@ def _compile(
     process_result("Success: IPA compiled.", result.returncode, result.stderr)
 
 
-def _generate_test_config(helper_binary_path, config_path):
-    ports = " ".join(
-        str(helper.helper_port)
-        for helper in helpers.values()
-        if helper.role != Role.COORDINATOR
-    )
+def _generate_test_config(helper_binary_path, config_path, ports):
     command = Command(
         cmd=f"""
         {helper_binary_path} test-setup
@@ -188,8 +183,9 @@ def _setup_helper(
     target_path: Path,
     helper_binary_path: Path,
     isolated: bool,
+    ports: list[int],
 ):
-    _clone(local_ipa_path=local_ipa_path, exists_ok=(not isolated))
+    _clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
     _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
 
     if helper_binary_path.exists():
@@ -215,12 +211,14 @@ def _setup_helper(
             _generate_test_config(
                 helper_binary_path=helper_binary_path,
                 config_path=config_path,
+                ports=ports,
             )
     else:
         config_path.mkdir(parents=True)
         _generate_test_config(
             helper_binary_path=helper_binary_path,
             config_path=config_path,
+            ports=ports,
         )
 
 
@@ -231,7 +229,7 @@ def _setup_coordinator(
     report_collector_binary_path: Path,
     isolated: bool,
 ):
-    _clone(local_ipa_path=local_ipa_path, exists_ok=(not isolated))
+    _clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
     _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
 
     if report_collector_binary_path.exists():
@@ -276,7 +274,7 @@ def _start_helper_sidecar(identity: int, config_path: Path):
 
 def start_commands_parallel(commands: list[Command]):
     with PopenContextManager(
-        commands, Popen_args={"stdout": subprocess.PIPE, "text": True}
+        commands, popen_args={"stdout": subprocess.PIPE, "text": True}
     ) as processes:
         for process in processes:
             process.wait()
@@ -310,7 +308,6 @@ def _generate_test_data(
     max_breakdown_key: int,
     max_trigger_value: int,
     test_data_path: Path,
-    local_ipa_path: Path,
     report_collector_binary_path: Path,
 ):
     test_data_path.mkdir(exist_ok=True, parents=True)
@@ -323,11 +320,11 @@ def _generate_test_data(
     """
     )
     with PopenContextManager(
-        [command], Popen_args={"stdout": subprocess.PIPE, "text": True}
+        [command], popen_args={"stdout": subprocess.PIPE, "text": True}
     ) as processes:
         process = processes[0]
         command_output, _ = process.communicate()
-        with open(output_file, "w") as output:
+        with open(output_file, "w", encoding="utf8") as output:
             output.write(command_output)
 
     process_result("Success: Test data created.", process.returncode, process.stderr)
@@ -362,7 +359,6 @@ async def wait_for_helpers(helper_urls, query_id):
 
 
 async def _start_ipa(
-    local_ipa_path: Path,
     config_path: Path,
     test_data_file: Path,
     report_collector_binary_path: Path,

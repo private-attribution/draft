@@ -12,7 +12,7 @@ from typing import Dict, Optional
 
 import loguru
 
-from .logger import logger as logger
+from .logger import logger
 from .settings import Role, settings
 
 complete_semaphore_path = settings.root_path / Path("complete_semaphore")
@@ -44,6 +44,7 @@ class Status(IntEnum):
 class Step:
     cmd: str
     status: Status
+    query: "Query"
 
     @contextmanager
     def run(self):
@@ -58,8 +59,7 @@ class Step:
             line = process.stdout.readline()
             if not line:
                 continue
-            else:
-                self.query.logger.info(line.rstrip("\n"))
+            self.query.logger.info(line.rstrip("\n"))
 
 
 @dataclass
@@ -80,6 +80,7 @@ class Query:
             format="{extra[role]}: {message}",
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
+            encoding="utf8",
         )
         self.logger.debug(f"adding new Query{self=}. all queries: {queries}")
         if queries.get(self.query_id) is not None:
@@ -92,19 +93,18 @@ class Query:
         query = queries.get(query_id)
         if query:
             return query
-        else:
-            query = cls(query_id)
-            if query.status_file_path.exists():
-                with query.status_file_path.open() as f:
-                    status_str = f.readline()
-                    query.status = Status[status_str]
-                    return query
+        query = cls(query_id)
+        if query.status_file_path.exists():
+            with query.status_file_path.open() as f:
+                status_str = f.readline()
+                query.status = Status[status_str]
+                return query
         return None
 
     @property
     def steps(self):
         if not self._steps:
-            raise NotImplementedError(f"{self.__cls__} does not implement steps.")
+            raise NotImplementedError(f"{self.__class__} does not implement steps.")
         return self._steps
 
     @property
@@ -179,8 +179,7 @@ class Query:
             return 0
         if not self.end_time:
             return time.time() - self.start_time
-        else:
-            return self.end_time - self.start_time
+        return self.end_time - self.start_time
 
 
 @dataclass(kw_only=True)

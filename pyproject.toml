@@ -18,6 +18,8 @@ dependencies=[
   "mnemonic",
   "pyre-check",
   "isort",
+  "pylint",
+  "pylint[spelling]",
 ]
 
 [project.scripts]
@@ -30,3 +32,6 @@ py-modules = ["sidecar",]
 profile = "black"
 py_version=39
 skip_glob=["server"]
+
+[tool.pylint.format]
+max-line-length = "88"

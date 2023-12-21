@@ -190,11 +190,13 @@ def compile_command(
 @Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_EXISTS
 @Option.CONFIG_PATH_NOT_EXISTS
+@click.option("--ports", multiple=True, default=[7431, 7432, 7433])
 def generate_test_config(
     branch: str,
     commit_hash: str,
     local_ipa_path: Path,
     config_path: Path,
+    ports: list[int],
 ):
     paths = Paths(
         repo_path=local_ipa_path,
@@ -202,7 +204,11 @@ def generate_test_config(
         branch=branch,
         commit_hash=commit_hash,
     )
-    commands._generate_test_config(paths.helper_binary_path, paths.config_path)
+    commands._generate_test_config(
+        paths.helper_binary_path,
+        paths.config_path,
+        ports=ports,
+    )
 
 
 @cli.command()
@@ -234,12 +240,14 @@ def start_helper(branch, commit_hash, local_ipa_path, config_path, identity):
     Isolated expects repo to not exist, and will clean it up at completion.
     Repeatable will not cleanup, and will not write new files that aren't required.""",
 )
+@click.option("--ports", multiple=True, default=[7431, 7432, 7433])
 def setup_helper(
     branch: str,
     commit_hash: str,
     local_ipa_path: Path,
     config_path: Path,
     isolated: bool,
+    ports: list[int],
 ):
     paths = Paths(
         repo_path=local_ipa_path,
@@ -254,6 +262,7 @@ def setup_helper(
         paths.target_path,
         paths.helper_binary_path,
         isolated,
+        ports,
     )
 
 
@@ -296,8 +305,16 @@ def setup_coordinator(
 @Option.COMMIT_HASH
 @Option.LOCAL_IPA_PATH_NOT_EXISTS
 @Option.CONFIG_PATH_NOT_EXISTS
+@click.option("--ports", multiple=True, default=[7431, 7432, 7433])
 @click.argument("identity")
-def start_isolated_helper(branch, commit_hash, local_ipa_path, config_path, identity):
+def start_isolated_helper(
+    branch,
+    commit_hash,
+    local_ipa_path,
+    config_path,
+    ports,
+    identity,
+):
     paths = Paths(
         repo_path=local_ipa_path,
         config_path=config_path,
@@ -311,6 +328,7 @@ def start_isolated_helper(branch, commit_hash, local_ipa_path, config_path, iden
         paths.target_path,
         paths.helper_binary_path,
         True,
+        ports,
     )
     commands._start_helper(
         paths.helper_binary_path,
@@ -369,7 +387,6 @@ def generate_test_data(
         max_breakdown_key,
         max_trigger_value,
         paths.test_data_path,
-        paths.repo_path,
         paths.report_collector_binary_path,
     )
 
@@ -417,11 +434,9 @@ async def start_isolated_ipa(
         max_breakdown_key,
         max_trigger_value,
         paths.test_data_path,
-        paths.repo_path,
         paths.report_collector_binary_path,
     )
     await commands._start_ipa(
-        paths.repo_path,
         paths.config_path,
         test_data_file,
         paths.report_collector_binary_path,
@@ -463,7 +478,6 @@ async def start_ipa(
     )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
     await commands._start_ipa(
-        paths.repo_path,
         paths.config_path,
         test_data_file,
         paths.report_collector_binary_path,
@@ -534,7 +548,6 @@ async def demo_ipa(
         max_breakdown_key,
         max_trigger_value,
         paths.test_data_path,
-        paths.repo_path,
         paths.report_collector_binary_path,
     )
 
@@ -550,7 +563,6 @@ async def demo_ipa(
         # allow helpers to start
         time.sleep(3)
         await commands._start_ipa(
-            paths.repo_path,
             paths.config_path,
             test_data_file,
             paths.report_collector_binary_path,
