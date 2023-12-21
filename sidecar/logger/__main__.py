@@ -8,6 +8,7 @@ from loguru import logger
 
 
 class Formatter:
+    # pylint: disable=too-few-public-methods
     def __init__(self):
         self.padding = 0
         self.fmt = (
@@ -16,7 +17,8 @@ class Formatter:
         )
 
     def format(self, record):
-        length = len("{name}:{function}:{line}".format(**record))
+        fmt = f"{record['name']}:{record['function']}:{record['line']}"
+        length = len(fmt)
         self.padding = max(self.padding, length)
         record["extra"]["padding"] = " " * (self.padding - length)
         return self.fmt
@@ -67,4 +69,4 @@ def main(num_lines, total_runtime):
 
 
 if __name__ == "__main__":
-    main()
+    main()  # pylint: disable=no-value-for-parameter

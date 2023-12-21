@@ -20,6 +20,7 @@ dependencies=[
   "isort",
   "pylint",
   "pylint[spelling]",
+  "pre-commit",
 ]
 
 [project.scripts]
@@ -35,3 +36,19 @@ skip_glob=["server"]
 
 [tool.pylint.format]
 max-line-length = "88"
+
+[tool.pylint.messages_control]
+disable = [
+  "C0114",
+  "C0115",
+  "C0116",
+  "W0212",
+  "W0719",
+  "R0902",
+  "R0913",
+  "E1121",
+]
+
+[tool.black]
+target-version = ["py311", ]
+include = '\.pyi?$'
