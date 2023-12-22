@@ -135,14 +135,14 @@ def cli():
     help="Prevent warning and skip if path exists.",
 )
 def clone(local_ipa_path, exists_ok):
-    commands._clone(local_ipa_path, exists_ok)
+    commands.clone(local_ipa_path, exists_ok)
 
 
 @cli.command()
 @Option.LOCAL_IPA_PATH_EXISTS
 @click.argument("branch", type=str, required=True, default="main")
 def checkout_branch(local_ipa_path, branch):
-    commands._checkout_branch(local_ipa_path=local_ipa_path, branch=branch)
+    commands.checkout_branch(local_ipa_path=local_ipa_path, branch=branch)
 
 
 @cli.command("compile")
@@ -176,7 +176,7 @@ def compile_command(
         features = "web-app real-world-infra compact-gate stall-detection"
         default_features = True
 
-    commands._compile(
+    commands.compile_(
         local_ipa_path=paths.repo_path,
         target_path=paths.target_path,
         binary_name=binary_name,
@@ -204,7 +204,7 @@ def generate_test_config(
         branch=branch,
         commit_hash=commit_hash,
     )
-    commands._generate_test_config(
+    commands.generate_test_config(
         paths.helper_binary_path,
         paths.config_path,
         ports=ports,
@@ -225,7 +225,7 @@ def start_helper(branch, commit_hash, local_ipa_path, config_path, identity):
         commit_hash=commit_hash,
     )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
-    commands._start_helper(paths.helper_binary_path, paths.config_path, identity)
+    commands.start_helper(paths.helper_binary_path, paths.config_path, identity)
 
 
 @cli.command()
@@ -255,7 +255,7 @@ def setup_helper(
         branch=branch,
         commit_hash=commit_hash,
     )
-    commands._setup_helper(
+    commands.setup_helper(
         commit_hash,
         paths.repo_path,
         paths.config_path,
@@ -291,7 +291,7 @@ def setup_coordinator(
         branch=branch,
         commit_hash=commit_hash,
     )
-    commands._setup_coordinator(
+    commands.setup_coordinator(
         commit_hash,
         paths.repo_path,
         paths.target_path,
@@ -321,7 +321,7 @@ def start_isolated_helper(
         branch=branch,
         commit_hash=commit_hash,
     )
-    commands._setup_helper(
+    commands.setup_helper(
         commit_hash,
         paths.repo_path,
         paths.config_path,
@@ -330,7 +330,7 @@ def start_isolated_helper(
         True,
         ports,
     )
-    commands._start_helper(
+    commands.start_helper(
         paths.helper_binary_path,
         paths.config_path,
         identity,
@@ -341,19 +341,19 @@ def start_isolated_helper(
 @Option.CONFIG_PATH_EXISTS
 @click.argument("identity")
 def start_helper_sidecar(config_path: Path, identity: int):
-    commands._start_helper_sidecar(identity, config_path)
+    commands.start_helper_sidecar(identity, config_path)
 
 
 @cli.command
 @Option.CONFIG_PATH_EXISTS
 def start_all_helper_sidecar_local(config_path: Path):
-    commands._start_all_helper_sidecar_local(config_path)
+    commands.start_all_helper_sidecar_local(config_path)
 
 
 @cli.command
 @Option.CONFIG_PATH_EXISTS
 def start_local_dev(config_path: Path):
-    commands._start_local_dev(config_path)
+    commands.start_local_dev(config_path)
 
 
 @cli.command()
@@ -382,7 +382,7 @@ def generate_test_data(
         commit_hash=commit_hash,
         config_path=config_path,
     )
-    commands._generate_test_data(
+    commands.generate_test_data(
         size,
         max_breakdown_key,
         max_trigger_value,
@@ -420,7 +420,7 @@ async def start_isolated_ipa(
         commit_hash=commit_hash,
         _test_data_path=test_data_path,
     )
-    commands._setup_helper(
+    commands.setup_helper(
         branch,
         commit_hash,
         paths.repo_path,
@@ -429,14 +429,14 @@ async def start_isolated_ipa(
         paths.helper_binary_path,
         True,
     )
-    test_data_file = commands._generate_test_data(
+    test_data_file = commands.generate_test_data(
         size,
         max_breakdown_key,
         max_trigger_value,
         paths.test_data_path,
         paths.report_collector_binary_path,
     )
-    await commands._start_ipa(
+    await commands.start_ipa(
         paths.config_path,
         test_data_file,
         paths.report_collector_binary_path,
@@ -477,7 +477,7 @@ async def start_ipa(
         commit_hash=commit_hash,
     )
     local_ipa_path, config_path = paths.repo_path, paths.config_path
-    await commands._start_ipa(
+    await commands.start_ipa(
         paths.config_path,
         test_data_file,
         paths.report_collector_binary_path,
@@ -490,7 +490,7 @@ async def start_ipa(
 @cli.command()
 @Option.LOCAL_IPA_PATH_EXISTS
 def cleanup(local_ipa_path):
-    commands._cleanup(local_ipa_path)
+    commands.cleanup(local_ipa_path)
 
 
 @cli.command()
@@ -533,7 +533,7 @@ async def demo_ipa(
         commit_hash=commit_hash,
     )
 
-    commands._setup_helper(
+    commands.setup_helper(
         branch,
         commit_hash,
         paths.repo_path,
@@ -543,7 +543,7 @@ async def demo_ipa(
         isolated,
     )
 
-    test_data_file = commands._generate_test_data(
+    test_data_file = commands.generate_test_data(
         size,
         max_breakdown_key,
         max_trigger_value,
@@ -562,7 +562,7 @@ async def demo_ipa(
     with (commands.PopenContextManager(_commands),):
         # allow helpers to start
         time.sleep(3)
-        await commands._start_ipa(
+        await commands.start_ipa(
             paths.config_path,
             test_data_file,
             paths.report_collector_binary_path,
@@ -571,7 +571,7 @@ async def demo_ipa(
         )
 
     if isolated:
-        commands._cleanup(local_ipa_path)
+        commands.cleanup(local_ipa_path)
 
 
 if __name__ == "__main__":

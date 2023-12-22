@@ -66,7 +66,7 @@ class PopenContextManager:
             process.kill()
 
 
-def _clone(local_ipa_path, exists_ok):
+def clone(local_ipa_path, exists_ok):
     # setup
     if local_ipa_path.exists():
         if exists_ok:
@@ -93,9 +93,7 @@ def get_branch_commit_hash(local_ipa_path: Path, branch: str) -> str:
         result.stderr,
     )
     return result.stdout.strip()
-
-
-def _checkout_commit(local_ipa_path: Path, commit_hash: str):
+def checkout_commit(local_ipa_path: Path, commit_hash: str):
     command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
     result = command.run_blocking()
     process_result("Success: upstream fetched.", result.returncode, result.stderr)
@@ -104,13 +102,13 @@ def _checkout_commit(local_ipa_path: Path, commit_hash: str):
     process_result(f"Success: Checked out {commit_hash}.", result.returncode)
 
 
-def _checkout_branch(local_ipa_path: Path, branch: str):
+def checkout_branch(local_ipa_path: Path, branch: str):
     commit_hash = get_branch_commit_hash(local_ipa_path, branch)
     process_result(f"Checking out {branch} @ {commit_hash}", 0)
-    _checkout_commit(local_ipa_path, commit_hash)
+    checkout_commit(local_ipa_path, commit_hash)
 
 
-def _compile(
+def compile_(
     local_ipa_path: Path,
     target_path: Path,
     binary_name: str,
@@ -120,7 +118,8 @@ def _compile(
     manifest_path = local_ipa_path / Path("Cargo.toml")
     command = Command(
         cmd=f"""cargo build --bin {binary_name} --manifest-path={manifest_path}
-        --features="{features}" {'--no-default-features' if not default_features else ''}
+        --features="{features}"
+        {'--no-default-features' if not default_features else ''}
         --target-dir={target_path} --release"""
     )
     print(command.cmd)
@@ -128,7 +127,7 @@ def _compile(
     process_result("Success: IPA compiled.", result.returncode, result.stderr)
 
 
-def _generate_test_config(helper_binary_path, config_path, ports):
+def generate_test_config(helper_binary_path, config_path, ports):
     command = Command(
         cmd=f"""
         {helper_binary_path} test-setup
@@ -170,13 +169,13 @@ def start_helper_process_cmd(
     return Command(cmd)
 
 
-def _start_helper(helper_binary_path, config_path, identity):
+def start_helper(helper_binary_path, config_path, identity):
     role = Role(int(identity))
     command = start_helper_process_cmd(helper_binary_path, config_path, role)
     command.run_blocking()
 
 
-def _setup_helper(
+def setup_helper(
     commit_hash: str,
     local_ipa_path: Path,
     config_path: Path,
@@ -185,8 +184,8 @@ def _setup_helper(
     isolated: bool,
     ports: list[int],
 ):
-    _clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
-    _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
+    clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
+    checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
 
     if helper_binary_path.exists():
         if isolated:
@@ -196,7 +195,7 @@ def _setup_helper(
         else:
             pass
     else:
-        _compile(
+        compile_(
             local_ipa_path,
             target_path,
             "helper",
@@ -208,29 +207,29 @@ def _setup_helper(
         if isolated:
             shutil.rmtree(config_path)
             config_path.mkdir(parents=True)
-            _generate_test_config(
+            generate_test_config(
                 helper_binary_path=helper_binary_path,
                 config_path=config_path,
                 ports=ports,
             )
     else:
         config_path.mkdir(parents=True)
-        _generate_test_config(
+        generate_test_config(
             helper_binary_path=helper_binary_path,
             config_path=config_path,
             ports=ports,
         )
 
 
-def _setup_coordinator(
+def setup_coordinator(
     commit_hash: str,
     local_ipa_path: Path,
     target_path: Path,
     report_collector_binary_path: Path,
     isolated: bool,
 ):
-    _clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
-    _checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
+    clone(local_ipa_path=local_ipa_path, exists_ok=not isolated)
+    checkout_commit(local_ipa_path=local_ipa_path, commit_hash=commit_hash)
 
     if report_collector_binary_path.exists():
         if isolated:
@@ -242,7 +241,7 @@ def _setup_coordinator(
         else:
             pass
     else:
-        _compile(
+        compile_(
             local_ipa_path,
             target_path,
             "report_collector",
@@ -266,7 +265,7 @@ def start_helper_sidecar_cmd(role: Role, config_path: Path) -> Command:
     return Command(cmd=cmd, env=env)
 
 
-def _start_helper_sidecar(identity: int, config_path: Path):
+def start_helper_sidecar(identity: int, config_path: Path):
     role = Role(int(identity))
     command = start_helper_sidecar_cmd(role, config_path)
     command.run_blocking()
@@ -280,7 +279,7 @@ def start_commands_parallel(commands: list[Command]):
             process.wait()
 
 
-def _start_all_helper_sidecar_local_commands(config_path: Path):
+def start_all_helper_sidecar_local_commands(config_path: Path):
     network_config = Path(config_path) / Path("network.toml")
     helpers = load_helpers_from_network_config(network_config)
     return [
@@ -289,21 +288,21 @@ def _start_all_helper_sidecar_local_commands(config_path: Path):
     ]
 
 
-def _start_all_helper_sidecar_local(config_path: Path):
-    commands = _start_all_helper_sidecar_local_commands(config_path)
+def start_all_helper_sidecar_local(config_path: Path):
+    commands = start_all_helper_sidecar_local_commands(config_path)
     start_commands_parallel(commands)
 
 
-def _start_local_dev(config_path: Path):
+def start_local_dev(config_path: Path):
     command = Command(cmd="npm --prefix server install")
     command.run_blocking()
 
     command = Command(cmd="npm --prefix server run dev")
-    commands = [command] + _start_all_helper_sidecar_local_commands(config_path)
+    commands = [command] + start_all_helper_sidecar_local_commands(config_path)
     start_commands_parallel(commands)
 
 
-def _generate_test_data(
+def generate_test_data(
     size: int,
     max_breakdown_key: int,
     max_trigger_value: int,
@@ -358,7 +357,7 @@ async def wait_for_helpers(helper_urls, query_id):
     return
 
 
-async def _start_ipa(
+async def start_ipa(
     config_path: Path,
     test_data_file: Path,
     report_collector_binary_path: Path,
@@ -388,7 +387,7 @@ async def _start_ipa(
     process_result("Success: IPA complete.", result.returncode, result.stderr)
 
 
-def _cleanup(local_ipa_path):
+def cleanup(local_ipa_path):
     local_ipa_path = Path(local_ipa_path)
     shutil.rmtree(local_ipa_path)
     click.echo(f"IPA removed from {local_ipa_path}")
