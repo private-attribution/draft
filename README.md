@@ -1,4 +1,5 @@
 # DRAFT - Distributed Relay and Automation Facilitation Tool
+![image of a draft beer tap](server/public/beer-tap.png)
 
 draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains 2 components:
 
@@ -30,3 +31,7 @@ pip install --editable .
 # start dev environment
 draft start-local-dev
 ```
+
+
+## Credit
+[Beer tap icons created by wanicon - Flaticon]("https://www.flaticon.com/free-icons/beer-tap")

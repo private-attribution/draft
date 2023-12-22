@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
-import { RocketLaunchIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
+import beerTap from "../public/beer-tap.png";
 
 const user = {
   name: "Tom Cook",
@@ -32,7 +32,11 @@ export default function Header() {
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
-                  <RocketLaunchIcon className="block h-8 w-auto fill-sky-800 dark:fill-sky-200" />
+                  <Image
+                    src={beerTap}
+                    alt="beer tap icon"
+                    className="block h-8 w-auto fill-sky-800 dark:fill-sky-200"
+                  />
                 </div>
                 <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
                   {navigation.map((item) => (
