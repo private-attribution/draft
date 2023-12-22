@@ -87,7 +87,7 @@ export function LogViewer({
   return (
     <div
       className={clsx(
-        `w-full bg-white dark:bg-slate-950 overflow-x-auto`,
+        "w-full bg-white dark:bg-slate-950 overflow-y-scroll max-h-96 text-start indent-[-128px] pl-32 text-wrap",
         className,
       )}
     >
@@ -96,7 +96,7 @@ export function LogViewer({
           <div
             key={index}
             className={clsx(
-              "text-slate-900 dark:text-slate-100 text-xs whitespace-pre",
+              "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line",
               sourceCodePro.className,
             )}
           >
