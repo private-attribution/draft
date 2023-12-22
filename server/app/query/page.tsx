@@ -152,8 +152,8 @@ function IPAForm({
         selectClassName=""
       />
       <SelectMenu
-        id="max_breakdown_keys"
-        label="Max Breakdown Keys"
+        id="max_breakdown_key"
+        label="Maximum Number of Breakdown Keys"
         options={["16", "32", "64", "128", "256"]}
         defaultValue="64"
         labelClassName=""
@@ -161,7 +161,7 @@ function IPAForm({
       />
       <SelectMenu
         id="max_trigger_value"
-        label="Max Trigger Value"
+        label="Maxiumum Trigger Value"
         options={["1", "3", "7", "15", "31", "63", "127", "255", "511", "1023"]}
         defaultValue="7"
         labelClassName=""

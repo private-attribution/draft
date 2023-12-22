@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, Form
 
 from ..local_paths import Paths
-from ..logger import logger
 from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import settings
 
@@ -70,7 +69,6 @@ def start_ipa_test_query(
         config_path=settings.config_path,
         commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
     )
-    logger.warning((size, max_breakdown_key, max_trigger_value, per_user_credit_cap))
     test_data_path = paths.repo_path / Path("test_data/input")
     query = IPACoordinatorQuery(
         query_id=query_id,
