@@ -1,3 +1,5 @@
+# pylint: disable=too-many-arguments
+
 import asyncio
 import itertools
 import json
@@ -5,33 +7,15 @@ import os
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 from urllib.parse import urlunparse
 
 import click
 import websockets
 
+from ..app.command import Command
 from ..app.helpers import Role, load_helpers_from_network_config
-
-
-@dataclass
-class Command:
-    cmd: str
-    env: Optional[dict] = field(default_factory=lambda: {**os.environ})
-
-    def run_blocking(self):
-        result = subprocess.run(
-            shlex.split(self.cmd),
-            env=self.env,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        print(result.stderr)
-        print(result.stdout)
-        return result
+from ..app.local_paths import get_branch_commit_hash
 
 
 def process_result(success_msg, returncode, failure_message=None):
@@ -81,18 +65,6 @@ def clone(local_ipa_path, exists_ok):
     process_result("Success: IPA cloned.", result.returncode, result.stderr)
 
 
-def get_branch_commit_hash(local_ipa_path: Path, branch: str) -> str:
-    command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
-    result = command.run_blocking()
-    process_result("Success: upstream fetched.", result.returncode, result.stderr)
-    command = Command(cmd=f"git -C {local_ipa_path} rev-parse origin/{branch}")
-    result = command.run_blocking()
-    process_result(
-        f"Success: {branch} is at {result.stdout.strip()}.",
-        result.returncode,
-        result.stderr,
-    )
-    return result.stdout.strip()
 def checkout_commit(local_ipa_path: Path, commit_hash: str):
     command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
     result = command.run_blocking()

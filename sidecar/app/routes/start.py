@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form
 
+from ..local_paths import Paths
 from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import settings
 
@@ -36,12 +37,14 @@ def start_ipa_helper(query_id: str):
     if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
 
-    local_ipa_path = settings.root_path / Path("ipa")
-    query = IPAHelperQuery(
-        query_id=query_id,
-        local_ipa_path=local_ipa_path,
+    paths = Paths(
+        repo_path=settings.root_path / Path("ipa"),
         config_path=settings.config_path,
         commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+    )
+    query = IPAHelperQuery(
+        paths=paths,
+        query_id=query_id,
     )
 
     query.run_in_thread()
@@ -57,20 +60,22 @@ def start_ipa_test_query(
     if role != role.COORDINATOR:
         raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
 
-    local_ipa_path = settings.root_path / Path("ipa")
-    test_data_path = local_ipa_path / Path("test_data/input")
+    paths = Paths(
+        repo_path=settings.root_path / Path("ipa"),
+        config_path=settings.config_path,
+        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+    )
+
+    test_data_path = paths.repo_path / Path("test_data/input")
     size = 1000
     query = IPACoordinatorQuery(
         query_id=query_id,
-        local_ipa_path=local_ipa_path,
-        test_data_path=test_data_path,
+        paths=paths,
         test_data_file=test_data_path / Path(f"events-{size}.txt"),
-        config_path=settings.config_path,
         size=size,
         max_breakdown_key=256,
         max_trigger_value=7,
         per_user_credit_cap=16,
-        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
     )
 
     query.run_in_thread()

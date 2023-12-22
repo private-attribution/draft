@@ -1,14 +1,15 @@
+# pylint: disable=too-many-arguments
+
 import asyncio
 import time
-from dataclasses import dataclass, field
 from enum import Enum, member
 from functools import wraps
 from pathlib import Path
-from typing import Optional
 
 import click
 import click_pathlib
 
+from ..app.local_paths import Paths
 from . import commands
 
 
@@ -84,40 +85,6 @@ class Option(Enum):
 
     def __call__(self, *args, **kwargs):
         return self.value(*args, **kwargs)
-
-
-@dataclass
-class Paths:
-    repo_path: Path
-    config_path: Path
-    branch: Optional[str]
-    commit_hash: Optional[str]
-    _test_data_path: Optional[Path] = None
-    test_data_path: Path = field(init=False)
-
-    def __post_init__(self):
-        if not self.config_path:
-            self.config_path = self.repo_path / Path("test_data/config")
-        if self._test_data_path:
-            self.test_data_path = self._test_data_path
-        else:
-            self.test_data_path = self.repo_path / Path("test_data/input")
-        if self.branch and not self.commit_hash:
-            self.commit_hash = commands.get_branch_commit_hash(
-                self.repo_path, self.branch
-            )
-
-    @property
-    def target_path(self) -> Path:
-        return self.repo_path / Path(f"target-{self.commit_hash}")
-
-    @property
-    def helper_binary_path(self) -> Path:
-        return self.target_path / Path("release/helper")
-
-    @property
-    def report_collector_binary_path(self) -> Path:
-        return self.target_path / Path("release/report_collector")
 
 
 @click.group()

@@ -12,6 +12,7 @@ from typing import Dict, Optional
 
 import loguru
 
+from .local_paths import Paths
 from .logger import logger
 from .settings import Role, settings
 
@@ -64,10 +65,11 @@ class Step:
 
 @dataclass
 class Query:
+    # pylint: disable=too-many-instance-attributes
     query_id: str
     role: Role = settings.role
     logger: loguru.Logger = logger
-    _steps: Optional[list[Step]] = None
+    steps: list[Step] = field(default_factory=list)
     _status: Status = field(init=False, default=Status.STARTING)
     start_time: Optional[float] = field(init=False, default=None)
     end_time: Optional[float] = field(init=False, default=None)
@@ -100,12 +102,6 @@ class Query:
                 query.status = Status[status_str]
                 return query
         return None
-
-    @property
-    def steps(self):
-        if not self._steps:
-            raise NotImplementedError(f"{self.__class__} does not implement steps.")
-        return self._steps
 
     @property
     def status(self) -> Status:
@@ -209,51 +205,59 @@ class DemoLoggerQuery(Query):
 
 @dataclass(kw_only=True)
 class IPAStep(Step):
-    query: "IPACoordinatorQuery | IPAHelperQuery"
+    query: "IPAQuery"
 
 
 @dataclass(kw_only=True)
-class IPACoordinatorQuery(Query):
-    local_ipa_path: Path
-    test_data_path: Path
+class IPAQuery(Query):
+    paths: Paths
+
+    @property
+    def commit_hash_str(self):
+        if self.paths.commit_hash:
+            return " --commit_hash " + self.paths.commit_hash
+        return ""
+
+    @property
+    def branch_str(self):
+        if self.paths.branch:
+            return " --branch " + self.paths.branch
+        return ""
+
+
+@dataclass(kw_only=True)
+class IPACoordinatorQuery(IPAQuery):
     test_data_file: Path
-    config_path: Path
     size: int
     max_breakdown_key: int
     max_trigger_value: int
     per_user_credit_cap: int
-    branch: Optional[str] = None
-    commit_hash: Optional[str] = None
 
     def __post_init__(self):
         ipa_compile_cmd = (
-            f"draft setup-coordinator --local_ipa_path {self.local_ipa_path}"
-            f"{' --branch ' + self.branch if self.branch else ''}"
-            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
-            f" --repeatable"
+            f"draft setup-coordinator --local_ipa_path {self.paths.repo_path}"
+            f"{self.branch_str} {self.commit_hash_str} --repeatable"
         )
         ipa_generate_test_data_cmd = (
             f"draft generate-test-data --size {self.size}"
-            f"{' --branch ' + self.branch if self.branch else ''}"
-            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f"{self.branch_str} {self.commit_hash_str}"
             f" --max-breakdown-key {self.max_breakdown_key}"
             f" --max-trigger-value {self.max_trigger_value}"
-            f" --test_data_path {self.test_data_path}"
-            f" --local_ipa_path {self.local_ipa_path}"
+            f" --test_data_path {self.paths.test_data_path}"
+            f" --local_ipa_path {self.paths.repo_path}"
         )
         ipa_start_ipa_cmd = (
             f"draft start-ipa"
-            f"{' --branch ' + self.branch if self.branch else ''}"
-            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
-            f" --local_ipa_path {self.local_ipa_path}"
-            f" --config_path {self.config_path}"
+            f"{self.branch_str} {self.commit_hash_str}"
+            f" --local_ipa_path {self.paths.repo_path}"
+            f" --config_path {self.paths.config_path}"
             f" --max-breakdown-key {self.max_breakdown_key}"
             f" --per-user-credit-cap {self.per_user_credit_cap}"
             f" --test_data_file {self.test_data_file}"
             f" --query_id {self.query_id}"
         )
 
-        self._steps = [
+        self.steps = [
             IPAStep(
                 query=self,
                 cmd=ipa_compile_cmd,
@@ -274,28 +278,21 @@ class IPACoordinatorQuery(Query):
 
 
 @dataclass(kw_only=True)
-class IPAHelperQuery(Query):
-    local_ipa_path: Path
-    config_path: Path
-    branch: Optional[str] = None
-    commit_hash: Optional[str] = None
-
+class IPAHelperQuery(IPAQuery):
     def __post_init__(self):
         ipa_compile_cmd = (
-            f"draft setup-helper --local_ipa_path {self.local_ipa_path}"
-            f"{' --branch ' + self.branch if self.branch else ''}"
-            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
+            f"draft setup-helper --local_ipa_path {self.paths.repo_path}"
+            f"{self.branch_str} {self.commit_hash_str}"
             f" --repeatable"
         )
 
         ipa_start_helper_cmd = (
-            f"draft start-helper --local_ipa_path {self.local_ipa_path}"
-            f"{' --branch ' + self.branch if self.branch else ''}"
-            f"{' --commit_hash ' + self.commit_hash if self.commit_hash else ''}"
-            f" --config_path {self.config_path} {self.role.value}"
+            f"draft start-helper --local_ipa_path {self.paths.repo_path}"
+            f"{self.branch_str} {self.commit_hash_str}"
+            f" --config_path {self.paths.config_path} {self.role.value}"
         )
 
-        self._steps = [
+        self.steps = [
             IPAStep(
                 query=self,
                 cmd=ipa_compile_cmd,

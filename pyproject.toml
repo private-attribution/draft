@@ -43,8 +43,7 @@ disable = [
   "missing-class-docstring",
   "missing-function-docstring",
   "broad-exception-raised",
-  # "R0902",
-  "R0913",
+  # "R0913",
 ]
 
 [tool.black]
