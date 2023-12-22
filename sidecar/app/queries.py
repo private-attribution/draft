@@ -84,7 +84,7 @@ class Query:
             enqueue=True,
             encoding="utf8",
         )
-        self.logger.debug(f"adding new Query{self=}. all queries: {queries}")
+        self.logger.debug(f"adding new Query {self}. all queries: {queries}")
         if queries.get(self.query_id) is not None:
             raise Exception(f"{self.query_id} already exists")
         self.log_file_path.touch()

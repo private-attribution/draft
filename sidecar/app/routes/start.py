@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form
 
 from ..local_paths import Paths
+from ..logger import logger
 from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import settings
 
@@ -55,6 +56,10 @@ def start_ipa_helper(query_id: str):
 @router.post("/ipa-query/{query_id}")
 def start_ipa_test_query(
     query_id: str,
+    size: Annotated[int, Form()],
+    max_breakdown_key: Annotated[int, Form()],
+    max_trigger_value: Annotated[int, Form()],
+    per_user_credit_cap: Annotated[int, Form()],
 ):
     role = settings.role
     if role != role.COORDINATOR:
@@ -65,17 +70,16 @@ def start_ipa_test_query(
         config_path=settings.config_path,
         commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
     )
-
+    logger.warning((size, max_breakdown_key, max_trigger_value, per_user_credit_cap))
     test_data_path = paths.repo_path / Path("test_data/input")
-    size = 1000
     query = IPACoordinatorQuery(
         query_id=query_id,
         paths=paths,
         test_data_file=test_data_path / Path(f"events-{size}.txt"),
         size=size,
-        max_breakdown_key=256,
-        max_trigger_value=7,
-        per_user_credit_cap=16,
+        max_breakdown_key=max_breakdown_key,
+        max_trigger_value=max_trigger_value,
+        per_user_credit_cap=per_user_credit_cap,
     )
 
     query.run_in_thread()

@@ -83,7 +83,7 @@ export default function Page() {
   return (
     <>
       {queryId && <QueryStartedAlert queryId={queryId} />}
-      <div className="md:flex md:items-center md:justify-between">
+      <div className="md:flex md:items-start md:justify-between">
         <DemoLogsForm handleDemoLogsFormSubmit={handleDemoLogsFormSubmit} />
         <IPAForm handleIPAFormSubmit={handleIPAFormSubmit} />
       </div>
@@ -99,7 +99,7 @@ function DemoLogsForm({
   return (
     <form
       onSubmit={handleDemoLogsFormSubmit}
-      className="rounded-md bg-slate-50 px-8 py-6"
+      className="rounded-md bg-slate-50 px-8 py-6 w-96"
     >
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         Demo Logger Query
@@ -138,11 +138,43 @@ function IPAForm({
   return (
     <form
       onSubmit={handleIPAFormSubmit}
-      className="rounded-md bg-slate-50 px-8 py-6"
+      className="rounded-md bg-slate-50 px-8 py-6 w-96"
     >
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         IPA Query
       </h2>
+      <SelectMenu
+        id="size"
+        label="Input Size"
+        options={["1000", "10000", "100000", "1000000"]}
+        defaultValue="1000"
+        labelClassName=""
+        selectClassName=""
+      />
+      <SelectMenu
+        id="max_breakdown_keys"
+        label="Max Breakdown Keys"
+        options={["16", "32", "64", "128", "256"]}
+        defaultValue="64"
+        labelClassName=""
+        selectClassName=""
+      />
+      <SelectMenu
+        id="max_trigger_value"
+        label="Max Trigger Value"
+        options={["1", "3", "7", "15", "31", "63", "127", "255", "511", "1023"]}
+        defaultValue="7"
+        labelClassName=""
+        selectClassName=""
+      />
+      <SelectMenu
+        id="per_user_credit_cap"
+        label="Per User Credit Cap"
+        options={["16", "32", "64", "128", "256"]}
+        defaultValue="64"
+        labelClassName=""
+        selectClassName=""
+      />
       <button
         type="submit"
         className="mt-4 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
