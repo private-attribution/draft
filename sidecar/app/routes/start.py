@@ -32,7 +32,10 @@ def demo_logger(
 
 
 @router.post("/ipa-helper/{query_id}")
-def start_ipa_helper(query_id: str):
+def start_ipa_helper(
+    query_id: str,
+    commit_hash: Annotated[str, Form()],
+):
     role = settings.role
     if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
@@ -40,7 +43,7 @@ def start_ipa_helper(query_id: str):
     paths = Paths(
         repo_path=settings.root_path / Path("ipa"),
         config_path=settings.config_path,
-        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+        commit_hash=commit_hash,
     )
     query = IPAHelperQuery(
         paths=paths,
@@ -55,11 +58,13 @@ def start_ipa_helper(query_id: str):
 @router.post("/ipa-query/{query_id}")
 def start_ipa_test_query(
     query_id: str,
+    commit_hash: Annotated[str, Form()],
     size: Annotated[int, Form()],
     max_breakdown_key: Annotated[int, Form()],
     max_trigger_value: Annotated[int, Form()],
     per_user_credit_cap: Annotated[int, Form()],
 ):
+    # pylint: disable=too-many-arguments
     role = settings.role
     if role != role.COORDINATOR:
         raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
@@ -67,7 +72,7 @@ def start_ipa_test_query(
     paths = Paths(
         repo_path=settings.root_path / Path("ipa"),
         config_path=settings.config_path,
-        commit_hash="dcb6a391309f9c58defd231029f8df489728f225",
+        commit_hash=commit_hash,
     )
     test_data_path = paths.repo_path / Path("test_data/input")
     query = IPACoordinatorQuery(

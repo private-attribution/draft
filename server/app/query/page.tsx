@@ -1,11 +1,14 @@
 "use client";
-import React, { useState, FormEvent, useEffect } from "react";
+import React, { useState, FormEvent, useEffect, Fragment } from "react";
 import clsx from "clsx";
+import { Listbox, Transition } from "@headlessui/react";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
+import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import QueryStartedAlert from "../alert";
 import { RemoteServers, RemoteServerNames } from "./servers";
 import NewQueryId from "./haikunator";
-import { Branches } from "./github";
+import { Branch, Branches, isValidCommitHash } from "./github";
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
@@ -35,7 +38,6 @@ export default function Page() {
       }
 
       // const data = await response.json();
-
       await new Promise((f) => setTimeout(f, 1000));
 
       // Redirect to /query/<newQueryId>
@@ -136,11 +138,53 @@ function IPAForm({
 }: {
   handleIPAFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const [branches, setBranches] = useState<string[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("main");
+  const owner = "private-attribution";
+  const repo = "ipa";
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const branchNames = branches.map((branch) => branch.name);
+  const [selectedBranchName, setSelectedBranchName] = useState<string>("main");
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string>("");
+  const [validCommitHash, setValidCommitHash] = useState<boolean>(true);
+
+  enum CommitSpecifier {
+    COMMIT_HASH,
+    BRANCH,
+  }
+  const [commitSpecifier, setCommitSpecifier] = useState<CommitSpecifier>(
+    CommitSpecifier.BRANCH,
+  );
+
+  const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
+  const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
+
   useEffect(() => {
-    const owner = "private-attribution";
-    const repo = "ipa";
+    const branch = branches.find(
+      (branch) => branch.name === selectedBranchName,
+    );
+    if (branch && commitSpecifier != CommitSpecifier.COMMIT_HASH) {
+      setSelectedCommitHash(branch.commitHash);
+      setValidCommitHash(true);
+    }
+  }, [selectedBranchName, branches]);
+
+  useEffect(() => {
+    const branch = branches.find(
+      (branch) => branch.name === selectedCommitHash,
+    );
+    const fetchCommitIsValid = async () => {
+      const _valid = await isValidCommitHash(owner, repo, selectedCommitHash);
+      setValidCommitHash(_valid);
+    };
+    if (branch) {
+      setSelectedBranchName(branch.name);
+      setValidCommitHash(true);
+    } else if (commitSpecifier != CommitSpecifier.BRANCH) {
+      setSelectedBranchName("N/A");
+      fetchCommitIsValid().catch(console.error);
+    }
+  }, [selectedCommitHash]);
+
+  useEffect(() => {
     const fetchBranches = async () => {
       const _branches = await Branches(owner, repo);
       setBranches(_branches);
@@ -156,16 +200,62 @@ function IPAForm({
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         IPA Query
       </h2>
-      <PassedStateSelectMenu
-        id="branch"
-        label="Branch"
-        options={branches}
-        selectedValue={selectedBranch}
-        setSelectedValue={setSelectedBranch}
-        labelClassName=""
-        selectClassName=""
-        disabled={false}
-      />
+      <div onClick={() => setCommitSpecifier(CommitSpecifier.BRANCH)}>
+        <PassedStateSelectMenu
+          id="branch"
+          label="Branch"
+          options={branchNames}
+          selected={selectedBranchName}
+          setSelected={setSelectedBranchName}
+          labelClassName=""
+          selectClassName=""
+          disabled={disableBranch}
+        />
+      </div>
+      <div
+        className="relative mt-2 rounded-md shadow-sm"
+        onClick={() => setCommitSpecifier(CommitSpecifier.COMMIT_HASH)}
+      >
+        <label
+          htmlFor="commit_hash"
+          className={clsx(
+            "block text-md font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
+            disableCommitHash && "opacity-25",
+          )}
+        >
+          Commit Hash
+        </label>
+        <input
+          type="string"
+          name="commit_hash"
+          id="commit_hash"
+          className={clsx(
+            "block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
+            !validCommitHash &&
+              "text-red-900 ring-red-300 placeholder:text-red-300 focus:ring-red-500",
+            disableCommitHash && "opacity-25",
+          )}
+          value={selectedCommitHash}
+          onChange={(e) => setSelectedCommitHash(e.target.value)}
+          aria-invalid="true"
+          aria-describedby="email-error"
+        />
+
+        {!validCommitHash && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 pt-10">
+            <ExclamationCircleIcon
+              className="h-5 w-5 text-red-500"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+      </div>
+      {!validCommitHash && (
+        <p className="mt-2 text-sm text-red-600" id="email-error">
+          Not a valid commit hash.
+        </p>
+      )}
+
       <SelectMenu
         id="size"
         label="Input Size"
@@ -208,57 +298,6 @@ function IPAForm({
   );
 }
 
-function PassedStateSelectMenu({
-  id,
-  label,
-  options,
-  selectedValue,
-  setSelectedValue,
-  labelClassName = "",
-  selectClassName = "",
-  disabled = false,
-}: {
-  id: string;
-  label: string;
-  options: string[];
-  selectedValue: string;
-  setSelectedValue: (value: string) => void;
-  labelClassName?: string;
-  selectClassName?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className={clsx(
-          "block text-md font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
-          labelClassName,
-          disabled && "opacity-25",
-        )}
-      >
-        {label}
-      </label>
-      <select
-        id={id}
-        name={id}
-        disabled={disabled}
-        className={clsx(
-          "block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6",
-          selectClassName,
-          disabled && "opacity-25",
-        )}
-        value={selectedValue}
-        onChange={(e) => setSelectedValue(e.target.value)}
-      >
-        {options.map((item, i) => (
-          <option key={i}>{item}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
 function SelectMenu({
   id,
   label,
@@ -276,14 +315,126 @@ function SelectMenu({
   selectClassName?: string;
   disabled?: boolean;
 }) {
-  const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
+  const [selected, setSelected] = useState<string>(defaultValue);
   return PassedStateSelectMenu({
     id,
     label,
     options,
-    selectedValue,
-    setSelectedValue,
+    selected,
+    setSelected,
     labelClassName,
     selectClassName,
+    disabled,
   });
+}
+
+function PassedStateSelectMenu({
+  id,
+  label,
+  options,
+  selected,
+  setSelected,
+  labelClassName = "",
+  selectClassName = "",
+  disabled = false,
+}: {
+  id: string;
+  label: string;
+  options: string[];
+  selected: string;
+  setSelected: (value: string) => void;
+  labelClassName?: string;
+  selectClassName?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <Listbox
+      value={selected}
+      name={id}
+      onChange={setSelected}
+      disabled={disabled}
+    >
+      {({ open }) => (
+        <>
+          <Listbox.Label
+            className={clsx(
+              "block text-sm font-medium leading-6 text-gray-900",
+              labelClassName,
+              disabled && "opacity-25",
+            )}
+          >
+            {label}
+          </Listbox.Label>
+          <div
+            className={clsx(
+              "relative mt-2",
+              selectClassName,
+              disabled && "opacity-25",
+            )}
+          >
+            <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+              <span className="block truncate">{selected}</span>
+              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                <ChevronUpDownIcon
+                  className="h-5 w-5 text-gray-400"
+                  aria-hidden="true"
+                />
+              </span>
+            </Listbox.Button>
+
+            <Transition
+              show={open}
+              as={Fragment}
+              leave="transition ease-in duration-100"
+              leaveFrom="opacity-100"
+              leaveTo="opacity-0"
+            >
+              <Listbox.Options
+                className={clsx(
+                  "absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm",
+                )}
+              >
+                {options.map((value) => (
+                  <Listbox.Option
+                    key={value}
+                    className={({ active }) =>
+                      clsx(
+                        active ? "bg-indigo-600 text-white" : "text-gray-900",
+                        "relative cursor-default select-none py-2 pl-3 pr-9",
+                      )
+                    }
+                    value={value}
+                  >
+                    {({ selected, active }) => (
+                      <>
+                        <span
+                          className={clsx(
+                            selected ? "font-semibold" : "font-normal",
+                            "block truncate",
+                          )}
+                        >
+                          {value}
+                        </span>
+
+                        {selected ? (
+                          <span
+                            className={clsx(
+                              active ? "text-white" : "text-indigo-600",
+                              "absolute inset-y-0 right-0 flex items-center pr-4",
+                            )}
+                          >
+                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </Listbox.Option>
+                ))}
+              </Listbox.Options>
+            </Transition>
+          </div>
+        </>
+      )}
+    </Listbox>
+  );
 }
