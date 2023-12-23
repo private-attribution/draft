@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import QueryStartedAlert from "../alert";
 import { RemoteServers, RemoteServerNames } from "./servers";
 import NewQueryId from "./haikunator";
+import { Branches } from "./github";
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
@@ -135,6 +136,18 @@ function IPAForm({
 }: {
   handleIPAFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const [branches, setBranches] = useState<string[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>("main");
+  useEffect(() => {
+    const owner = "private-attribution";
+    const repo = "ipa";
+    const fetchBranches = async () => {
+      const _branches = await Branches(owner, repo);
+      setBranches(_branches);
+    };
+    fetchBranches().catch(console.error);
+  }, []);
+
   return (
     <form
       onSubmit={handleIPAFormSubmit}
@@ -143,6 +156,16 @@ function IPAForm({
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         IPA Query
       </h2>
+      <PassedStateSelectMenu
+        id="branch"
+        label="Branch"
+        options={branches}
+        selectedValue={selectedBranch}
+        setSelectedValue={setSelectedBranch}
+        labelClassName=""
+        selectClassName=""
+        disabled={false}
+      />
       <SelectMenu
         id="size"
         label="Input Size"
@@ -185,28 +208,33 @@ function IPAForm({
   );
 }
 
-function SelectMenu({
+function PassedStateSelectMenu({
   id,
   label,
   options,
-  defaultValue,
+  selectedValue,
+  setSelectedValue,
   labelClassName = "",
   selectClassName = "",
+  disabled = false,
 }: {
   id: string;
   label: string;
   options: string[];
-  defaultValue: string;
-  labelClassName: string;
-  selectClassName: string;
+  selectedValue: string;
+  setSelectedValue: (value: string) => void;
+  labelClassName?: string;
+  selectClassName?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
       <label
         htmlFor={id}
         className={clsx(
-          "block text-sm font-medium leading-6 text-gray-900",
+          "block text-md font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
           labelClassName,
+          disabled && "opacity-25",
         )}
       >
         {label}
@@ -214,11 +242,14 @@ function SelectMenu({
       <select
         id={id}
         name={id}
+        disabled={disabled}
         className={clsx(
-          "mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6",
+          "block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6",
           selectClassName,
+          disabled && "opacity-25",
         )}
-        defaultValue={defaultValue}
+        value={selectedValue}
+        onChange={(e) => setSelectedValue(e.target.value)}
       >
         {options.map((item, i) => (
           <option key={i}>{item}</option>
@@ -226,4 +257,33 @@ function SelectMenu({
       </select>
     </div>
   );
+}
+
+function SelectMenu({
+  id,
+  label,
+  options,
+  defaultValue,
+  labelClassName = "",
+  selectClassName = "",
+  disabled = false,
+}: {
+  id: string;
+  label: string;
+  options: string[];
+  defaultValue: string;
+  labelClassName?: string;
+  selectClassName?: string;
+  disabled?: boolean;
+}) {
+  const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
+  return PassedStateSelectMenu({
+    id,
+    label,
+    options,
+    selectedValue,
+    setSelectedValue,
+    labelClassName,
+    selectClassName,
+  });
 }
