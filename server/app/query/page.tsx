@@ -290,7 +290,11 @@ function IPAForm({
       />
       <button
         type="submit"
-        className="mt-4 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        className={clsx(
+          "mt-4 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600",
+          !validCommitHash && "opacity-25 hover:bg-emerald-600",
+        )}
+        disabled={!validCommitHash}
       >
         Start Query
       </button>
