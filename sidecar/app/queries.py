@@ -45,7 +45,7 @@ class Status(IntEnum):
 class Step:
     cmd: str
     status: Status
-    query: "Query"
+    query: "Query" = field(repr=False)
 
     @contextmanager
     def run(self):
@@ -67,24 +67,27 @@ class Step:
 class Query:
     # pylint: disable=too-many-instance-attributes
     query_id: str
-    role: Role = settings.role
-    logger: loguru.Logger = logger
     steps: list[Step] = field(default_factory=list)
+    logger: loguru.Logger = field(init=False, repr=False)
+    role: Role = field(init=False, default=settings.role, repr=False)
     _status: Status = field(init=False, default=Status.STARTING)
     start_time: Optional[float] = field(init=False, default=None)
     end_time: Optional[float] = field(init=False, default=None)
-    current_process: Optional[subprocess.Popen] = field(init=False, default=None)
+    current_process: Optional[subprocess.Popen] = field(
+        init=False, default=None, repr=False
+    )
+    _logger_id: int = field(init=False, repr=False)
 
     def __post_init__(self):
         self.logger = logger.bind(task=self.query_id)
-        logger.add(
+        self._logger_id = logger.add(
             self.log_file_path,
             format="{extra[role]}: {message}",
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
             encoding="utf8",
         )
-        self.logger.debug(f"adding new Query {self}. all queries: {queries}")
+        self.logger.debug(f"adding new Query {self}.")
         if queries.get(self.query_id) is not None:
             raise Exception(f"{self.query_id} already exists")
         self.log_file_path.touch()
@@ -160,6 +163,7 @@ class Query:
 
     def finish(self):
         self.end_time = time.time()
+        logger.remove(self._logger_id)
         del queries[self.query_id]
 
     def run_all(self, **kwargs):
@@ -193,7 +197,7 @@ class DemoLoggerQuery(Query):
         .venv/bin/python sidecar/logger --num-lines {self.num_lines}
         --total-runtime {self.total_runtime}
         """
-        self._steps = [
+        self.steps = [
             DemoLoggerStep(
                 query=self,
                 cmd=demo_logger_cmd,
