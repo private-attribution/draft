@@ -66,7 +66,7 @@ export const initialRunTimeByRemoteServer: RunTimeByRemoteServer =
   );
 
 export class RemoteServer {
-  private baseURL: URL;
+  protected baseURL: URL;
   remoteServerName: RemoteServerNames;
   remoteServerNameStr: string;
 
@@ -76,16 +76,8 @@ export class RemoteServer {
     this.remoteServerNameStr = RemoteServerNames[this.remoteServerName];
   }
 
-  startDemoLoggerPath(id: string): URL {
-    return new URL(`/start/demo-logger/${id}`, this.baseURL);
-  }
-
-  startIPAHelperPath(id: string): URL {
-    return new URL(`/start/ipa-helper/${id}`, this.baseURL);
-  }
-
-  startIPAQueryPath(id: string): URL {
-    return new URL(`/start/ipa-query/${id}`, this.baseURL);
+  startURL(id: string): never | URL {
+    throw new Error("Not Implemented");
   }
 
   logsWebSocketURL(id: string): URL {
@@ -106,15 +98,15 @@ export class RemoteServer {
     return webSocketURL;
   }
 
-  private logsSocket(id: string): WebSocket {
+  protected logsSocket(id: string): WebSocket {
     return new WebSocket(this.logsWebSocketURL(id));
   }
 
-  private statusSocket(id: string): WebSocket {
+  protected statusSocket(id: string): WebSocket {
     return new WebSocket(this.statusWebSocketURL(id));
   }
 
-  private statsSocket(id: string): WebSocket {
+  protected statsSocket(id: string): WebSocket {
     return new WebSocket(this.statsWebSocketURL(id));
   }
 
@@ -224,23 +216,60 @@ export class RemoteServer {
   }
 }
 
-type RemoteServersObject = {
+export class DemoLoggerRemoteServer extends RemoteServer {
+  startURL(id: string): URL {
+    return new URL(`/start/demo-logger/${id}`, this.baseURL);
+  }
+}
+
+export type RemoteServersType = {
   [key in RemoteServerNames]: RemoteServer;
 };
-export const RemoteServers: RemoteServersObject = {
-  [RemoteServerNames.Coordinator]: new RemoteServer(
+export const DemoLoggerRemoteServers: RemoteServersType = {
+  [RemoteServerNames.Coordinator]: new DemoLoggerRemoteServer(
     RemoteServerNames.Coordinator,
     new URL("http://localhost:17430"),
   ),
-  [RemoteServerNames.Helper1]: new RemoteServer(
+  [RemoteServerNames.Helper1]: new DemoLoggerRemoteServer(
     RemoteServerNames.Helper1,
     new URL("http://localhost:17431"),
   ),
-  [RemoteServerNames.Helper2]: new RemoteServer(
+  [RemoteServerNames.Helper2]: new DemoLoggerRemoteServer(
     RemoteServerNames.Helper2,
     new URL("http://localhost:17432"),
   ),
-  [RemoteServerNames.Helper3]: new RemoteServer(
+  [RemoteServerNames.Helper3]: new DemoLoggerRemoteServer(
+    RemoteServerNames.Helper3,
+    new URL("http://localhost:17433"),
+  ),
+};
+
+export class IPAHelperRemoteServer extends RemoteServer {
+  startURL(id: string): URL {
+    return new URL(`/start/ipa-helper/${id}`, this.baseURL);
+  }
+}
+
+export class IPACoordinatorRemoteServer extends RemoteServer {
+  startURL(id: string): URL {
+    return new URL(`/start/ipa-query/${id}`, this.baseURL);
+  }
+}
+
+export const IPARemoteServers: RemoteServersType = {
+  [RemoteServerNames.Coordinator]: new IPACoordinatorRemoteServer(
+    RemoteServerNames.Coordinator,
+    new URL("http://localhost:17430"),
+  ),
+  [RemoteServerNames.Helper1]: new IPAHelperRemoteServer(
+    RemoteServerNames.Helper1,
+    new URL("http://localhost:17431"),
+  ),
+  [RemoteServerNames.Helper2]: new IPAHelperRemoteServer(
+    RemoteServerNames.Helper2,
+    new URL("http://localhost:17432"),
+  ),
+  [RemoteServerNames.Helper3]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper3,
     new URL("http://localhost:17433"),
   ),

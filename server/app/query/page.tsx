@@ -6,7 +6,11 @@ import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import QueryStartedAlert from "../alert";
-import { RemoteServers, RemoteServerNames } from "./servers";
+import {
+  DemoLoggerRemoteServers,
+  IPARemoteServers,
+  RemoteServersType,
+} from "./servers";
 import NewQueryId from "./haikunator";
 import { Branch, Branches, isValidCommitHash } from "./github";
 
@@ -14,8 +18,9 @@ export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleDemoLogsFormSubmit = async (
+  const handleFormSubmit = async (
     event: FormEvent<HTMLFormElement>,
+    remoteServers: RemoteServersType,
   ) => {
     event.preventDefault();
     try {
@@ -24,14 +29,11 @@ export default function Page() {
       // Send a POST request to start the process
       console.log("sending post");
       const formData = new FormData(event.currentTarget);
-      for (const remoteServer of Object.values(RemoteServers)) {
-        const response = await fetch(
-          remoteServer.startDemoLoggerPath(newQueryId),
-          {
-            method: "POST",
-            body: formData,
-          },
-        );
+      for (const remoteServer of Object.values(remoteServers)) {
+        const response = await fetch(remoteServer.startURL(newQueryId), {
+          method: "POST",
+          body: formData,
+        });
         const data = await response.json();
         console.log(remoteServer);
         console.log(data);
@@ -47,40 +49,14 @@ export default function Page() {
     }
   };
 
+  const handleDemoLogsFormSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    await handleFormSubmit(event, DemoLoggerRemoteServers);
+  };
+
   const handleIPAFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    try {
-      const newQueryId = NewQueryId();
-      setQueryId(newQueryId);
-      // Send a POST request to start the process
-      console.log("sending post");
-      const formData = new FormData(event.currentTarget);
-      for (const remoteServer of Object.values(RemoteServers)) {
-        let path: URL;
-        if (remoteServer.remoteServerName === RemoteServerNames.Coordinator) {
-          path = remoteServer.startIPAQueryPath(newQueryId);
-        } else {
-          path = remoteServer.startIPAHelperPath(newQueryId);
-        }
-
-        const response = await fetch(path, {
-          method: "POST",
-          body: formData,
-        });
-        const data = await response.json();
-        console.log(remoteServer);
-        console.log(data);
-      }
-
-      // const data = await response.json();
-
-      await new Promise((f) => setTimeout(f, 1000));
-
-      // Redirect to /query/<newQueryId>
-      router.push(`/query/${newQueryId}`);
-    } catch (error) {
-      console.error("Error starting process:", error);
-    }
+    await handleFormSubmit(event, IPARemoteServers);
   };
 
   return (
@@ -112,16 +88,12 @@ function DemoLogsForm({
         label="Number of Lines to Log"
         options={["10", "100", "1000"]}
         defaultValue="10"
-        labelClassName=""
-        selectClassName=""
       />
       <SelectMenu
         id="total_runtime"
         label="Time to Run Logs (Seconds)"
         options={["10", "30", "60", "600"]}
         defaultValue="10"
-        labelClassName=""
-        selectClassName=""
       />
       <button
         type="submit"
@@ -212,8 +184,6 @@ function IPAForm({
           options={branchNames}
           selected={selectedBranchName}
           setSelected={setSelectedBranchName}
-          labelClassName=""
-          selectClassName=""
           disabled={disableBranch}
         />
       </div>
@@ -266,32 +236,24 @@ function IPAForm({
         label="Input Size"
         options={["1000", "10000", "100000", "1000000"]}
         defaultValue="1000"
-        labelClassName=""
-        selectClassName=""
       />
       <SelectMenu
         id="max_breakdown_key"
         label="Maximum Number of Breakdown Keys"
         options={["16", "32", "64", "128", "256"]}
         defaultValue="64"
-        labelClassName=""
-        selectClassName=""
       />
       <SelectMenu
         id="max_trigger_value"
         label="Maxiumum Trigger Value"
         options={["1", "3", "7", "15", "31", "63", "127", "255", "511", "1023"]}
         defaultValue="7"
-        labelClassName=""
-        selectClassName=""
       />
       <SelectMenu
         id="per_user_credit_cap"
         label="Per User Credit Cap"
         options={["16", "32", "64", "128", "256"]}
         defaultValue="64"
-        labelClassName=""
-        selectClassName=""
       />
       <button
         type="submit"

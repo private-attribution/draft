@@ -11,7 +11,7 @@ import {
   Status,
   ServerLog,
   RemoteServer,
-  RemoteServers,
+  IPARemoteServers, //hack until the queryId is stored in a DB
   StatusByRemoteServer,
   StatsByRemoteServer,
   RunTimeByRemoteServer,
@@ -44,7 +44,7 @@ export default function Query({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     let webSockets: WebSocket[] = [];
-    for (const remoteServer of Object.values(RemoteServers)) {
+    for (const remoteServer of Object.values(IPARemoteServers)) {
       const loggingWs = remoteServer.openLogSocket(params.id, setLogs);
       const statusWs = remoteServer.openStatusSocket(
         params.id,
@@ -84,7 +84,7 @@ export default function Query({ params }: { params: { id: string } }) {
               </h3>
             </div>
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.values(RemoteServers).map(
+              {Object.values(IPARemoteServers).map(
                 (remoteServer: RemoteServer) => {
                   const runTime =
                     runTimeByRemoteServer[remoteServer.remoteServerName];
@@ -111,7 +111,7 @@ export default function Query({ params }: { params: { id: string } }) {
           </div>
         </button>
         {!statsHidden &&
-          Object.values(RemoteServers).map((remoteServer: RemoteServer) => {
+          Object.values(IPARemoteServers).map((remoteServer: RemoteServer) => {
             const stats = statsByRemoteServer[remoteServer.remoteServerName];
             return (
               <div key={remoteServer.remoteServerName}>
@@ -132,7 +132,7 @@ export default function Query({ params }: { params: { id: string } }) {
               </h3>
             </div>
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.values(RemoteServers).map(
+              {Object.values(IPARemoteServers).map(
                 (remoteServer: RemoteServer) => {
                   const status =
                     statusByRemoteServer[remoteServer.remoteServerName] ??
