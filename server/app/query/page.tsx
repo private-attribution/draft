@@ -165,7 +165,12 @@ function IPAForm({
       setSelectedCommitHash(branch.commitHash);
       setValidCommitHash(true);
     }
-  }, [selectedBranchName, branches]);
+  }, [
+    selectedBranchName,
+    branches,
+    commitSpecifier,
+    CommitSpecifier.COMMIT_HASH,
+  ]);
 
   useEffect(() => {
     const branch = branches.find(
@@ -182,7 +187,7 @@ function IPAForm({
       setSelectedBranchName("N/A");
       fetchCommitIsValid().catch(console.error);
     }
-  }, [selectedCommitHash]);
+  }, [selectedCommitHash, commitSpecifier, CommitSpecifier.COMMIT_HASH]);
 
   useEffect(() => {
     const fetchBranches = async () => {

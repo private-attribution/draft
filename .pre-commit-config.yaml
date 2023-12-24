@@ -25,3 +25,10 @@ repos:
       language: system
       types: [python]
       pass_filenames: false
+    - id: npm-build
+      name: npm-build
+      entry: npm --prefix server run build
+      language: system
+      files: ^server/
+      types_or: [javascript, jsx, ts, tsx]
+      pass_filenames: false
