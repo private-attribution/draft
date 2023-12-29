@@ -20,7 +20,9 @@ jobs:
       with:
         node-version: '20'
     - name: Install next
-      run: npm install next
+      run: npm --prefix server install next
+    - name: Install requirements
+      run: npm --prefix server install
 
     - name: Run pre-commit
       uses: pre-commit/action@v3.0.0
