@@ -21,7 +21,7 @@ repos:
         ]
     - id: pyre-check
       name: pyre-check
-      entry: .venv/bin/pyre check
+      entry: pyre check
       language: system
       types: [python]
       pass_filenames: false
