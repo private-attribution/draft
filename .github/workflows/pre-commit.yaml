@@ -11,4 +11,16 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
-    - uses: pre-commit/action@v3.0.0
+
+    - name: Install dependencies
+      run: |
+        pip install .
+    - name: Setup node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Install next
+      run: npm install next
+
+    - name: Run pre-commit
+      uses: pre-commit/action@v3.0.0
