@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     @property
     def private_key(self):
-        return self.private_key
+        return self._private_key
 
 
 settings = Settings()
