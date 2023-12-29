@@ -28,6 +28,7 @@ const StatusClassNameMixins: StatusClassNameMixinsType = {
   WAITING_TO_START: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
   IN_PROGRESS: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
   COMPLETE: "bg-cyan-300 dark:bg-cyan-700",
+  KILLED: "bg-rose-200 dark:bg-rose-700 animate-pulse",
   NOT_FOUND: "bg-rose-300 dark:bg-rose-800",
   CRASHED: "bg-rose-300 dark:bg-rose-800 animate-pulse",
   UNKNOWN: "bg-rose-300 dark:bg-rose-800",

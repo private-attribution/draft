@@ -21,6 +21,8 @@ dependencies=[
   "pylint",
   "pylint[spelling]",
   "pre-commit",
+  "cryptography",
+  "httpx",
 ]
 
 [project.scripts]

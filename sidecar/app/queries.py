@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import shlex
 import subprocess
 import threading
@@ -9,12 +10,17 @@ from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
 from typing import Dict, Optional
+from urllib.parse import urljoin
 
+import httpx
 import loguru
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 
+from .helpers import Role
 from .local_paths import Paths
 from .logger import logger
-from .settings import Role, settings
+from .settings import settings
 
 complete_semaphore_path = settings.root_path / Path("complete_semaphore")
 complete_semaphore_path.mkdir(exist_ok=True, parents=True)
@@ -37,6 +43,7 @@ class Status(IntEnum):
     WAITING_TO_START = auto()
     IN_PROGRESS = auto()
     COMPLETE = auto()
+    KILLED = auto()
     NOT_FOUND = auto()
     CRASHED = auto()
 
@@ -67,7 +74,7 @@ class Step:
 class Query:
     # pylint: disable=too-many-instance-attributes
     query_id: str
-    steps: list[Step] = field(default_factory=list)
+    steps: list[Step] = field(default_factory=list, repr=False)
     logger: loguru.Logger = field(init=False, repr=False)
     role: Role = field(init=False, default=settings.role, repr=False)
     _status: Status = field(init=False, default=Status.STARTING)
@@ -152,25 +159,54 @@ class Query:
         with step.run() as process:
             self.current_process = process
         self.logger.info(f"Return code: {self.current_process.returncode}")
-        if self.current_process.returncode != 0:
+        if self.current_process.returncode != 0 and self.status != Status.COMPLETE:
             self.crash()
+
+    def finish(self):
+        self.status = Status.COMPLETE
+        if self.running:
+            self._terminate_current_process()
+        self.logger.info("Terminating process.")
+        self.logger.info(f"Return code: {self.current_process.returncode}")
+        self._cleanup()
+
+    def kill(self):
+        self.status = Status.KILLED
+        self.logger.info(f"Killed. {self=}")
+        if self.running:
+            self._kill_current_process()
+        self.logger.info("Killing process.")
+        self.logger.info(f"Return code: {self.current_process.returncode}")
+        self._cleanup()
 
     def crash(self):
         self.status = Status.CRASHED
-        self.logger.info("CRASHING!")
-        self.finish()
-        raise Exception("CRASHED")
+        self.logger.info(f"CRASHING! {self=}")
+        if self.running:
+            self._kill_current_process()
+        self.logger.info("Killing process.")
+        self.logger.info(f"Return code: {self.current_process.returncode}")
+        self._cleanup()
 
-    def finish(self):
+    def _cleanup(self):
         self.end_time = time.time()
         logger.remove(self._logger_id)
         del queries[self.query_id]
+
+    def _terminate_current_process(self):
+        if self.current_process is None:
+            raise Exception("{self=} doesn't have a process to kill")
+        self.current_process.terminate()
+
+    def _kill_current_process(self):
+        if self.current_process is None:
+            raise Exception("{self=} doesn't have a process to kill")
+        self.current_process.kill()
 
     def run_all(self, **kwargs):
         self.start_time = time.time()
         for step in self.steps:
             self.run_step(step, **kwargs)
-        self.status = Status.COMPLETE
         self.finish()
 
     @property
@@ -279,6 +315,32 @@ class IPACoordinatorQuery(IPAQuery):
             ),
         ]
         super().__post_init__()
+
+    def sign_query_id(self):
+        return base64.b64encode(
+            settings.private_key.sign(
+                self.query_id.encode("utf8"), ec.ECDSA(hashes.SHA256())
+            )
+        ).decode("utf8")
+
+    def send_finish_signals(self):
+        signature = self.sign_query_id()
+        self.logger.info("sending finish signals")
+        for helper in settings.helpers.values():
+            if helper.role == self.role:
+                pass
+            finish_url = urljoin(
+                helper.sidecar_url.geturl(), f"/stop/finish/{self.query_id}"
+            )
+            r = httpx.post(
+                finish_url,
+                json={"identity": str(self.role.value), "signature": signature},
+            )
+            logger.info(f"sent post request: {r.text}")
+
+    def finish(self):
+        super().finish()
+        self.send_finish_signals()
 
 
 @dataclass(kw_only=True)

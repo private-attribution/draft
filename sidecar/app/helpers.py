@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import ParseResult, urlparse
 
 import tomllib
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
+from cryptography.x509 import load_pem_x509_certificate
 
 
 class Role(IntEnum):
@@ -19,6 +21,7 @@ class Helper:
     hostname: str
     sidecar_port: int
     helper_port: int
+    public_key: EllipticCurvePublicKey
 
     @property
     def sidecar_url(self) -> ParseResult:
@@ -42,11 +45,16 @@ def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, He
             sidecar_port = int(helper_config.get("sidecar_port", 0))
             if not hostname or not helper_port or not sidecar_port:
                 raise Exception(f"{network_data=} missing data.")
+            public_key_pem_data = helper_config.get("certificate")
+            cert = load_pem_x509_certificate(public_key_pem_data.encode("utf8"))
+            public_key = cert.public_key()
+            assert isinstance(public_key, EllipticCurvePublicKey)
             helpers[role] = Helper(
                 role=role,
                 hostname=hostname,
                 helper_port=helper_port,
                 sidecar_port=sidecar_port,
+                public_key=public_key,
             )
 
         url = urlparse(f"http://{network_data['coordinator']['url']}")
@@ -55,11 +63,16 @@ def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, He
         sidecar_port = int(network_data["coordinator"].get("sidecar_port", 0))
         if not hostname or not helper_port or not sidecar_port:
             raise Exception(f"{network_data=} missing data.")
+        public_key_pem_data = network_data["coordinator"].get("certificate")
+        cert = load_pem_x509_certificate(public_key_pem_data.encode("utf8"))
+        public_key = cert.public_key()
+        assert isinstance(public_key, EllipticCurvePublicKey)
 
         helpers[Role.COORDINATOR] = Helper(
             role=Role.COORDINATOR,
             hostname=hostname,
             helper_port=helper_port,
             sidecar_port=sidecar_port,
+            public_key=public_key,
         )
         return helpers

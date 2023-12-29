@@ -11,6 +11,7 @@ import {
   Status,
   ServerLog,
   RemoteServer,
+  RemoteServersType,
   IPARemoteServers, //hack until the queryId is stored in a DB
   StatusByRemoteServer,
   StatsByRemoteServer,
@@ -42,6 +43,18 @@ export default function Query({ params }: { params: { id: string } }) {
     setStatsHidden(!statsHidden);
   }
 
+  const kill = async (remoteServers: RemoteServersType) => {
+    const fetchPromises = Object.values(remoteServers).map(
+      async (remoteServer) => {
+        const response = await fetch(remoteServer.killURL(params.id), {
+          method: "POST",
+        });
+      },
+    );
+
+    await Promise.all(fetchPromises);
+  };
+
   useEffect(() => {
     let webSockets: WebSocket[] = [];
     for (const remoteServer of Object.values(IPARemoteServers)) {
@@ -67,9 +80,19 @@ export default function Query({ params }: { params: { id: string } }) {
 
   return (
     <>
-      <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
-        Query Details: {params.id}
-      </h2>
+      <div className="inline-flex items-center">
+        <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
+          Query Details: {params.id}
+        </h2>
+
+        <button
+          onClick={() => kill(IPARemoteServers)}
+          type="button"
+          className="ml-3 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        >
+          Kill Query
+        </button>
+      </div>
 
       <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
         <button

@@ -18,6 +18,7 @@ export enum Status {
   WAITING_TO_START = "WAITING_TO_START",
   IN_PROGRESS = "IN_PROGRESS",
   COMPLETE = "COMPLETE",
+  KILLED = "KILLED",
   NOT_FOUND = "NOT_FOUND",
   CRASHED = "CRASHED",
   UNKNOWN = "UNKNOWN",
@@ -77,6 +78,10 @@ export class RemoteServer {
   }
 
   startURL(id: string): never | URL {
+    throw new Error("Not Implemented");
+  }
+
+  killURL(id: string): never | URL {
     throw new Error("Not Implemented");
   }
 
@@ -248,11 +253,17 @@ export class IPAHelperRemoteServer extends RemoteServer {
   startURL(id: string): URL {
     return new URL(`/start/ipa-helper/${id}`, this.baseURL);
   }
+  killURL(id: string): URL {
+    return new URL(`/stop/kill/${id}`, this.baseURL);
+  }
 }
 
 export class IPACoordinatorRemoteServer extends RemoteServer {
   startURL(id: string): URL {
     return new URL(`/start/ipa-query/${id}`, this.baseURL);
+  }
+  killURL(id: string): URL {
+    return new URL(`/stop/kill/${id}`, this.baseURL);
   }
 }
 

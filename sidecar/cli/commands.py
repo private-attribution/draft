@@ -223,8 +223,12 @@ def setup_coordinator(
 
 
 def start_helper_sidecar_cmd(role: Role, config_path: Path) -> Command:
-    network_config = Path(config_path) / Path("network.toml")
+    network_config = config_path / Path("network.toml")
     helpers = load_helpers_from_network_config(network_config)
+    if role == Role.COORDINATOR:
+        private_key_pem_path = config_path / Path("coordinator.key")
+    else:
+        private_key_pem_path = config_path / Path(f"h{role.value}.key")
     helper = helpers[role]
     cmd = "uvicorn sidecar.app.main:app"
     env = {
@@ -232,6 +236,8 @@ def start_helper_sidecar_cmd(role: Role, config_path: Path) -> Command:
         "ROLE": str(role.value),
         "ROOT_PATH": f"tmp/sidecar/{role.value}",
         "CONFIG_PATH": config_path,
+        "NETWORK_CONFIG_PATH": network_config,
+        "PRIVATE_KEY_PEM_PATH": private_key_pem_path,
         "UVICORN_PORT": str(helper.sidecar_port),
     }
     return Command(cmd=cmd, env=env)
