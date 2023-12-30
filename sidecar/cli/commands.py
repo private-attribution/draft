@@ -51,6 +51,7 @@ class PopenContextManager:
             )
             self.processes.append(process)
             signal.signal(signal.SIGTERM, build_sigterm_handler(process))
+            signal.signal(signal.SIGINT, build_sigterm_handler(process))
 
         return self.processes
 

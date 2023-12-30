@@ -24,5 +24,7 @@ class Command:
                 process.terminate()
 
             signal.signal(signal.SIGTERM, sigterm_handler)
-            print(process.stdout.read())
+            signal.signal(signal.SIGINT, sigterm_handler)
+            for line in process.stdout.readlines():
+                print(line)
         return process
