@@ -6,6 +6,7 @@ import json
 import os
 import shlex
 import shutil
+import signal
 import subprocess
 from pathlib import Path
 from urllib.parse import urlunparse
@@ -38,11 +39,19 @@ class PopenContextManager:
             self.popen_args = {}
 
     def __enter__(self):
+        def build_sigterm_handler(process):
+            def sigterm_handler(_signum, _frame):
+                process.terminate()
+
+            return sigterm_handler
+
         for command in self.commands:
             process = subprocess.Popen(
                 shlex.split(command.cmd), env=command.env, **self.popen_args
             )
             self.processes.append(process)
+            signal.signal(signal.SIGTERM, build_sigterm_handler(process))
+
         return self.processes
 
     def __exit__(self, exc_type, exc_value, exc_tb):

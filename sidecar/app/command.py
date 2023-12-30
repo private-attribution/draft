@@ -1,5 +1,6 @@
 import os
 import shlex
+import signal
 import subprocess
 from dataclasses import dataclass, field
 from typing import Optional
@@ -11,13 +12,17 @@ class Command:
     env: Optional[dict] = field(default_factory=lambda: {**os.environ})
 
     def run_blocking(self):
-        result = subprocess.run(
+        with subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            check=False,
-        )
-        print(result.stderr)
-        print(result.stdout)
-        return result
+        ) as process:
+
+            def sigterm_handler(_signum, _frame):
+                process.terminate()
+
+            signal.signal(signal.SIGTERM, sigterm_handler)
+            print(process.stdout.read())
+        return process

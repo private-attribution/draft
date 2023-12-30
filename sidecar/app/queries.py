@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import shlex
 import subprocess
-import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -81,7 +80,7 @@ class Query:
     start_time: Optional[float] = field(init=False, default=None)
     end_time: Optional[float] = field(init=False, default=None)
     current_process: Optional[subprocess.Popen] = field(
-        init=False, default=None, repr=False
+        init=False, default=None, repr=True
     )
     _logger_id: int = field(init=False, repr=False)
 
@@ -142,13 +141,6 @@ class Query:
     def status_file_path(self) -> Path:
         return status_semaphore_path / Path(f"{self.query_id}")
 
-    def run_in_thread(self):
-        thread = threading.Thread(
-            target=self.run_all,
-            daemon=True,
-        )
-        thread.start()
-
     def run_step(self, step):
         if self.status >= Status.COMPLETE:
             self.logger.warning(f"Skipping {step=} run. Query has {self.status=}.")
@@ -158,56 +150,76 @@ class Query:
         self.logger.info("Starting: " + step.cmd)
         with step.run() as process:
             self.current_process = process
-        self.logger.info(f"Return code: {self.current_process.returncode}")
-        if self.current_process.returncode != 0 and self.status != Status.COMPLETE:
-            self.crash()
+            self.logger.info(f"New process: {self.current_process=}")
+        if self.current_process:
+            self.logger.info(f"Return code: {self.current_process.returncode}")
+            if self.current_process.returncode != 0 and self.status < Status.COMPLETE:
+                self.status = Status.CRASHED
 
     def finish(self):
         self.status = Status.COMPLETE
-        if self.running:
-            self._terminate_current_process()
-        self.logger.info("Terminating process.")
-        self.logger.info(f"Return code: {self.current_process.returncode}")
         self._cleanup()
+
+    def terminate(self):
+        self.logger.info(f"Terminating: {self=}")
+        self._terminate_current_process()
+        self.status = Status.COMPLETE
+        self.logger.info(f"Terminated: {self=}")
 
     def kill(self):
+        self.logger.info(f"Killing: {self=}")
+        self._terminate_current_process()
         self.status = Status.KILLED
-        self.logger.info(f"Killed. {self=}")
-        if self.running:
-            self._kill_current_process()
-        self.logger.info("Killing process.")
-        self.logger.info(f"Return code: {self.current_process.returncode}")
-        self._cleanup()
+        self.logger.info(f"Killed: {self=}")
 
     def crash(self):
-        self.status = Status.CRASHED
         self.logger.info(f"CRASHING! {self=}")
-        if self.running:
-            self._kill_current_process()
-        self.logger.info("Killing process.")
-        self.logger.info(f"Return code: {self.current_process.returncode}")
-        self._cleanup()
+        self._terminate_current_process()
+        self.status = Status.CRASHED
+        self.logger.info(f"CRASHED: {self=}")
 
     def _cleanup(self):
-        self.end_time = time.time()
-        logger.remove(self._logger_id)
-        del queries[self.query_id]
+        self.current_process = None
+        if not self.end_time:
+            self.end_time = time.time()
+        try:
+            logger.remove(self._logger_id)
+        except ValueError:
+            pass
+        if queries.get(self.query_id) is not None:
+            del queries[self.query_id]
 
     def _terminate_current_process(self):
-        if self.current_process is None:
-            raise Exception("{self=} doesn't have a process to kill")
-        self.current_process.terminate()
+        if self.current_process is None or not self.running:
+            self.logger.info("{self=} doesn't have a process to kill")
+        else:
+            self.current_process.terminate()
+            while self.current_process.poll() is None:
+                pass
+            self.logger.info(
+                f"Process terminated. Return code: {self.current_process.returncode}"
+            )
 
     def _kill_current_process(self):
-        if self.current_process is None:
-            raise Exception("{self=} doesn't have a process to kill")
-        self.current_process.kill()
+        # CURRENTLY UNUSED, DOES NOT PROPAGATE SIGNAL
+        if self.current_process is None or not self.running:
+            self.logger.info("{self=} doesn't have a process to kill")
+        else:
+            self.current_process.kill()
+            while self.current_process.poll() is None:
+                pass
+            self.logger.info(
+                f"Process killed. Return code: {self.current_process.returncode}"
+            )
 
     def run_all(self, **kwargs):
         self.start_time = time.time()
         for step in self.steps:
+            if self.status >= Status.COMPLETE:
+                break
             self.run_step(step, **kwargs)
-        self.finish()
+        if self.status < Status.COMPLETE:
+            self.finish()
 
     @property
     def run_time(self):
@@ -323,9 +335,9 @@ class IPACoordinatorQuery(IPAQuery):
             )
         ).decode("utf8")
 
-    def send_finish_signals(self):
+    def send_terminate_signals(self):
         signature = self.sign_query_id()
-        self.logger.info("sending finish signals")
+        self.logger.info("sending terminate signals")
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 pass
@@ -340,7 +352,7 @@ class IPACoordinatorQuery(IPAQuery):
 
     def finish(self):
         super().finish()
-        self.send_finish_signals()
+        self.send_terminate_signals()
 
 
 @dataclass(kw_only=True)

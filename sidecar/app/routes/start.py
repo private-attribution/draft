@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, BackgroundTasks, Form
 
 from ..local_paths import Paths
 from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
@@ -20,13 +20,14 @@ def demo_logger(
     query_id: str,
     num_lines: Annotated[int, Form()],
     total_runtime: Annotated[int, Form()],
+    background_tasks: BackgroundTasks,
 ):
     query = DemoLoggerQuery(
         query_id=query_id,
         num_lines=num_lines,
         total_runtime=total_runtime,
     )
-    query.run_in_thread()
+    background_tasks.add_task(query.run_all)
 
     return {"message": "Process started successfully", "query_id": query_id}
 
@@ -35,6 +36,7 @@ def demo_logger(
 def start_ipa_helper(
     query_id: str,
     commit_hash: Annotated[str, Form()],
+    background_tasks: BackgroundTasks,
 ):
     role = settings.role
     if not role or role == role.COORDINATOR:
@@ -49,8 +51,7 @@ def start_ipa_helper(
         paths=paths,
         query_id=query_id,
     )
-
-    query.run_in_thread()
+    background_tasks.add_task(query.run_all)
 
     return {"message": "Process started successfully", "query_id": query_id}
 
@@ -63,6 +64,7 @@ def start_ipa_test_query(
     max_breakdown_key: Annotated[int, Form()],
     max_trigger_value: Annotated[int, Form()],
     per_user_credit_cap: Annotated[int, Form()],
+    background_tasks: BackgroundTasks,
 ):
     # pylint: disable=too-many-arguments
     role = settings.role
@@ -84,7 +86,6 @@ def start_ipa_test_query(
         max_trigger_value=max_trigger_value,
         per_user_credit_cap=per_user_credit_cap,
     )
-
-    query.run_in_thread()
+    background_tasks.add_task(query.run_all)
 
     return {"message": "Process started successfully", "query_id": query_id}
