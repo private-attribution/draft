@@ -228,8 +228,7 @@ class Query:
             self.logger.info("{self=} doesn't have a process to kill")
         elif current_process is not None:
             current_process.terminate()
-            while current_process.poll() is None:
-                continue
+            current_process.wait()
             self.logger.info(
                 f"Process terminated. Return code: {current_process.returncode}"
             )
@@ -242,8 +241,7 @@ class Query:
             self.logger.info("{self=} doesn't have a process to kill")
         elif current_process:
             current_process.kill()
-            while current_process.poll() is None:
-                continue
+            current_process.wait()
             self.logger.info(
                 f"Process killed. Return code: {current_process.returncode}"
             )
