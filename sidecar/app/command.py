@@ -1,7 +1,6 @@
 # pylint: disable=R0801,R0903
 from __future__ import annotations
 
-import asyncio
 import os
 import select
 import shlex
@@ -81,12 +80,10 @@ class Command:
             text=True,
         )
 
-    async def get_async_process(self):
-        return await asyncio.create_subprocess_exec(
-            *shlex.split(self.cmd),
+    def get_no_output_capture_process(self):
+        return subprocess.Popen(
+            shlex.split(self.cmd),
             env=self.env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
         )
 
     @contextmanager
@@ -112,49 +109,32 @@ class Command:
             for line in process.stderr:
                 stderr_handler(line)
 
-    def run_blocking(self):
-        with self.pipe_handler as (stdout_handler, stderr_handler):
-            print(f"Starting subprocess: {self}\n")
-            with self.run(stdout_handler, stderr_handler):
-                pass
+    def run_blocking_no_output_capture(self):
+        with self.get_no_output_capture_process() as process:
+            process.wait()
 
 
-async def read_stream(
-    stream: asyncio.StreamReader,
-    handler: Callable[[str], None],
-) -> None:
-    while True:
-        line = await stream.readline()
-        if not line:
-            break
-        handler(line.decode("utf-8"))
-
-
-class ParallelCommandsContextManager:
+class PopenContextManager:
     def __init__(self, commands: list[Command]):
         self.commands = commands
         self.processes = []
 
-    async def run_command(self, command, stdout_handler, stderr_handler):
-        print(f"Starting subprocess: {command}")
-        process = await command.get_async_process()
-        stdout_task = asyncio.create_task(read_stream(process.stdout, stdout_handler))
-        stderr_task = asyncio.create_task(read_stream(process.stderr, stderr_handler))
-        await asyncio.gather(stdout_task, stderr_task)
-        return await process.wait()
-
-    async def __aenter__(self):
+    def __enter__(self):
         for command in self.commands:
-            with command.pipe_handler as (stdout_handler, stderr_handler):
-                process = self.run_command(command, stdout_handler, stderr_handler)
-                self.processes.append(process)
+            process = subprocess.Popen(
+                shlex.split(command.cmd),
+                env=command.env,
+            )
+            self.processes.append(process)
 
         return self.processes
 
-    async def __aexit__(self, exc_type, exc_value, exc_tb):
-        pass
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        for process in self.processes:
+            process.kill()
 
 
-async def start_commands_parallel(commands: list[Command]):
-    async with ParallelCommandsContextManager(commands=commands) as processes:
-        await asyncio.gather(*processes)
+def start_commands_parallel(commands: list[Command]):
+    with PopenContextManager(commands) as processes:
+        for process in processes:
+            process.wait()

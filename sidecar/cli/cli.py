@@ -1,4 +1,3 @@
-import asyncio
 import os
 from pathlib import Path
 from typing import Optional
@@ -61,7 +60,7 @@ def start_helper_sidecar(
         identity,
         root_path,
     )
-    command.run_blocking()
+    command.run_blocking_no_output_capture()
 
 
 @cli.command
@@ -79,7 +78,7 @@ def start_local_dev(
     npm_install_command = Command(
         cmd="npm --prefix server install",
     )
-    npm_install_command.run_blocking()
+    npm_install_command.run_blocking_no_output_capture()
     npm_run_dev_command = Command(
         cmd="npm --prefix server run dev",
     )
@@ -95,7 +94,7 @@ def start_local_dev(
         for helper in helpers.values()
     ]
     commands = [npm_run_dev_command] + sidecar_commands
-    asyncio.run(start_commands_parallel(commands))
+    start_commands_parallel(commands)
 
 
 if __name__ == "__main__":
