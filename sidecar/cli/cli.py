@@ -65,12 +65,6 @@ def start_helper_sidecar(
 
 
 @cli.command
-def demo():
-    command = Command("python -m sidecar.logger")
-    command.run_blocking()
-
-
-@cli.command
 @click.option(
     "--config_path",
     type=click_pathlib.Path(exists=True),
