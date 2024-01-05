@@ -79,7 +79,7 @@ class Step:
         self.query.logger.info(line.rstrip("\n"))
 
     def command_stderr_handler(self, line):
-        self.query.logger.warning(line.rstrip("\n"))
+        self.query.logger.info(line.rstrip("\n"))
 
     def run(self):
         self.pre_run()
