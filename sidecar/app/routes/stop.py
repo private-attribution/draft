@@ -59,7 +59,7 @@ def finish(
     logger.info(f"{query=}")
     if query.status < Status.COMPLETE:
         logger.info("calling query finish")
-        query.terminate()
+        query.finish()
         return {"message": "Query stopped successfully", "query_id": query_id}
     return {"message": "Query already complete", "query_id": query_id}
 

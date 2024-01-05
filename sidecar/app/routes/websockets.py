@@ -76,9 +76,9 @@ async def stats_websocket(websocket: WebSocket, query_id: str):
         if query is None or query.done or query.current_process is None:
             logger.warning(f"{query_id=} is not running.")
             return
-
-        process_psutil = psutil.Process(query.current_process.pid)
-        while query.running:
+        current_process = query.current_process
+        while query.running and current_process is not None:
+            process_psutil = psutil.Process(current_process.pid)
             try:
                 run_time = query.run_time
                 cpu_percent = process_psutil.cpu_percent()

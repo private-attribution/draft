@@ -1,21 +1,30 @@
+# pylint: disable=R0801
 from __future__ import annotations
 
+import asyncio
 import base64
-import shlex
+import json
+import os
 import subprocess
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
-from typing import Dict, Optional
-from urllib.parse import urljoin
+from typing import ClassVar, Dict, Optional
+from urllib.parse import urljoin, urlunparse
 
 import httpx
 import loguru
+import websockets
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from .command import (
+    Command,
+    FilePipeHandlerContextManager,
+    LoggerPipeHandlerContextManager,
+    PipeHandlerContextManager,
+)
 from .helpers import Role
 from .local_paths import Paths
 from .logger import logger
@@ -37,6 +46,7 @@ def gen_process_complete_semaphore_path(query_id):
 
 
 class Status(IntEnum):
+    UNKNOWN = auto()
     STARTING = auto()
     COMPILING = auto()
     WAITING_TO_START = auto()
@@ -49,24 +59,47 @@ class Status(IntEnum):
 
 @dataclass
 class Step:
-    cmd: str
-    status: Status
     query: "Query" = field(repr=False)
+    skip: bool = field(init=False, default=False)
+    env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
+    status: ClassVar[Status] = Status.UNKNOWN
+    _pipe_handler: PipeHandlerContextManager = field(init=False, repr=False)
 
-    @contextmanager
-    def run(self):
-        process = subprocess.Popen(
-            shlex.split(self.cmd),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
+    @classmethod
+    def build_from_query(cls, query):
+        return cls(
+            query=query,
         )
-        yield process
-        while process.poll() is None:
-            line = process.stdout.readline()
-            if not line:
-                continue
-            self.query.logger.info(line.rstrip("\n"))
+
+    def __post_init__(self):
+        self._pipe_handler = LoggerPipeHandlerContextManager(logger=self.query.logger)
+
+    @property
+    def command(self) -> Command:
+        raise NotImplementedError
+
+    def pre_run(self):
+        pass
+
+    def post_run(self):
+        pass
+
+    @property
+    def pipe_handler(self):
+        return self._pipe_handler
+
+    def run(self):
+        self.pre_run()
+        if self.skip:
+            self.query.logger.info(f"Skipped Step: {self}")
+        else:
+            with self.pipe_handler as (stdout_handler, stderr_handler):
+                with self.command.run(stdout_handler, stderr_handler) as process:
+                    self.query.current_process = process
+                    self.query.status = self.status
+                    self.query.logger.info(f"{self.query.status.name=}")
+
+        self.post_run()
 
 
 @dataclass
@@ -83,9 +116,11 @@ class Query:
         init=False, default=None, repr=True
     )
     _logger_id: int = field(init=False, repr=False)
+    step_classes: ClassVar[list[type[Step]]] = []
 
     def __post_init__(self):
         self.logger = logger.bind(task=self.query_id)
+        print(f"adding logger as {self.log_file_path}")
         self._logger_id = logger.add(
             self.log_file_path,
             format="{extra[role]}: {message}",
@@ -98,6 +133,9 @@ class Query:
             raise Exception(f"{self.query_id} already exists")
         self.log_file_path.touch()
         queries[self.query_id] = self
+        self.steps = [
+            step_class.build_from_query(self) for step_class in self.step_classes
+        ]
 
     @classmethod
     def get_from_query_id(cls, query_id) -> Optional["Query"]:
@@ -145,38 +183,39 @@ class Query:
         if self.status >= Status.COMPLETE:
             self.logger.warning(f"Skipping {step=} run. Query has {self.status=}.")
             return
-        self.status = step.status
-        self.logger.info(f"{self.status.name=}")
-        self.logger.info("Starting: " + step.cmd)
-        with step.run() as process:
-            self.current_process = process
-            self.logger.info(f"New process: {self.current_process=}")
+        self.logger.info(f"Starting: {step.command}")
+        step.run()
         if self.current_process:
             self.logger.info(f"Return code: {self.current_process.returncode}")
             if self.current_process.returncode != 0 and self.status < Status.COMPLETE:
-                self.status = Status.CRASHED
+                self.crash()
 
     def finish(self):
-        self.status = Status.COMPLETE
+        status = Status.COMPLETE
+        self.logger.info(f"Finishing: {self=}")
+        if self.running:
+            self._terminate_current_process(status=status)
+        else:
+            self.status = status
         self._cleanup()
 
-    def terminate(self):
-        self.logger.info(f"Terminating: {self=}")
-        self._terminate_current_process()
-        self.status = Status.COMPLETE
-        self.logger.info(f"Terminated: {self=}")
-
     def kill(self):
+        status = Status.KILLED
         self.logger.info(f"Killing: {self=}")
-        self._terminate_current_process()
-        self.status = Status.KILLED
-        self.logger.info(f"Killed: {self=}")
+        if self.running:
+            self._kill_current_process(status=status)
+        else:
+            self.status = status
+        self._cleanup()
 
     def crash(self):
+        status = Status.CRASHED
         self.logger.info(f"CRASHING! {self=}")
-        self._terminate_current_process()
-        self.status = Status.CRASHED
-        self.logger.info(f"CRASHED: {self=}")
+        if self.running:
+            self._kill_current_process(status=status)
+        else:
+            self.status = status
+        self._cleanup()
 
     def _cleanup(self):
         self.current_process = None
@@ -189,35 +228,40 @@ class Query:
         if queries.get(self.query_id) is not None:
             del queries[self.query_id]
 
-    def _terminate_current_process(self):
-        if self.current_process is None or not self.running:
+    def _terminate_current_process(self, status: Status):
+        # typing work around so it knows current_process isn't None
+        current_process = self.current_process
+        if not self.running:
             self.logger.info("{self=} doesn't have a process to kill")
-        else:
-            self.current_process.terminate()
-            while self.current_process.poll() is None:
-                pass
+        elif current_process is not None:
+            current_process.terminate()
+            while current_process.poll() is None:
+                continue
             self.logger.info(
-                f"Process terminated. Return code: {self.current_process.returncode}"
+                f"Process terminated. Return code: {current_process.returncode}"
             )
+        self.status = status
 
-    def _kill_current_process(self):
-        # CURRENTLY UNUSED, DOES NOT PROPAGATE SIGNAL
-        if self.current_process is None or not self.running:
+    def _kill_current_process(self, status: Status):
+        # typing work around so it knows current_process isn't None
+        current_process = self.current_process
+        if not self.running:
             self.logger.info("{self=} doesn't have a process to kill")
-        else:
-            self.current_process.kill()
-            while self.current_process.poll() is None:
-                pass
+        elif current_process:
+            current_process.kill()
+            while current_process.poll() is None:
+                continue
             self.logger.info(
-                f"Process killed. Return code: {self.current_process.returncode}"
+                f"Process killed. Return code: {current_process.returncode}"
             )
+        self.status = status
 
-    def run_all(self, **kwargs):
+    def run_all(self):
         self.start_time = time.time()
         for step in self.steps:
             if self.status >= Status.COMPLETE:
                 break
-            self.run_step(step, **kwargs)
+            self.run_step(step)
         if self.status < Status.COMPLETE:
             self.finish()
 
@@ -233,48 +277,229 @@ class Query:
 @dataclass(kw_only=True)
 class DemoLoggerStep(Step):
     query: "DemoLoggerQuery"
+    status: ClassVar[Status] = Status.IN_PROGRESS
+
+    @property
+    def command(self) -> Command:
+        return Command(
+            cmd=f".venv/bin/python sidecar/logger "
+            f"--num-lines {self.query.num_lines} "
+            f"--total-runtime {self.query.total_runtime}",
+            pipe_handler=self.pipe_handler,
+        )
 
 
 @dataclass(kw_only=True)
 class DemoLoggerQuery(Query):
     num_lines: int
     total_runtime: int
-
-    def __post_init__(self):
-        demo_logger_cmd = f"""
-        .venv/bin/python sidecar/logger --num-lines {self.num_lines}
-        --total-runtime {self.total_runtime}
-        """
-        self.steps = [
-            DemoLoggerStep(
-                query=self,
-                cmd=demo_logger_cmd,
-                status=Status.IN_PROGRESS,
-            )
-        ]
-        super().__post_init__()
+    step_classes: ClassVar[list[type[Step]]] = [
+        DemoLoggerStep,
+    ]
 
 
 @dataclass(kw_only=True)
 class IPAStep(Step):
     query: "IPAQuery"
 
+    @property
+    def command(self) -> Command:
+        raise NotImplementedError
+
+
+@dataclass(kw_only=True)
+class IPACloneStep(IPAStep):
+    repo_url: ClassVar[str] = "https://github.com/private-attribution/ipa.git"
+    status: ClassVar[Status] = Status.STARTING
+
+    def pre_run(self):
+        if self.query.paths.repo_path.exists():
+            self.skip = True
+
+    @property
+    def command(self) -> Command:
+        return Command(
+            cmd=f"git clone {self.repo_url} {self.query.paths.repo_path}",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
+class IPAFetchUpstreamStep(IPAStep):
+    status: ClassVar[Status] = Status.STARTING
+
+    @property
+    def command(self) -> Command:
+        repo_path = self.query.paths.repo_path
+        return Command(
+            cmd=f"git -C {repo_path} fetch --all",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
+class IPACheckoutCommitStep(IPAStep):
+    status: ClassVar[Status] = Status.STARTING
+
+    @property
+    def command(self) -> Command:
+        repo_path = self.query.paths.repo_path
+        commit_hash = self.query.paths.commit_hash
+        return Command(
+            cmd=f"git -C {repo_path} checkout {commit_hash}",
+            pipe_handler=self.pipe_handler,
+        )
+
 
 @dataclass(kw_only=True)
 class IPAQuery(Query):
     paths: Paths
 
-    @property
-    def commit_hash_str(self):
-        if self.paths.commit_hash:
-            return " --commit_hash " + self.paths.commit_hash
-        return ""
+    def send_kill_signals(self):
+        self.logger.info("sending kill signals")
+        for helper in settings.helpers.values():
+            if helper.role == self.role:
+                continue
+            finish_url = urljoin(
+                helper.sidecar_url.geturl(), f"/stop/kill/{self.query_id}"
+            )
+            r = httpx.post(
+                finish_url,
+            )
+            logger.info(f"sent post request: {r.text}")
+
+    def crash(self):
+        super().crash()
+        self.send_kill_signals()
+
+
+@dataclass(kw_only=True)
+class IPACorrdinatorCompileStep(IPAStep):
+    status: ClassVar[Status] = Status.COMPILING
 
     @property
-    def branch_str(self):
-        if self.paths.branch:
-            return " --branch " + self.paths.branch
-        return ""
+    def command(self) -> Command:
+        manifest_path = self.query.paths.repo_path / Path("Cargo.toml")
+        target_path = self.query.paths.repo_path / Path(
+            f"target-{self.query.paths.commit_hash}"
+        )
+        return Command(
+            cmd=f"cargo build --bin report_collector --manifest-path={manifest_path} "
+            f'--features="clap cli test-fixture" '
+            f"--target-dir={target_path} --release",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
+class IPAHelperCompileStep(IPAStep):
+    status: ClassVar[Status] = Status.COMPILING
+
+    @property
+    def command(self) -> Command:
+        manifest_path = self.query.paths.repo_path / Path("Cargo.toml")
+        target_path = self.query.paths.repo_path / Path(
+            f"target-{self.query.paths.commit_hash}"
+        )
+        return Command(
+            cmd=f"cargo build --bin helper --manifest-path={manifest_path} "
+            f'--features="web-app real-world-infra compact-gate stall-detection" '
+            f"--no-default-features --target-dir={target_path} --release",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
+class IPACoordinatorStep(IPAStep):
+    query: "IPACoordinatorQuery"
+
+    @property
+    def command(self) -> Command:
+        raise NotImplementedError
+
+
+@dataclass(kw_only=True)
+class IPACoordinatorGenerateTestDataStep(IPACoordinatorStep):
+    status: ClassVar[Status] = Status.COMPILING
+
+    @property
+    def command(self) -> Command:
+        report_collector_binary_path = self.query.paths.report_collector_binary_path
+        size = self.query.size
+        test_data_path = self.query.test_data_file
+        max_breakdown_key = self.query.max_breakdown_key
+        max_trigger_value = self.query.max_trigger_value
+
+        self._pipe_handler = FilePipeHandlerContextManager(stdout_path=test_data_path)
+
+        return Command(
+            cmd=f"{report_collector_binary_path} gen-ipa-inputs -n {size} "
+            f"--max-breakdown-key {max_breakdown_key} --report-filter all "
+            f"--max-trigger-value {max_trigger_value} --seed 123",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
+class IPACoordinatorStartStep(IPACoordinatorStep):
+    status: ClassVar[Status] = Status.IN_PROGRESS
+
+    @property
+    def command(self) -> Command:
+        network_config = self.query.paths.config_path / Path("network.toml")
+        report_collector_binary_path = self.query.paths.report_collector_binary_path
+        test_data_path = self.query.test_data_file
+        max_breakdown_key = self.query.max_breakdown_key
+        per_user_credit_cap = self.query.per_user_credit_cap
+
+        return Command(
+            cmd=f"{report_collector_binary_path} --network {network_config} "
+            f"--input-file {test_data_path} oprf-ipa "
+            f"--max-breakdown-key {max_breakdown_key} "
+            f"--per-user-credit-cap {per_user_credit_cap} --plaintext-match-keys ",
+            pipe_handler=self.pipe_handler,
+        )
+
+    async def wait_for_status(self, helper_url, query_id):
+        url = urlunparse(
+            helper_url._replace(scheme="ws", path=f"/ws/status/{query_id}")
+        )
+        async with websockets.connect(url) as websocket:
+            while True:
+                status_json = await websocket.recv()
+                status_data = json.loads(status_json)
+                status = status_data.get("status")
+                match status:
+                    case "IN_PROGRESS":
+                        return
+                    case "NOT_FOUND":
+                        raise Exception(f"{query_id=} doesn't exists.")
+
+                self.query.logger.info(
+                    f"Current status for {url=}: {status_data.get('status')}"
+                )
+
+                # Add a delay before checking again
+                await asyncio.sleep(1)
+
+    async def wait_for_helpers(self, helper_urls, query_id):
+        tasks = [
+            asyncio.create_task(self.wait_for_status(url, query_id))
+            for url in helper_urls
+        ]
+        await asyncio.gather(*tasks)
+
+    def pre_run(self):
+        self.query.status = Status.WAITING_TO_START
+        helper_urls = [
+            helper.sidecar_url
+            for helper in settings.helpers.values()
+            if helper.role != Role.COORDINATOR
+        ]
+        self.query.logger.info(helper_urls)
+        asyncio.run(self.wait_for_helpers(helper_urls, self.query.query_id))
+        time.sleep(3)  # allow enough time for the command to start
+        self.query.status = self.status
 
 
 @dataclass(kw_only=True)
@@ -284,49 +509,14 @@ class IPACoordinatorQuery(IPAQuery):
     max_breakdown_key: int
     max_trigger_value: int
     per_user_credit_cap: int
-
-    def __post_init__(self):
-        ipa_compile_cmd = (
-            f"draft setup-coordinator --local_ipa_path {self.paths.repo_path}"
-            f"{self.branch_str} {self.commit_hash_str} --repeatable"
-        )
-        ipa_generate_test_data_cmd = (
-            f"draft generate-test-data --size {self.size}"
-            f"{self.branch_str} {self.commit_hash_str}"
-            f" --max-breakdown-key {self.max_breakdown_key}"
-            f" --max-trigger-value {self.max_trigger_value}"
-            f" --test_data_path {self.paths.test_data_path}"
-            f" --local_ipa_path {self.paths.repo_path}"
-        )
-        ipa_start_ipa_cmd = (
-            f"draft start-ipa"
-            f"{self.branch_str} {self.commit_hash_str}"
-            f" --local_ipa_path {self.paths.repo_path}"
-            f" --config_path {self.paths.config_path}"
-            f" --max-breakdown-key {self.max_breakdown_key}"
-            f" --per-user-credit-cap {self.per_user_credit_cap}"
-            f" --test_data_file {self.test_data_file}"
-            f" --query_id {self.query_id}"
-        )
-
-        self.steps = [
-            IPAStep(
-                query=self,
-                cmd=ipa_compile_cmd,
-                status=Status.COMPILING,
-            ),
-            IPAStep(
-                query=self,
-                cmd=ipa_generate_test_data_cmd,
-                status=Status.STARTING,
-            ),
-            IPAStep(
-                query=self,
-                cmd=ipa_start_ipa_cmd,
-                status=Status.IN_PROGRESS,
-            ),
-        ]
-        super().__post_init__()
+    step_classes: ClassVar[list[type[Step]]] = [
+        IPACloneStep,
+        IPAFetchUpstreamStep,
+        IPACheckoutCommitStep,
+        IPACorrdinatorCompileStep,
+        IPACoordinatorGenerateTestDataStep,
+        IPACoordinatorStartStep,
+    ]
 
     def sign_query_id(self):
         return base64.b64encode(
@@ -340,7 +530,7 @@ class IPACoordinatorQuery(IPAQuery):
         self.logger.info("sending terminate signals")
         for helper in settings.helpers.values():
             if helper.role == self.role:
-                pass
+                continue
             finish_url = urljoin(
                 helper.sidecar_url.geturl(), f"/stop/finish/{self.query_id}"
             )
@@ -348,7 +538,7 @@ class IPACoordinatorQuery(IPAQuery):
                 finish_url,
                 json={"identity": str(self.role.value), "signature": signature},
             )
-            logger.info(f"sent post request: {r.text}")
+            logger.info(f"sent post request: {finish_url}: {r.text}")
 
     def finish(self):
         super().finish()
@@ -356,30 +546,47 @@ class IPACoordinatorQuery(IPAQuery):
 
 
 @dataclass(kw_only=True)
+class IPAHelperStep(IPAStep):
+    query: "IPAHelperQuery"
+
+    @property
+    def command(self) -> Command:
+        raise NotImplementedError
+
+
+@dataclass(kw_only=True)
+class IPAStartHelperStep(IPAHelperStep):
+    status: ClassVar[Status] = Status.IN_PROGRESS
+
+    @property
+    def command(self) -> Command:
+        helper_binary_path = self.query.paths.helper_binary_path
+        identity = self.query.role.value
+        network_path = self.query.paths.config_path / Path("network.toml")
+        tls_cert_path = self.query.paths.config_path / Path(f"pub/h{identity}.pem")
+        tls_key_path = self.query.paths.config_path / Path(f"h{identity}.key")
+        mk_public_path = self.query.paths.config_path / Path(f"pub/h{identity}_mk.pub")
+        mk_private_path = self.query.paths.config_path / Path(f"h{identity}_mk.key")
+        port = self.query.port
+
+        return Command(
+            cmd=f"{helper_binary_path} --network {network_path} "
+            f"--identity {identity} --tls-cert {tls_cert_path} "
+            f"--tls-key {tls_key_path} --port {port} "
+            f"--mk-public-key {mk_public_path} "
+            f"--mk-private-key {mk_private_path}",
+            pipe_handler=self.pipe_handler,
+        )
+
+
+@dataclass(kw_only=True)
 class IPAHelperQuery(IPAQuery):
-    def __post_init__(self):
-        ipa_compile_cmd = (
-            f"draft setup-helper --local_ipa_path {self.paths.repo_path}"
-            f"{self.branch_str} {self.commit_hash_str}"
-            f" --repeatable"
-        )
+    port: int
 
-        ipa_start_helper_cmd = (
-            f"draft start-helper --local_ipa_path {self.paths.repo_path}"
-            f"{self.branch_str} {self.commit_hash_str}"
-            f" --config_path {self.paths.config_path} {self.role.value}"
-        )
-
-        self.steps = [
-            IPAStep(
-                query=self,
-                cmd=ipa_compile_cmd,
-                status=Status.COMPILING,
-            ),
-            IPAStep(
-                query=self,
-                cmd=ipa_start_helper_cmd,
-                status=Status.IN_PROGRESS,
-            ),
-        ]
-        super().__post_init__()
+    step_classes: ClassVar[list[type[Step]]] = [
+        IPACloneStep,
+        IPAFetchUpstreamStep,
+        IPACheckoutCommitStep,
+        IPAHelperCompileStep,
+        IPAStartHelperStep,
+    ]

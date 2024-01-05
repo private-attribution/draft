@@ -12,7 +12,6 @@ role_str = f"{settings.role.name.replace('_', ' ').title():>{max_role_str_len}}"
 LOGGER_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
     "<level>{level: <8}</level> | "
-    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
     "<blue>{extra[role]}</blue> - <level>{message}</level>"
 )
 logger.configure(extra={"role": role_str})

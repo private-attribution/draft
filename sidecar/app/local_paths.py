@@ -2,28 +2,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .command import Command
-
-
-def get_branch_commit_hash(local_ipa_path: Path, branch: str) -> str:
-    command = Command(cmd=f"git -C {local_ipa_path} fetch --all")
-    result = command.run_blocking()
-    command = Command(cmd=f"git -C {local_ipa_path} rev-parse origin/{branch}")
-    result = command.run_blocking()
-    return result.stdout.strip()
-
 
 @dataclass
 class Paths:
     repo_path: Path
     config_path: Path
-    branch: Optional[str] = None
-    commit_hash: Optional[str] = None
+    commit_hash: str
     _test_data_path: Optional[Path] = None
-
-    def __post_init__(self):
-        if self.branch and not self.commit_hash:
-            self.commit_hash = get_branch_commit_hash(self.repo_path, self.branch)
 
     @property
     def test_data_path(self) -> Path:
