@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, TextIO
 from urllib.parse import urljoin, urlunparse
 
 import httpx
@@ -19,12 +19,7 @@ import websockets
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from .command import (
-    Command,
-    FilePipeHandlerContextManager,
-    LoggerPipeHandlerContextManager,
-    PipeHandlerContextManager,
-)
+from .command import Command
 from .helpers import Role
 from .local_paths import Paths
 from .logger import logger
@@ -63,16 +58,12 @@ class Step:
     skip: bool = field(init=False, default=False)
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
     status: ClassVar[Status] = Status.UNKNOWN
-    _pipe_handler: PipeHandlerContextManager = field(init=False, repr=False)
 
     @classmethod
     def build_from_query(cls, query):
         return cls(
             query=query,
         )
-
-    def __post_init__(self):
-        self._pipe_handler = LoggerPipeHandlerContextManager(logger=self.query.logger)
 
     @property
     def command(self) -> Command:
@@ -84,20 +75,23 @@ class Step:
     def post_run(self):
         pass
 
-    @property
-    def pipe_handler(self):
-        return self._pipe_handler
+    def command_stdout_handler(self, line):
+        self.query.logger.info(line)
+
+    def command_stderr_handler(self, line):
+        self.query.logger.warning(line)
 
     def run(self):
         self.pre_run()
         if self.skip:
             self.query.logger.info(f"Skipped Step: {self}")
         else:
-            with self.pipe_handler as (stdout_handler, stderr_handler):
-                with self.command.run(stdout_handler, stderr_handler) as process:
-                    self.query.current_process = process
-                    self.query.status = self.status
-                    self.query.logger.info(f"{self.query.status.name=}")
+            with self.command.run(
+                self.command_stdout_handler, self.command_stderr_handler
+            ) as process:
+                self.query.current_process = process
+                self.query.status = self.status
+                self.query.logger.info(f"{self.query.status.name=}")
 
         self.post_run()
 
@@ -285,7 +279,6 @@ class DemoLoggerStep(Step):
             cmd=f".venv/bin/python sidecar/logger "
             f"--num-lines {self.query.num_lines} "
             f"--total-runtime {self.query.total_runtime}",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -320,7 +313,6 @@ class IPACloneStep(IPAStep):
     def command(self) -> Command:
         return Command(
             cmd=f"git clone {self.repo_url} {self.query.paths.repo_path}",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -333,7 +325,6 @@ class IPAFetchUpstreamStep(IPAStep):
         repo_path = self.query.paths.repo_path
         return Command(
             cmd=f"git -C {repo_path} fetch --all",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -347,7 +338,6 @@ class IPACheckoutCommitStep(IPAStep):
         commit_hash = self.query.paths.commit_hash
         return Command(
             cmd=f"git -C {repo_path} checkout {commit_hash}",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -387,7 +377,6 @@ class IPACorrdinatorCompileStep(IPAStep):
             cmd=f"cargo build --bin report_collector --manifest-path={manifest_path} "
             f'--features="clap cli test-fixture" '
             f"--target-dir={target_path} --release",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -405,7 +394,6 @@ class IPAHelperCompileStep(IPAStep):
             cmd=f"cargo build --bin helper --manifest-path={manifest_path} "
             f'--features="web-app real-world-infra compact-gate stall-detection" '
             f"--no-default-features --target-dir={target_path} --release",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -421,22 +409,28 @@ class IPACoordinatorStep(IPAStep):
 @dataclass(kw_only=True)
 class IPACoordinatorGenerateTestDataStep(IPACoordinatorStep):
     status: ClassVar[Status] = Status.COMPILING
+    output_file: Optional[TextIO] = field(repr=False, init=False)
+
+    def command_stdout_handler(self, line):
+        self.output_file.write(line)
+
+    def post_run(self):
+        output_file = self.output_file
+        if output_file:
+            output_file.close()
 
     @property
     def command(self) -> Command:
         report_collector_binary_path = self.query.paths.report_collector_binary_path
         size = self.query.size
-        test_data_path = self.query.test_data_file
+        self.output_file = self.query.test_data_file.open("w", encoding="utf8")
         max_breakdown_key = self.query.max_breakdown_key
         max_trigger_value = self.query.max_trigger_value
-
-        self._pipe_handler = FilePipeHandlerContextManager(stdout_path=test_data_path)
 
         return Command(
             cmd=f"{report_collector_binary_path} gen-ipa-inputs -n {size} "
             f"--max-breakdown-key {max_breakdown_key} --report-filter all "
             f"--max-trigger-value {max_trigger_value} --seed 123",
-            pipe_handler=self.pipe_handler,
         )
 
 
@@ -457,7 +451,6 @@ class IPACoordinatorStartStep(IPACoordinatorStep):
             f"--input-file {test_data_path} oprf-ipa "
             f"--max-breakdown-key {max_breakdown_key} "
             f"--per-user-credit-cap {per_user_credit_cap} --plaintext-match-keys ",
-            pipe_handler=self.pipe_handler,
         )
 
     async def wait_for_status(self, helper_url, query_id):
@@ -575,7 +568,6 @@ class IPAStartHelperStep(IPAHelperStep):
             f"--tls-key {tls_key_path} --port {port} "
             f"--mk-public-key {mk_public_path} "
             f"--mk-private-key {mk_private_path}",
-            pipe_handler=self.pipe_handler,
         )
 
 

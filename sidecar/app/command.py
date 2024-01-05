@@ -5,71 +5,15 @@ import os
 import select
 import shlex
 import subprocess
-import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Callable, Optional
-
-import loguru
-
-
-class PipeHandlerContextManager:
-    def __enter__(self) -> tuple[Callable[[str], None], Callable[[str], None]]:
-        raise NotImplementedError
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        pass
-
-
-def print_wrapper(line: str) -> None:
-    sys.stdout.write(line)
-
-
-class PrintPipeHandlerContextManager(PipeHandlerContextManager):
-    def __enter__(self) -> tuple[Callable[[str], None], Callable[[str], None]]:
-        return print_wrapper, print_wrapper
-
-
-class LoggerPipeHandlerContextManager(PipeHandlerContextManager):
-    def __init__(self, logger: loguru.Logger):
-        self.logger = logger
-
-    def __enter__(self) -> tuple[Callable[[str], None], Callable[[str], None]]:
-        def info_wrapper(line: str) -> None:
-            self.logger.info(line.rstrip("\n"))
-
-        def warning_wrapper(line: str) -> None:
-            self.logger.warning(line.rstrip("\n"))
-
-        return info_wrapper, warning_wrapper
-
-
-class FilePipeHandlerContextManager(PipeHandlerContextManager):
-    def __init__(self, stdout_path: Path):
-        self.stdout_path = stdout_path
-        self.stdout_f = None
-
-    def __enter__(self) -> tuple[Callable[[str], None], Callable[[str], None]]:
-        self.stdout_f = self.stdout_path.open("w", encoding="utf8")
-
-        def stdout_wrapper(line: str) -> None:
-            self.stdout_f.write(line)
-
-        return stdout_wrapper, print_wrapper
-
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        self.stdout_f.close()
+from typing import Optional
 
 
 @dataclass
 class Command:
     cmd: str
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
-    pipe_handler: Optional[PipeHandlerContextManager] = field(
-        default_factory=PrintPipeHandlerContextManager,
-        repr=False,
-    )
 
     def get_process(self):
         return subprocess.Popen(
