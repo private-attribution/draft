@@ -76,10 +76,10 @@ class Step:
         pass
 
     def command_stdout_handler(self, line):
-        self.query.logger.info(line)
+        self.query.logger.info(line.rstrip("\n"))
 
     def command_stderr_handler(self, line):
-        self.query.logger.warning(line)
+        self.query.logger.warning(line.rstrip("\n"))
 
     def run(self):
         self.pre_run()
@@ -120,7 +120,6 @@ class Query:
             format="{extra[role]}: {message}",
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
-            encoding="utf8",
         )
         self.logger.debug(f"adding new Query {self}.")
         if queries.get(self.query_id) is not None:
