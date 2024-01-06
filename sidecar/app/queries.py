@@ -411,6 +411,9 @@ class IPACoordinatorGenerateTestDataStep(IPACoordinatorStep):
     def command_stdout_handler(self, line):
         self.output_file.write(line)
 
+    def pre_run(self):
+        self.output_file = self.query.test_data_file.open("w", encoding="utf8")
+
     def post_run(self):
         output_file = self.output_file
         if output_file:
@@ -420,7 +423,6 @@ class IPACoordinatorGenerateTestDataStep(IPACoordinatorStep):
     def command(self) -> Command:
         report_collector_binary_path = self.query.paths.report_collector_binary_path
         size = self.query.size
-        self.output_file = self.query.test_data_file.open("w", encoding="utf8")
         max_breakdown_key = self.query.max_breakdown_key
         max_trigger_value = self.query.max_trigger_value
 
