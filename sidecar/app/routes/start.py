@@ -4,7 +4,8 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Form
 
 from ..local_paths import Paths
-from ..queries import DemoLoggerQuery, IPACoordinatorQuery, IPAHelperQuery
+from ..queries import IPACoordinatorQuery, IPAHelperQuery
+from ..query.demo_logger import DemoLoggerQuery
 from ..settings import settings
 
 router = APIRouter(
@@ -27,7 +28,7 @@ def demo_logger(
         num_lines=num_lines,
         total_runtime=total_runtime,
     )
-    background_tasks.add_task(query.run_all)
+    background_tasks.add_task(query.start)
 
     return {"message": "Process started successfully", "query_id": query_id}
 

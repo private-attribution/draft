@@ -266,29 +266,6 @@ class Query:
 
 
 @dataclass(kw_only=True)
-class DemoLoggerStep(Step):
-    query: "DemoLoggerQuery"
-    status: ClassVar[Status] = Status.IN_PROGRESS
-
-    @property
-    def command(self) -> Command:
-        return Command(
-            cmd=f".venv/bin/python sidecar/logger "
-            f"--num-lines {self.query.num_lines} "
-            f"--total-runtime {self.query.total_runtime}",
-        )
-
-
-@dataclass(kw_only=True)
-class DemoLoggerQuery(Query):
-    num_lines: int
-    total_runtime: int
-    step_classes: ClassVar[list[type[Step]]] = [
-        DemoLoggerStep,
-    ]
-
-
-@dataclass(kw_only=True)
 class IPAStep(Step):
     query: "IPAQuery"
 
