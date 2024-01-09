@@ -5,7 +5,7 @@ import time
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, TypeVar
 
 import loguru
 
@@ -161,3 +161,6 @@ class Query:
         if self.current_step:
             return self.current_step.memory_rss_usage
         return 0
+
+
+QueryTypeT = TypeVar("QueryTypeT", bound=Query)

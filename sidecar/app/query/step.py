@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from typing import TYPE_CHECKING, ClassVar, Optional
@@ -10,7 +11,7 @@ import loguru
 from .command import Command
 
 if TYPE_CHECKING:
-    from .base import Query
+    from .base import QueryTypeT
 
 
 class Status(IntEnum):
@@ -26,14 +27,15 @@ class Status(IntEnum):
 
 
 @dataclass(kw_only=True)
-class Step:
+class Step(ABC):
     skip: bool = field(init=False, default=False)
     status: ClassVar[Status] = Status.UNKNOWN
     success: Optional[bool] = field(init=False, default=None)
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        raise NotImplementedError
+    @abstractmethod
+    def build_from_query(cls, query: QueryTypeT):
+        ...
 
     def pre_run(self):
         pass
@@ -41,8 +43,9 @@ class Step:
     def post_run(self):
         pass
 
+    @abstractmethod
     def run(self):
-        raise NotImplementedError
+        ...
 
     def start(self):
         self.pre_run()
@@ -56,35 +59,36 @@ class Step:
         self.terminate()
         self.success = True
 
+    @abstractmethod
     def terminate(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def kill(self):
-        raise NotImplementedError
+        ...
 
     @property
+    @abstractmethod
     def cpu_usage_percent(self) -> float:
-        raise NotImplementedError
+        ...
 
     @property
+    @abstractmethod
     def memory_rss_usage(self) -> int:
-        raise NotImplementedError
+        ...
 
 
 @dataclass(kw_only=True)
-class CommandStep(Step):
+class CommandStep(Step, ABC):
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
     command: Command = field(init=False, repr=True)
 
     def __post_init__(self):
         self.command = self.build_command()
 
-    @classmethod
-    def build_from_query(cls, query: Query):
-        raise NotImplementedError
-
+    @abstractmethod
     def build_command(self) -> Command:
-        raise NotImplementedError
+        ...
 
     def run(self):
         self.command.start()
@@ -107,12 +111,5 @@ class CommandStep(Step):
 
 
 @dataclass(kw_only=True)
-class LoggerOutputCommandStep(CommandStep):
+class LoggerOutputCommandStep(CommandStep, ABC):
     logger: loguru.Logger = field(repr=False)
-
-    @classmethod
-    def build_from_query(cls, query: Query):
-        raise NotImplementedError
-
-    def build_command(self) -> Command:
-        raise NotImplementedError

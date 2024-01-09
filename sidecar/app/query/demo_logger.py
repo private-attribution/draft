@@ -15,12 +15,7 @@ class DemoLoggerStep(LoggerOutputCommandStep):
     status: ClassVar[Status] = Status.IN_PROGRESS
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, DemoLoggerQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a DemoLoggerQuery, "
-                f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: DemoLoggerQuery):
         return cls(
             num_lines=query.num_lines,
             total_runtime=query.total_runtime,
@@ -40,6 +35,4 @@ class DemoLoggerStep(LoggerOutputCommandStep):
 class DemoLoggerQuery(Query):
     num_lines: int
     total_runtime: int
-    step_classes: ClassVar[list[type[Step]]] = [
-        DemoLoggerStep,
-    ]
+    step_classes: ClassVar[list[type[Step]]] = [DemoLoggerStep]

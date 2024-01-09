@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import base64
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
 from urllib.parse import urljoin, urlunparse
 
 import httpx
+import loguru
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
@@ -15,84 +16,8 @@ from ..helpers import Role
 from ..local_paths import Paths
 from ..settings import settings
 from .base import Query
-from .command import Command, FileOutputCommand, LoggerOutputCommand
+from .command import FileOutputCommand, LoggerOutputCommand
 from .step import CommandStep, LoggerOutputCommandStep, Status, Step
-
-
-@dataclass(kw_only=True)
-class IPACloneStep(LoggerOutputCommandStep):
-    repo_path: Path
-    repo_url: ClassVar[str] = "https://github.com/private-attribution/ipa.git"
-    status: ClassVar[Status] = Status.STARTING
-
-    @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAQuery, " f"but recieved {query.__class__}"
-            )
-        return cls(
-            repo_path=query.paths.repo_path,
-            logger=query.logger,
-        )
-
-    def build_command(self) -> LoggerOutputCommand:
-        return LoggerOutputCommand(
-            cmd=f"git clone {self.repo_url} {self.repo_path}",
-            logger=self.logger,
-        )
-
-    def pre_run(self):
-        if self.repo_path.exists():
-            self.skip = True
-
-
-@dataclass(kw_only=True)
-class IPAFetchUpstreamStep(LoggerOutputCommandStep):
-    repo_path: Path
-    status: ClassVar[Status] = Status.STARTING
-
-    @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAQuery, " f"but recieved {query.__class__}"
-            )
-        return cls(
-            repo_path=query.paths.repo_path,
-            logger=query.logger,
-        )
-
-    def build_command(self) -> LoggerOutputCommand:
-        return LoggerOutputCommand(
-            cmd=f"git -C {self.repo_path} fetch --all",
-            logger=self.logger,
-        )
-
-
-@dataclass(kw_only=True)
-class IPACheckoutCommitStep(LoggerOutputCommandStep):
-    repo_path: Path
-    commit_hash: str
-    status: ClassVar[Status] = Status.STARTING
-
-    @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAQuery, " f"but recieved {query.__class__}"
-            )
-        return cls(
-            repo_path=query.paths.repo_path,
-            commit_hash=query.paths.commit_hash,
-            logger=query.logger,
-        )
-
-    def build_command(self) -> LoggerOutputCommand:
-        return LoggerOutputCommand(
-            cmd=f"git -C {self.repo_path} checkout {self.commit_hash}",
-            logger=self.logger,
-        )
 
 
 @dataclass(kw_only=True)
@@ -118,17 +43,78 @@ class IPAQuery(Query):
 
 
 @dataclass(kw_only=True)
-class IPACompileStep(LoggerOutputCommandStep):
+class IPACloneStep(LoggerOutputCommandStep):
+    repo_path: Path
+    repo_url: ClassVar[str] = "https://github.com/private-attribution/ipa.git"
+    status: ClassVar[Status] = Status.STARTING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        return cls(
+            repo_path=query.paths.repo_path,
+            logger=query.logger,
+        )
+
+    def build_command(self) -> LoggerOutputCommand:
+        return LoggerOutputCommand(
+            cmd=f"git clone {self.repo_url} {self.repo_path}",
+            logger=self.logger,
+        )
+
+    def pre_run(self):
+        if self.repo_path.exists():
+            self.skip = True
+
+
+@dataclass(kw_only=True)
+class IPAFetchUpstreamStep(LoggerOutputCommandStep):
+    repo_path: Path
+    status: ClassVar[Status] = Status.STARTING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        return cls(
+            repo_path=query.paths.repo_path,
+            logger=query.logger,
+        )
+
+    def build_command(self) -> LoggerOutputCommand:
+        return LoggerOutputCommand(
+            cmd=f"git -C {self.repo_path} fetch --all",
+            logger=self.logger,
+        )
+
+
+@dataclass(kw_only=True)
+class IPACheckoutCommitStep(LoggerOutputCommandStep):
+    repo_path: Path
+    commit_hash: str
+    status: ClassVar[Status] = Status.STARTING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        return cls(
+            repo_path=query.paths.repo_path,
+            commit_hash=query.paths.commit_hash,
+            logger=query.logger,
+        )
+
+    def build_command(self) -> LoggerOutputCommand:
+        return LoggerOutputCommand(
+            cmd=f"git -C {self.repo_path} checkout {self.commit_hash}",
+            logger=self.logger,
+        )
+
+
+@dataclass(kw_only=True)
+class IPACompileStepMixin:
     manifest_path: Path
     target_path: Path
+    logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAQuery, " f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: IPAQuery):
         manifest_path = query.paths.repo_path / Path("Cargo.toml")
         target_path = query.paths.repo_path / Path(f"target-{query.paths.commit_hash}")
         return cls(
@@ -137,12 +123,9 @@ class IPACompileStep(LoggerOutputCommandStep):
             logger=query.logger,
         )
 
-    def build_command(self) -> Command:
-        raise NotImplementedError
-
 
 @dataclass(kw_only=True)
-class IPACorrdinatorCompileStep(IPACompileStep):
+class IPACorrdinatorCompileStep(LoggerOutputCommandStep, IPACompileStepMixin):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin report_collector "
@@ -154,7 +137,7 @@ class IPACorrdinatorCompileStep(IPACompileStep):
 
 
 @dataclass(kw_only=True)
-class IPAHelperCompileStep(IPACompileStep):
+class IPAHelperCompileStep(LoggerOutputCommandStep, IPACompileStepMixin):
     status: ClassVar[Status] = Status.COMPILING
 
     def build_command(self) -> LoggerOutputCommand:
@@ -176,12 +159,7 @@ class IPACoordinatorGenerateTestDataStep(CommandStep):
     status: ClassVar[Status] = Status.COMPILING
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPACoordinatorQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPACoordinatorQuery, "
-                f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: IPACoordinatorQuery):
         return cls(
             output_file_path=query.test_data_file,
             report_collector_binary_path=query.paths.report_collector_binary_path,
@@ -205,11 +183,7 @@ class IPACoordinatorWaitForHelpersStep(Step):
     status: ClassVar[Status] = Status.WAITING_TO_START
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAQuery, " f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: IPAQuery):
         return cls(
             query_id=query.query_id,
         )
@@ -272,12 +246,7 @@ class IPACoordinatorStartStep(LoggerOutputCommandStep):
     status: ClassVar[Status] = Status.IN_PROGRESS
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPACoordinatorQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPACoordinatorQuery, "
-                f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: IPACoordinatorQuery):
         return cls(
             network_config=query.paths.config_path / Path("network.toml"),
             report_collector_binary_path=query.paths.report_collector_binary_path,
@@ -357,12 +326,7 @@ class IPAStartHelperStep(LoggerOutputCommandStep):
     status: ClassVar[Status] = Status.IN_PROGRESS
 
     @classmethod
-    def build_from_query(cls, query: Query):
-        if not isinstance(query, IPAHelperQuery):
-            raise ValueError(
-                f"{cls.__name__} expects a IPAHelperQuery, "
-                f"but recieved {query.__class__}"
-            )
+    def build_from_query(cls, query: IPAHelperQuery):
         identity = query.role.value
         network_path = query.paths.config_path / Path("network.toml")
         tls_cert_path = query.paths.config_path / Path(f"pub/h{identity}.pem")
