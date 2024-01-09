@@ -64,7 +64,7 @@ class Query:
             return query
         query = cls(query_id)
         if query.status_file_path.exists():
-            with query.status_file_path.open() as f:
+            with query.status_file_path.open("r") as f:
                 status_str = f.readline()
                 query.status = Status[status_str]
                 return query
@@ -77,7 +77,7 @@ class Query:
     @status.setter
     def status(self, status: Status):
         self._status = status
-        with self.status_file_path.open("w+") as f:
+        with self.status_file_path.open("w") as f:
             self.logger.debug(f"setting status: {status=}")
             f.write(str(status.name))
 
@@ -106,10 +106,7 @@ class Query:
             self.status = step.status
             self.current_step = step
             step.start()
-            self.logger.info(f"Return code: {step.returncode}")
-            self.logger.info(f"{step=}")
-            self.logger.info(f"{step.command=}")
-            if step.returncode != 0:
+            if not step.success:
                 self.crash()
         if not self.finished:
             self.finish()
@@ -118,7 +115,7 @@ class Query:
         self.status = Status.COMPLETE
         self.logger.info(f"Finishing: {self=}")
         if self.current_step:
-            self.current_step.terminate()
+            self.current_step.finish()
         self._cleanup()
 
     def kill(self):

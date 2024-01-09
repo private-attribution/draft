@@ -1,24 +1,26 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import ClassVar
-
-import loguru
 
 from .base import Query
 from .command import LoggerOutputCommand
-from .step import CommandStep, Status, Step
+from .step import LoggerOutputCommandStep, Status, Step
 
 
 @dataclass(kw_only=True)
-class DemoLoggerStep(CommandStep):
+class DemoLoggerStep(LoggerOutputCommandStep):
     num_lines: int
     total_runtime: int
-    logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.IN_PROGRESS
 
     @classmethod
-    def build_from_query(cls, query: "DemoLoggerQuery"):
+    def build_from_query(cls, query: Query):
+        if not isinstance(query, DemoLoggerQuery):
+            raise ValueError(
+                f"{cls.__name__} expects a DemoLoggerQuery, "
+                f"but recieved {query.__class__}"
+            )
         return cls(
             num_lines=query.num_lines,
             total_runtime=query.total_runtime,

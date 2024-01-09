@@ -8,7 +8,8 @@ from pydantic import BaseModel
 
 from ..helpers import Role
 from ..logger import logger
-from ..queries import Query, Status
+from ..query.base import Query
+from ..query.step import Status
 from ..settings import settings
 
 router = APIRouter(

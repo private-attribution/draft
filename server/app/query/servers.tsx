@@ -35,7 +35,7 @@ function getStatusFromString(statusString: string): Status {
 
 export interface StatsDataPoint {
   timestamp: string;
-  memoryUsage: number;
+  memoryRSSUsage: number;
   cpuUsage: number;
 }
 
@@ -195,11 +195,9 @@ export class RemoteServer {
     ws.onmessage = (event) => {
       const eventData = JSON.parse(event.data);
       updateRunTime(eventData.run_time);
-      // https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_info
-      // we grab rss memory aka “Resident Set Size”, this is the non-swapped physical memory a process has used
       const statsDataPoint: StatsDataPoint = {
         timestamp: eventData.timestamp,
-        memoryUsage: eventData.memory_info[0],
+        memoryRSSUsage: eventData.memory_rss_usage,
         cpuUsage: eventData.cpu_percent,
       };
 

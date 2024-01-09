@@ -53,6 +53,9 @@ class Command:
 
     @property
     def memory_rss_usage(self) -> int:
+        # https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_info
+        # we grab rss memory aka “Resident Set Size”
+        # this is the non-swapped physical memory a process has used
         process_psutil = self.process_psutil
         if process_psutil is None:
             return 0
@@ -89,10 +92,9 @@ class FileOutputCommand(Command):
     def __post_init__(self):
         # need to manually close in start method
         # pylint: disable=consider-using-with
-        self.output_file = self.output_file_path.open("w", encoding="utf8")
+        self.output_file = self.output_file_path.open("wb")
 
-    @property
-    def new_process(self):
+    def build_process(self):
         return subprocess.Popen(
             shlex.split(self.cmd),
             stdout=self.output_file,
@@ -108,8 +110,7 @@ class FileOutputCommand(Command):
 class LoggerOutputCommand(Command):
     logger: loguru.Logger = field(repr=False)
 
-    @property
-    def new_process(self):
+    def build_process(self):
         return subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
@@ -119,26 +120,25 @@ class LoggerOutputCommand(Command):
         )
 
     def start(self):
-        with self.new_process as process:
-            self.process = process
-            stdout_fileno = process.stdout.fileno()
-            stderr_fileno = process.stderr.fileno()
-            while process.poll() is None:
-                readable, _, _ = select.select([stdout_fileno, stderr_fileno], [], [])
-                for fd in readable:
-                    if fd == stdout_fileno:
-                        stdout_line = process.stdout.readline()
-                        if stdout_line:
-                            self.logger.info(stdout_line.rstrip("\n"))
-                    elif fd == stderr_fileno:
-                        stderr_line = process.stderr.readline()
-                        if stderr_line:
-                            self.logger.info(stderr_line.rstrip("\n"))
-            for line in process.stdout:
-                self.logger.info(line.rstrip("\n"))
+        self.process = self.build_process()
+        stdout_fileno = self.process.stdout.fileno()
+        stderr_fileno = self.process.stderr.fileno()
+        while self.process.poll() is None:
+            readable, _, _ = select.select([stdout_fileno, stderr_fileno], [], [])
+            for fd in readable:
+                if fd == stdout_fileno:
+                    stdout_line = self.process.stdout.readline()
+                    if stdout_line:
+                        self.logger.info(stdout_line.rstrip("\n"))
+                elif fd == stderr_fileno:
+                    stderr_line = self.process.stderr.readline()
+                    if stderr_line:
+                        self.logger.info(stderr_line.rstrip("\n"))
+        for line in self.process.stdout:
+            self.logger.info(line.rstrip("\n"))
 
-            for line in process.stderr:
-                self.logger.info(line.rstrip("\n"))
+        for line in self.process.stderr:
+            self.logger.info(line.rstrip("\n"))
 
 
 class ParallelCommandContextManager:

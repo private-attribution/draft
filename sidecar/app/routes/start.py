@@ -4,8 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Form
 
 from ..local_paths import Paths
-from ..queries import IPACoordinatorQuery, IPAHelperQuery
+from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
+from ..query.ipa import IPACoordinatorQuery, IPAHelperQuery
+from ..query.step import Status
 from ..settings import settings
 
 router = APIRouter(
@@ -53,9 +55,19 @@ def start_ipa_helper(
         query_id=query_id,
         port=settings.helper.helper_port,
     )
-    background_tasks.add_task(query.run_all)
+    background_tasks.add_task(query.start)
 
     return {"message": "Process started successfully", "query_id": query_id}
+
+
+@router.get("/ipa-helper/{query_id}/status")
+def get_ipa_helper_status(
+    query_id: str,
+):
+    query = Query.get_from_query_id(query_id)
+    if query is None:
+        return {"status": Status.NOT_FOUND.name}
+    return {"status": query.status.name}
 
 
 @router.post("/ipa-query/{query_id}")
@@ -88,6 +100,6 @@ def start_ipa_test_query(
         max_trigger_value=max_trigger_value,
         per_user_credit_cap=per_user_credit_cap,
     )
-    background_tasks.add_task(query.run_all)
+    background_tasks.add_task(query.start)
 
     return {"message": "Process started successfully", "query_id": query_id}

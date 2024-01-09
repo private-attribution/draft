@@ -37,7 +37,9 @@ export function StatsComponent({
     (entry: StatsDataPoint) => entry.timestamp,
   );
 
-  const memoryValues = stats.map((entry: StatsDataPoint) => entry.memoryUsage);
+  const memoryValues = stats.map(
+    (entry: StatsDataPoint) => entry.memoryRSSUsage,
+  );
   const cpuValues = stats.map((entry: StatsDataPoint) => entry.cpuUsage);
 
   const memoryChartData = {
