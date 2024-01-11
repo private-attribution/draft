@@ -6,7 +6,7 @@ import {
   StatusPill,
   RunTimePill,
   LogViewer,
-} from "./components";
+} from "@/app/query/view/[id]/components";
 import {
   Status,
   ServerLog,
@@ -19,8 +19,8 @@ import {
   initialStatusByRemoteServer,
   initialStatsByRemoteServer,
   initialRunTimeByRemoteServer,
-} from "../servers";
-import { StatsComponent } from "./charts";
+} from "@/app/query/servers";
+import { StatsComponent } from "@/app/query/view/[id]/charts";
 
 export default function Query({ params }: { params: { id: string } }) {
   // display controls
