@@ -13,7 +13,11 @@ import {
   TimeScale,
   ChartOptions,
 } from "chart.js";
-import { StatsDataPoint, RemoteServer, StatsByRemoteServer } from "../servers";
+import {
+  StatsDataPoint,
+  RemoteServer,
+  StatsByRemoteServer,
+} from "@/app/query/servers";
 
 ChartJS.register(
   LineElement,

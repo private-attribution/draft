@@ -17,13 +17,7 @@ export default function RootLayout({
       <body className={clsx(inter.className, "h-full")}>
         <div className="min-h-full bg-slate-100 dark:bg-slate-900">
           <Header />
-          <div className="py-10">
-            <main>
-              <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                {children}
-              </div>
-            </main>
-          </div>
+          <main>{children}</main>
           <Footer />
         </div>
       </body>

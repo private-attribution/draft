@@ -2,7 +2,7 @@ import React from "react";
 import { Source_Code_Pro } from "next/font/google";
 import clsx from "clsx";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { Status, ServerLog } from "../servers";
+import { Status, ServerLog } from "@/app/query/servers";
 
 const sourceCodePro = Source_Code_Pro({ subsets: ["latin"] });
 

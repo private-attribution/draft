@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import beerTap from "../public/beer-tap.png";
+import beerTap from "@/public/beer-tap.png";
 
 const user = {
   name: "Tom Cook",
@@ -13,7 +13,7 @@ const user = {
   imageUrl:
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
-const navigation = [{ name: "Dashboard", href: "/", current: true }];
+const navigation = [{ name: "Dashboard", href: "/query", current: true }];
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" },
@@ -32,11 +32,13 @@ export default function Header() {
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
-                  <Image
-                    src={beerTap}
-                    alt="beer tap icon"
-                    className="block h-8 w-auto fill-sky-800 dark:fill-sky-200"
-                  />
+                  <Link href="/">
+                    <Image
+                      src={beerTap}
+                      alt="beer tap icon"
+                      className="block h-8 w-auto fill-sky-800 dark:fill-sky-200"
+                    />
+                  </Link>
                 </div>
                 <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
                   {navigation.map((item) => (
@@ -58,7 +60,7 @@ export default function Header() {
               </div>
               <div className="flex">
                 <div className="flex items-center">
-                  <Link href="/query">
+                  <Link href="/query/create">
                     <button
                       type="button"
                       className="ml-3 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"

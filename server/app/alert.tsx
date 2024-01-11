@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
 export default function QueryStartedAlert({ queryId }: { queryId: string }) {
@@ -13,8 +14,8 @@ export default function QueryStartedAlert({ queryId }: { queryId: string }) {
         </div>
         <div className="ml-3">
           <p className="text-sm font-medium text-green-800">
-            Successfully started Query: {queryId}. Redirecting to /query/
-            {queryId}.{" "}
+            Successfully started Query: {queryId}. Redirecting to
+            <Link href={`/query/view/${queryId}`}>/query/view/{queryId} </Link>.{" "}
           </p>
         </div>
         <div className="ml-auto pl-3">
