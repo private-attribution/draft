@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import clsx from "clsx";
 import { Line } from "react-chartjs-2";
 import "chartjs-adapter-spacetime";
@@ -13,11 +12,7 @@ import {
   TimeScale,
   ChartOptions,
 } from "chart.js";
-import {
-  StatsDataPoint,
-  RemoteServer,
-  StatsByRemoteServer,
-} from "@/app/query/servers";
+import { StatsDataPoint, RemoteServer } from "@/app/query/servers";
 
 ChartJS.register(
   LineElement,
@@ -83,7 +78,7 @@ export function StatsComponent({
         },
         ticks: {
           // Use the callback function to format labels
-          callback: function (value, index, values) {
+          callback: function (value, _index, _values) {
             const valueNum = parseInt(`${value}`);
             if (value === 0) return "0 B"; // Special case for zero
 

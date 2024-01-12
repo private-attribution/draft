@@ -1,19 +1,8 @@
-import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import background_img from "@/public/background.jpg";
-
-import {
-  ArrowPathIcon,
-  CheckIcon,
-  CloudArrowUpIcon,
-  Cog6ToothIcon,
-  FingerPrintIcon,
-  LockClosedIcon,
-  ServerIcon,
-} from "@heroicons/react/20/solid";
 import GitHubIcon from "@/app/logos/github";
 
 export default async function Example() {

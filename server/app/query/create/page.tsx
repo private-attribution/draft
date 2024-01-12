@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, FormEvent, useEffect, Fragment } from "react";
+import { useState, FormEvent, useEffect, Fragment } from "react";
 import clsx from "clsx";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";

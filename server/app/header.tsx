@@ -1,5 +1,5 @@
 "use client";
-import React, { Fragment } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Disclosure, Menu, Transition } from "@headlessui/react";

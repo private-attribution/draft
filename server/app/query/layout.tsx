@@ -1,11 +1,5 @@
 import React from "react";
-import { Inter } from "next/font/google";
 import "@/app/globals.css";
-import clsx from "clsx";
-import Header from "@/app/header";
-import Footer from "@/app/footer";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,

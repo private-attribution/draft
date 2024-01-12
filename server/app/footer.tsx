@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Example() {
   return (
     <footer className="bg-white dark:bg-slate-950 h-full sticky top-[100vh]">

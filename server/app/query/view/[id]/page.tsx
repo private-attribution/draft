@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   HiddenSectionChevron,
   StatusPill,
@@ -46,7 +46,7 @@ export default function Query({ params }: { params: { id: string } }) {
   const kill = async (remoteServers: RemoteServersType) => {
     const fetchPromises = Object.values(remoteServers).map(
       async (remoteServer) => {
-        const response = await fetch(remoteServer.killURL(params.id), {
+        await fetch(remoteServer.killURL(params.id), {
           method: "POST",
         });
       },

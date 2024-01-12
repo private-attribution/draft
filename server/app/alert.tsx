@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
 
