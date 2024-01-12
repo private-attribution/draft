@@ -9,4 +9,4 @@ IGNORE-ME*
 .pyre/*
 
 # local env files
-.env*.local
+.env*
