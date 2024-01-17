@@ -58,9 +58,9 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname !== "/") {
+  const allowedPathsRegex = new RegExp(`^(/|/login|/auth/callback|/docs/.+)$`);
+  if (!user && !allowedPathsRegex.test(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-
     url.pathname = `/404`;
     return NextResponse.rewrite(url);
   }
