@@ -107,7 +107,7 @@ class IPACheckoutCommitStep(LoggerOutputCommandStep):
 
 
 @dataclass(kw_only=True)
-class IPACompileStepMixin:
+class IPACorrdinatorCompileStep(LoggerOutputCommandStep):
     manifest_path: Path
     target_path: Path
     logger: loguru.Logger = field(repr=False)
@@ -123,9 +123,6 @@ class IPACompileStepMixin:
             logger=query.logger,
         )
 
-
-@dataclass(kw_only=True)
-class IPACorrdinatorCompileStep(LoggerOutputCommandStep, IPACompileStepMixin):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin report_collector "
@@ -137,8 +134,21 @@ class IPACorrdinatorCompileStep(LoggerOutputCommandStep, IPACompileStepMixin):
 
 
 @dataclass(kw_only=True)
-class IPAHelperCompileStep(LoggerOutputCommandStep, IPACompileStepMixin):
+class IPAHelperCompileStep(LoggerOutputCommandStep):
+    manifest_path: Path
+    target_path: Path
+    logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        manifest_path = query.paths.repo_path / Path("Cargo.toml")
+        target_path = query.paths.repo_path / Path(f"target-{query.paths.commit_hash}")
+        return cls(
+            manifest_path=manifest_path,
+            target_path=target_path,
+            logger=query.logger,
+        )
 
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
