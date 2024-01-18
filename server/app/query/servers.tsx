@@ -268,18 +268,18 @@ export class IPACoordinatorRemoteServer extends RemoteServer {
 export const IPARemoteServers: RemoteServersType = {
   [RemoteServerNames.Coordinator]: new IPACoordinatorRemoteServer(
     RemoteServerNames.Coordinator,
-    new URL("http://localhost:17430"),
+    new URL(process?.env?.COORDINATOR_URL ?? "http://localhost:17430"),
   ),
   [RemoteServerNames.Helper1]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper1,
-    new URL("http://localhost:17431"),
+    new URL(process?.env?.Helper1_URL ?? "http://localhost:17431"),
   ),
   [RemoteServerNames.Helper2]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper2,
-    new URL("http://localhost:17432"),
+    new URL(process?.env?.Helper2_URL ?? "http://localhost:17432"),
   ),
   [RemoteServerNames.Helper3]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper3,
-    new URL("http://localhost:17433"),
+    new URL(process?.env?.Helper3_URL ?? "http://localhost:17433"),
   ),
 };
