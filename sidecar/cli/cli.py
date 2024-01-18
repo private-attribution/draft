@@ -37,6 +37,7 @@ def start_helper_sidecar_command(
         "NETWORK_CONFIG_PATH": network_config,
         "PRIVATE_KEY_PEM_PATH": private_key_pem_path,
         "UVICORN_PORT": str(helper.sidecar_port),
+        "UVICORN_HOST": "0.0.0.0",
     }
     return Command(cmd=cmd, env=env)
 
