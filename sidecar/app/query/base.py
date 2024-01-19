@@ -37,7 +37,6 @@ class Query:
         self.logger = logger.bind(task=self.query_id)
         self._log_dir.mkdir(exist_ok=True)
         self._status_dir.mkdir(exist_ok=True)
-        self.log_file_path.touch()
         self._logger_id = logger.add(
             self.log_file_path,
             format="{extra[role]}: {message}",
