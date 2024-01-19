@@ -30,9 +30,13 @@ class Query:
     logger: loguru.Logger = field(init=False, repr=False)
     _logger_id: int = field(init=False, repr=False)
     step_classes: ClassVar[list[type[Step]]] = []
+    _log_dir: Path = settings.root_path / Path("logs")
+    _status_dir: Path = settings.root_path / Path("status_semaphore")
 
     def __post_init__(self):
         self.logger = logger.bind(task=self.query_id)
+        self._log_dir.mkdir(exist_ok=True)
+        self._status_dir.mkdir(exist_ok=True)
         self.log_file_path.touch()
         self._logger_id = logger.add(
             self.log_file_path,
@@ -87,11 +91,11 @@ class Query:
 
     @property
     def log_file_path(self) -> Path:
-        return settings.root_path / Path("logs") / Path(f"{self.query_id}.log")
+        return self._log_dir / Path(f"{self.query_id}.log")
 
     @property
     def status_file_path(self) -> Path:
-        return settings.root_path / Path("status_semaphore") / Path(f"{self.query_id}")
+        return self._status_dir / Path(f"{self.query_id}")
 
     @property
     def steps(self) -> Iterable[Step]:

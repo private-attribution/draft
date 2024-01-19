@@ -22,6 +22,7 @@ def start_helper_sidecar_command(
     role = Role(int(identity))
     network_config = config_path / Path("network.toml")
     root_path = root_path or Path(f"tmp/sidecar/{role.value}")
+    root_path.mkdir(parents=True, exist_ok=True)
     helpers = load_helpers_from_network_config(network_config)
     if role == Role.COORDINATOR:
         private_key_pem_path = config_path / Path("coordinator.key")
