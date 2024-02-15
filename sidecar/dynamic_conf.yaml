@@ -1,5 +1,8 @@
 # dynamic_conf.yaml
 tls:
+  certificates:
+    - certFile: "`{{env "CERT_PATH"}}`"
+      keyFile: "`{{env "KEY_PATH"}}`"
   options:
     default:
       minVersion: VersionTLS12
@@ -9,7 +12,7 @@ tls:
 http:
   routers:
     service1:
-      rule: "Host(`${BASE_DOMAIN}`)"
+      rule: "Host(`{{env "BASE_DOMAIN"}}`)"
       service: "service1"
       entryPoints:
         - "web-secure"
@@ -17,7 +20,7 @@ http:
         cert: "${CERT_PATH}"
         key: "${KEY_PATH}"
     service2:
-      rule: "Host(`ipa.${BASE_DOMAIN}`)"
+      rule: "Host(`ipa.{{env "BASE_DOMAIN"}`)"
       service: "service2"
       entryPoints:
         - "web-secure"
