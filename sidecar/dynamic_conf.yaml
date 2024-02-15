@@ -14,14 +14,16 @@ http:
       entryPoints:
         - "web-secure"
       tls:
-        options: "default"
+        cert: "${CERT_PATH}"
+        key: "${KEY_PATH}"
     service2:
       rule: "Host(`ipa.${BASE_DOMAIN}`)"
       service: "service2"
       entryPoints:
         - "web-secure"
       tls:
-        options: "default"
+        cert: "${CERT_PATH}"
+        key: "${KEY_PATH}"
 
   services:
     service1:
