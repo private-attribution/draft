@@ -1,0 +1,34 @@
+# dynamic_conf.yaml
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+
+http:
+  routers:
+    service1:
+      rule: "Host(`${BASE_DOMAIN}`)"
+      service: "service1"
+      entryPoints:
+        - "web-secure"
+      tls:
+        options: "default"
+    service2:
+      rule: "Host(`ipa.${BASE_DOMAIN}`)"
+      service: "service2"
+      entryPoints:
+        - "web-secure"
+      tls:
+        options: "default"
+
+  services:
+    service1:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:17340"
+    service2:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:17341"

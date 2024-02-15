@@ -43,6 +43,31 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
+def start_traefik_command(
+    config_path: Path,
+    identity: int,
+    root_path: Optional[Path] = None,
+):
+    role = Role(int(identity))
+    root_path = root_path or Path(f"tmp/sidecar/{role.value}")
+    if role == Role.COORDINATOR:
+        base_domain = "coordinator.ipa-helper.dev"
+    else:
+        base_domain = f"helper{role.value}.ipa-helper.dev"
+    cert_path = config_path / Path("cert.pem")
+    key_path = config_path / Path("key.pem")
+
+    env = {
+        **os.environ,
+        "BASE_DOMAIN": base_domain,
+        "CERT_PATH": cert_path,
+        "KEY_PATH": key_path,
+        "DYNAMIC_CONF_PATH": Path("sidecar/dynamic_conf.yaml"),
+    }
+    cmd = "./traefik --configFile=sidecar/traefik.yaml"
+    return Command(cmd=cmd, env=env)
+
+
 @cli.command
 @click.option(
     "--config_path",
@@ -57,12 +82,17 @@ def start_helper_sidecar(
     root_path: Optional[Path],
     identity: int,
 ):
-    command = start_helper_sidecar_command(
+    sidecar_command = start_helper_sidecar_command(
         config_path,
         identity,
         root_path,
     )
-    command.run_blocking_no_output_capture()
+    traefik_command = start_traefik_command(
+        config_path,
+        identity,
+        root_path,
+    )
+    start_commands_parallel([sidecar_command, traefik_command])
 
 
 @cli.command
