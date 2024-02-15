@@ -4,19 +4,3 @@ entryPoints:
     address: ":80"
   web-secure:
     address: ":443"
-    http:
-      tls:
-        certificateStore:
-          default: "default"
-
-providers:
-  file:
-    filename: "${DYNAMIC_CONF_PATH}"
-    watch: true
-
-tls:
-  stores:
-    default:
-      defaultCertificate:
-        certFile: "${CERT_PATH}"
-        keyFile: "${KEY_PATH}"
