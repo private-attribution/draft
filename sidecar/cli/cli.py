@@ -64,7 +64,7 @@ def start_traefik_command(
         "TRAEFIK_PROVIDERS_HTTP_TLS_KEY": key_path,
         "TRAEFIK_PROVIDERS_FILE_FILENAME": Path("sidecar/dynamic_conf.yaml"),
     }
-    cmd = "./traefik --configFile=sidecar/traefik.yaml"
+    cmd = "sudo ./traefik --configFile=sidecar/traefik.yaml"
     return Command(cmd=cmd, env=env)
 
 
