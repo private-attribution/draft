@@ -15,7 +15,7 @@ http:
       tls:
         options: "default"
     service2:
-      rule: "Host(`ipa.{{env "BASE_DOMAIN"}`)"
+      rule: "Host(`ipa.{{env "BASE_DOMAIN"}}`)"
       service: "service2"
       entryPoints:
         - "web-secure"
