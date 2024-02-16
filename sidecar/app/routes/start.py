@@ -53,7 +53,7 @@ def start_ipa_helper(
     query = IPAHelperQuery(
         paths=paths,
         query_id=query_id,
-        port=settings.helper.helper_port,
+        port=settings.helper_port,
     )
     background_tasks.add_task(query.start)
 

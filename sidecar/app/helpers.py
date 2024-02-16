@@ -18,18 +18,9 @@ class Role(IntEnum):
 @dataclass
 class Helper:
     role: Role
-    hostname: str
-    sidecar_port: int
-    helper_port: int
+    helper_url: ParseResult
+    sidecar_url: ParseResult
     public_key: EllipticCurvePublicKey
-
-    @property
-    def sidecar_url(self) -> ParseResult:
-        return urlparse(f"http://{self.hostname}:{self.sidecar_port}")
-
-    @property
-    def helper_url(self) -> ParseResult:
-        return urlparse(f"http://{self.hostname}:{self.helper_port}")
 
 
 def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, Helper]:
@@ -39,30 +30,21 @@ def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, He
         helper_roles = list(r for r in Role if r != Role.COORDINATOR)
         helpers = {}
         for helper_config, role in zip(helper_configs, helper_roles):
-            url = urlparse(f"http://{helper_config['url']}")
-            hostname = str(url.hostname)
-            helper_port = int(url.port or 0)
-            sidecar_port = int(helper_config.get("sidecar_port", 0))
-            if not hostname or not helper_port or not sidecar_port:
-                raise Exception(f"{network_data=} missing data.")
+            helper_url = urlparse(f"http://{helper_config['url']}")
+            sidecar_url = urlparse(f"http://{helper_config['sidecar_url']}")
             public_key_pem_data = helper_config.get("certificate")
             cert = load_pem_x509_certificate(public_key_pem_data.encode("utf8"))
             public_key = cert.public_key()
             assert isinstance(public_key, EllipticCurvePublicKey)
             helpers[role] = Helper(
                 role=role,
-                hostname=hostname,
-                helper_port=helper_port,
-                sidecar_port=sidecar_port,
+                helper_url=helper_url,
+                sidecar_url=sidecar_url,
                 public_key=public_key,
             )
 
-        url = urlparse(f"http://{network_data['coordinator']['url']}")
-        hostname = str(url.hostname)
-        helper_port = int(url.port or 0)
-        sidecar_port = int(network_data["coordinator"].get("sidecar_port", 0))
-        if not hostname or not helper_port or not sidecar_port:
-            raise Exception(f"{network_data=} missing data.")
+        helper_url = urlparse(f"http://{network_data['coordinator']['url']}")
+        sidecar_url = urlparse(f"http://{network_data['coordinator']['sidecar_url']}")
         public_key_pem_data = network_data["coordinator"].get("certificate")
         cert = load_pem_x509_certificate(public_key_pem_data.encode("utf8"))
         public_key = cert.public_key()
@@ -70,9 +52,8 @@ def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, He
 
         helpers[Role.COORDINATOR] = Helper(
             role=Role.COORDINATOR,
-            hostname=hostname,
-            helper_port=helper_port,
-            sidecar_port=sidecar_port,
+            helper_url=helper_url,
+            sidecar_url=sidecar_url,
             public_key=public_key,
         )
         return helpers

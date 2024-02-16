@@ -7,7 +7,7 @@ import click_pathlib
 import yaml
 
 from ..app.command import Command, start_commands_parallel
-from ..app.helpers import Role, load_helpers_from_network_config
+from ..app.helpers import Role
 
 
 @click.group()
@@ -18,18 +18,18 @@ def cli():
 def start_helper_sidecar_command(
     config_path: Path,
     identity: int,
+    helper_port: int,
+    sidecar_port: int,
     root_path: Optional[Path] = None,
 ):
     role = Role(int(identity))
     network_config = config_path / Path("network.toml")
     root_path = root_path or Path(f"tmp/sidecar/{role.value}")
     root_path.mkdir(parents=True, exist_ok=True)
-    helpers = load_helpers_from_network_config(network_config)
     if role == Role.COORDINATOR:
         private_key_pem_path = config_path / Path("coordinator.key")
     else:
         private_key_pem_path = config_path / Path(f"h{role.value}.key")
-    helper = helpers[role]
     cmd = "uvicorn sidecar.app.main:app"
     env = {
         **os.environ,
@@ -38,7 +38,8 @@ def start_helper_sidecar_command(
         "CONFIG_PATH": config_path,
         "NETWORK_CONFIG_PATH": network_config,
         "PRIVATE_KEY_PEM_PATH": private_key_pem_path,
-        "UVICORN_PORT": str(helper.sidecar_port),
+        "HELPER_PORT": str(helper_port),
+        "UVICORN_PORT": str(sidecar_port),
         "UVICORN_HOST": "0.0.0.0",
     }
     return Command(cmd=cmd, env=env)
@@ -113,6 +114,8 @@ def create_tls_config(cert_path: Path, key_path: Path, config_path: Path):
 def start_traefik_command(
     config_path: Path,
     identity: int,
+    helper_port: int,
+    sidecar_port: int,
     root_domain: str,
 ):
     role = Role(int(identity))
@@ -122,9 +125,6 @@ def start_traefik_command(
     else:
         sidecar_domain = f"sidecar{role.value}.{root_domain}"
         helper_domain = f"helper{role.value}.{root_domain}"
-    network_config = config_path / Path("network.toml")
-    helpers = load_helpers_from_network_config(network_config)
-    helper = helpers[role]
     cert_path = config_path / Path("cert.pem")
     key_path = config_path / Path("key.pem")
     tls_config_path = Path("sidecar/traefik/dynamic/tls_conf.yaml")
@@ -138,8 +138,8 @@ def start_traefik_command(
         sidecar_domain=sidecar_domain,
         helper_domain=helper_domain,
         config_path=dynamic_config_path,
-        sidecar_port=helper.sidecar_port,
-        ipa_port=helper.helper_port,
+        sidecar_port=sidecar_port,
+        ipa_port=helper_port,
     )
 
     env = {
@@ -149,6 +149,7 @@ def start_traefik_command(
     return Command(cmd=cmd, env=env)
 
 
+# pylint: disable=too-many-arguments
 @cli.command
 @click.option(
     "--config_path",
@@ -158,22 +159,30 @@ def start_traefik_command(
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
 @click.option("--root_domain", type=str, default="ipa-helper.dev")
+@click.option("--helper_port", type=int, default=7430)
+@click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
 def start_helper_sidecar(
     config_path: Path,
     root_path: Optional[Path],
     root_domain: str,
+    helper_port: int,
+    sidecar_port: int,
     identity: int,
 ):
     sidecar_command = start_helper_sidecar_command(
-        config_path,
-        identity,
-        root_path,
+        config_path=config_path,
+        identity=identity,
+        helper_port=helper_port,
+        sidecar_port=sidecar_port,
+        root_path=root_path,
     )
     traefik_command = start_traefik_command(
-        config_path,
-        identity,
-        root_domain,
+        config_path=config_path,
+        identity=identity,
+        helper_port=helper_port,
+        sidecar_port=sidecar_port,
+        root_domain=root_domain,
     )
     start_commands_parallel([sidecar_command, traefik_command])
 
@@ -186,9 +195,13 @@ def start_helper_sidecar(
     show_default=True,
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
+@click.option("--helper_start_port", type=int, default=7430)
+@click.option("--sidecar_start_port", type=int, default=17430)
 def start_local_dev(
     config_path: Path,
     root_path: Optional[Path],
+    helper_start_port: int,
+    sidecar_start_port: int,
 ):
     npm_install_command = Command(
         cmd="npm --prefix server install",
@@ -198,15 +211,15 @@ def start_local_dev(
         cmd="npm --prefix server run dev",
     )
 
-    network_config = Path(config_path) / Path("network.toml")
-    helpers = load_helpers_from_network_config(network_config)
     sidecar_commands = [
         start_helper_sidecar_command(
-            config_path,
-            helper.role,
-            root_path,
+            config_path=config_path,
+            identity=role,
+            helper_port=helper_start_port + int(role),
+            sidecar_port=sidecar_start_port + int(role),
+            root_path=root_path,
         )
-        for helper in helpers.values()
+        for role in Role
     ]
     commands = [npm_run_dev_command] + sidecar_commands
     start_commands_parallel(commands)

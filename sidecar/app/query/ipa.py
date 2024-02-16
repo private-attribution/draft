@@ -202,18 +202,19 @@ class IPACoordinatorWaitForHelpersStep(Step):
         )
 
     def run(self):
-        helper_urls = [
+        sidecar_urls = [
             helper.sidecar_url
             for helper in settings.helpers.values()
             if helper.role != Role.COORDINATOR
         ]
-        for helper_url in helper_urls:
+        for sidecar_url in sidecar_urls:
             url = urlunparse(
-                helper_url._replace(
+                sidecar_url._replace(
                     scheme="ws", path=f"/start/ipa-helper/{self.query_id}/status"
                 ),
             )
             while True:
+                print(url)
                 r = httpx.get(url).json()
                 print(r)
                 status = r.get("status")

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     network_config_path: Annotated[Path, BeforeValidator(gen_path)]
     private_key_pem_path: Annotated[Path, BeforeValidator(gen_path)]
     role: Role
+    helper_port: int
     _helpers: dict[Role, Helper]
     _private_key: EllipticCurvePrivateKey
 

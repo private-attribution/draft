@@ -12,7 +12,7 @@ N0Gz2XisE0JNL5f0tEyrJf/PwSlnazeMxw==
 -----END CERTIFICATE-----
 """
 url = "localhost:7431"
-sidecar_port = "17431"
+sidecar_url = "localhost:17431"
 
 [peers.hpke]
 public_key = "fde0d0c958db9f49d3f1b49cb6830b867cc810bff9e7d0cbf17c777969f3c23e"
@@ -31,7 +31,7 @@ RwAwRAIgaX95X9bgeZHgbTCl73N2j61AnljyS8DXQ7mWb6fsQXECIFgvumh8TASD
 -----END CERTIFICATE-----
 """
 url = "localhost:7432"
-sidecar_port = "17432"
+sidecar_url = "localhost:17432"
 
 [peers.hpke]
 public_key = "4e8f1cd4114a8ee8adc58a33050782e2f8ded3336a9c65725f35998e765c4e2d"
@@ -50,7 +50,7 @@ B6Bgc2gw5JC/G6ahPglwIkjO2ew02/ax6g==
 -----END CERTIFICATE-----
 """
 url = "localhost:7433"
-sidecar_port = "17433"
+sidecar_url = "localhost:17433"
 
 [peers.hpke]
 public_key = "ebedcfa02354a1d17aed80b0ed55028d0616152d5f8971291e030231dc92063d"
@@ -61,7 +61,7 @@ version = "http2"
 
 [coordinator]
 url = "localhost:7430"
-sidecar_port = "17430"
+sidecar_url = "localhost:17430"
 certificate = """
 -----BEGIN CERTIFICATE-----
 MIIBHDCBwqADAgECAghMfLQt7MF1IDAKBggqhkjOPQQDAjAUMRIwEAYDVQQDDAls
