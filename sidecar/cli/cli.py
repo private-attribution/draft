@@ -59,27 +59,27 @@ def create_dynamic_config(
         "http": {
             "routers": {
                 "service1": {
-                    "rule": f"Host({base_domain})",
-                    "service": "service1",
-                    "entryPoints": ["web-secure"],
-                    "tls": {"options": "default"},
+                    "rule": f'"Host({base_domain})"',
+                    "service": '"service1"',
+                    "entryPoints": ['"web-secure"'],
+                    "tls": {"options": '"default"'},
                 },
                 "service2": {
-                    "rule": f"Host(ipa.{base_domain})",
-                    "service": "service2",
-                    "entryPoints": ["web-secure"],
-                    "tls": {"options": "default"},
+                    "rule": f'"Host(ipa.{base_domain})"',
+                    "service": '"service2"',
+                    "entryPoints": ['"web-secure"'],
+                    "tls": {"options": '"default"'},
                 },
             },
             "services": {
                 "service1": {
                     "loadBalancer": {
-                        "servers": [{"url": f"http://localhost:{sidecar_port}"}]
+                        "servers": [{"url": f'"http://localhost:{sidecar_port}"'}]
                     }
                 },
                 "service2": {
                     "loadBalancer": {
-                        "servers": [{"url": f"http://localhost:{ipa_port}"}]
+                        "servers": [{"url": f'"http://localhost:{ipa_port}"'}]
                     }
                 },
             },
