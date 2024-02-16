@@ -168,6 +168,9 @@ class IPACoordinatorGenerateTestDataStep(CommandStep):
     max_trigger_value: int
     status: ClassVar[Status] = Status.COMPILING
 
+    def pre_run(self):
+        self.output_file_path.parent.mkdir(parents=True, exist_ok=True)
+
     @classmethod
     def build_from_query(cls, query: IPACoordinatorQuery):
         return cls(
