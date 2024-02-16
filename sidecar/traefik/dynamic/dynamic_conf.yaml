@@ -13,17 +13,14 @@ http:
       entryPoints:
         - "web-secure"
       tls:
-        cert: "${CERT_PATH}"
-        key: "${KEY_PATH}"
+        options: "default"
     service2:
       rule: "Host(`ipa.{{env "BASE_DOMAIN"}`)"
       service: "service2"
       entryPoints:
         - "web-secure"
       tls:
-        cert: "${CERT_PATH}"
-        key: "${KEY_PATH}"
-
+        options: "default"
   services:
     service1:
       loadBalancer:
