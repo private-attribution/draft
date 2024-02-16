@@ -45,7 +45,11 @@ def start_helper_sidecar_command(
 
 
 def create_dynamic_config(
-    base_domain: str, config_path: Path, sidecar_port=int, ipa_port=int
+    sidecar_domain: str,
+    helper_domain: str,
+    config_path: Path,
+    sidecar_port=int,
+    ipa_port=int,
 ):
     data = {
         "tls": {
@@ -59,13 +63,13 @@ def create_dynamic_config(
         "http": {
             "routers": {
                 "service1": {
-                    "rule": f"Host(`{base_domain}`)",
+                    "rule": f"Host(`{sidecar_domain}`)",
                     "service": "service1",
                     "entryPoints": ["web-secure"],
                     "tls": {"options": "default"},
                 },
                 "service2": {
-                    "rule": f"Host(`ipa.{base_domain}`)",
+                    "rule": f"Host(`ipa.{helper_domain}`)",
                     "service": "service2",
                     "entryPoints": ["web-secure"],
                     "tls": {"options": "default"},
@@ -110,14 +114,14 @@ def start_traefik_command(
     config_path: Path,
     identity: int,
     root_domain: str,
-    root_path: Optional[Path] = None,
 ):
     role = Role(int(identity))
-    root_path = root_path or Path(f"tmp/sidecar/{role.value}")
     if role == Role.COORDINATOR:
-        base_domain = f"coordinator.{root_domain}"
+        sidecar_domain = f"sidecar-coordinator.{root_domain}"
+        helper_domain = f"helper-coordinator.{root_domain}"
     else:
-        base_domain = f"helper{role.value}.{root_domain}"
+        sidecar_domain = f"sidecar{role.value}.{root_domain}"
+        helper_domain = f"helper{role.value}.{root_domain}"
     network_config = config_path / Path("network.toml")
     helpers = load_helpers_from_network_config(network_config)
     helper = helpers[role]
@@ -131,7 +135,8 @@ def start_traefik_command(
     )
     dynamic_config_path = Path("sidecar/traefik/dynamic/dyanmic_conf.yaml")
     create_dynamic_config(
-        base_domain=base_domain,
+        sidecar_domain=sidecar_domain,
+        helper_domain=helper_domain,
         config_path=dynamic_config_path,
         sidecar_port=helper.sidecar_port,
         ipa_port=helper.helper_port,
@@ -139,7 +144,6 @@ def start_traefik_command(
 
     env = {
         **os.environ,
-        "BASE_DOMAIN": base_domain,
     }
     cmd = "sudo ./traefik --configFile=sidecar/traefik/traefik.yaml"
     return Command(cmd=cmd, env=env)
@@ -170,7 +174,6 @@ def start_helper_sidecar(
         config_path,
         identity,
         root_domain,
-        root_path,
     )
     start_commands_parallel([sidecar_command, traefik_command])
 
