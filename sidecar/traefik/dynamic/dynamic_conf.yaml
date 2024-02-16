@@ -8,14 +8,14 @@ tls:
 http:
   routers:
     service1:
-      rule: "Host(`{{env "BASE_DOMAIN"}}`)"
+      rule: "Host(`{{ .Env.BASE_DOMAIN }}`)"
       service: "service1"
       entryPoints:
         - "web-secure"
       tls:
         options: "default"
     service2:
-      rule: "Host(`ipa.{{env "BASE_DOMAIN"}}`)"
+      rule: "Host(`ipa.{{ .Env.BASE_DOMAIN }}`)"
       service: "service2"
       entryPoints:
         - "web-secure"
