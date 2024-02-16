@@ -4,6 +4,7 @@ from typing import Optional
 
 import click
 import click_pathlib
+import yaml
 
 from ..app.command import Command, start_commands_parallel
 from ..app.helpers import Role, load_helpers_from_network_config
@@ -43,6 +44,23 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
+def create_dynamic_tls_config(cert_path: Path, key_path: Path, config_path: Path):
+    data = {
+        "tls": {
+            "stores": {
+                "default": {
+                    "defaultCertificate": {
+                        "certFile": str(cert_path.absolute()),
+                        "keyFile": str(key_path.absolute()),
+                    }
+                }
+            }
+        }
+    }
+    with config_path.open(mode="w") as f:
+        yaml.dump(data, f)
+
+
 def start_traefik_command(
     config_path: Path,
     identity: int,
@@ -56,15 +74,14 @@ def start_traefik_command(
         base_domain = f"helper{role.value}.ipa-helper.dev"
     cert_path = config_path / Path("cert.pem")
     key_path = config_path / Path("key.pem")
+    config_path = Path("sidecar/traefik/dynamic/tls_conf.yaml")
+    create_dynamic_tls_config(cert_path, key_path, config_path)
 
     env = {
         **os.environ,
         "BASE_DOMAIN": base_domain,
-        "TRAEFIK_PROVIDERS_FILE_FILENAME": Path("sidecar/dynamic_conf.yaml"),
-        "CERT_PATH": cert_path,
-        "KEY_PATH": key_path,
     }
-    cmd = "sudo ./traefik --configFile=sidecar/traefik.yaml"
+    cmd = "sudo ./traefik --configFile=sidecar/traefik/traefik.yaml"
     return Command(cmd=cmd, env=env)
 
 

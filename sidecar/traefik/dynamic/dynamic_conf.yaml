@@ -1,8 +1,4 @@
-# dynamic_conf.yaml
 tls:
-  certificates:
-    - certFile: "`{{env "CERT_PATH"}}`"
-      keyFile: "`{{env "KEY_PATH"}}`"
   options:
     default:
       minVersion: VersionTLS12
