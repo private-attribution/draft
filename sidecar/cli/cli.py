@@ -44,7 +44,52 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
-def create_dynamic_tls_config(cert_path: Path, key_path: Path, config_path: Path):
+def create_dynamic_config(
+    base_domain: str, config_path: Path, sidecar_port=int, ipa_port=int
+):
+    data = {
+        "tls": {
+            "options": {
+                "default": {
+                    "minVersion": "VersionTLS12",
+                    "cipherSuites": ["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],
+                }
+            }
+        },
+        "http": {
+            "routers": {
+                "service1": {
+                    "rule": f"Host({base_domain})",
+                    "service": "service1",
+                    "entryPoints": ["web-secure"],
+                    "tls": {"options": "default"},
+                },
+                "service2": {
+                    "rule": f"Host(ipa.{base_domain})",
+                    "service": "service2",
+                    "entryPoints": ["web-secure"],
+                    "tls": {"options": "default"},
+                },
+            },
+            "services": {
+                "service1": {
+                    "loadBalancer": {
+                        "servers": [{"url": f"http://localhost:{sidecar_port}"}]
+                    }
+                },
+                "service2": {
+                    "loadBalancer": {
+                        "servers": [{"url": f"http://localhost:{ipa_port}"}]
+                    }
+                },
+            },
+        },
+    }
+    with config_path.open(mode="w") as f:
+        yaml.dump(data, f)
+
+
+def create_tls_config(cert_path: Path, key_path: Path, config_path: Path):
     data = {
         "tls": {
             "stores": {
@@ -64,18 +109,33 @@ def create_dynamic_tls_config(cert_path: Path, key_path: Path, config_path: Path
 def start_traefik_command(
     config_path: Path,
     identity: int,
+    root_domain: str,
     root_path: Optional[Path] = None,
 ):
     role = Role(int(identity))
     root_path = root_path or Path(f"tmp/sidecar/{role.value}")
     if role == Role.COORDINATOR:
-        base_domain = "coordinator.ipa-helper.dev"
+        base_domain = f"coordinator.{root_domain}"
     else:
-        base_domain = f"helper{role.value}.ipa-helper.dev"
+        base_domain = f"helper{role.value}.{root_domain}"
+    network_config = config_path / Path("network.toml")
+    helpers = load_helpers_from_network_config(network_config)
+    helper = helpers[role]
     cert_path = config_path / Path("cert.pem")
     key_path = config_path / Path("key.pem")
-    config_path = Path("sidecar/traefik/dynamic/tls_conf.yaml")
-    create_dynamic_tls_config(cert_path, key_path, config_path)
+    tls_config_path = Path("sidecar/traefik/dynamic/tls_conf.yaml")
+    create_tls_config(
+        cert_path=cert_path,
+        key_path=key_path,
+        config_path=tls_config_path,
+    )
+    dynamic_config_path = Path("sidecar/traefik/dynamic/dyanmic_conf.yaml")
+    create_dynamic_config(
+        base_domain=base_domain,
+        config_path=dynamic_config_path,
+        sidecar_port=helper.helper_port,
+        ipa_port=helper.helper_port + 1,
+    )
 
     env = {
         **os.environ,
@@ -93,10 +153,12 @@ def start_traefik_command(
     show_default=True,
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
+@click.option("--root_domain", type=str, default="ipa-helper.dev")
 @click.option("--identity", required=True, type=int)
 def start_helper_sidecar(
     config_path: Path,
     root_path: Optional[Path],
+    root_domain: str,
     identity: int,
 ):
     sidecar_command = start_helper_sidecar_command(
@@ -107,6 +169,7 @@ def start_helper_sidecar(
     traefik_command = start_traefik_command(
         config_path,
         identity,
+        root_domain,
         root_path,
     )
     start_commands_parallel([sidecar_command, traefik_command])
