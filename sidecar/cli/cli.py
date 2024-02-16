@@ -133,8 +133,8 @@ def start_traefik_command(
     create_dynamic_config(
         base_domain=base_domain,
         config_path=dynamic_config_path,
-        sidecar_port=helper.helper_port,
-        ipa_port=helper.helper_port + 1,
+        sidecar_port=helper.sidecar_port,
+        ipa_port=helper.helper_port,
     )
 
     env = {
