@@ -70,7 +70,7 @@ def create_dynamic_config(
                     "tls": {"options": "default"},
                 },
                 "service2": {
-                    "rule": f"Host(`ipa.{helper_domain}`)",
+                    "rule": f"Host(`{helper_domain}`)",
                     "service": "service2",
                     "entryPoints": ["web-secure"],
                     "tls": {"options": "default"},
