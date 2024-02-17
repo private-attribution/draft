@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
-from urllib.parse import urljoin, urlunparse
+from urllib.parse import urlunparse
 
 import httpx
 import loguru
@@ -29,9 +29,12 @@ class IPAQuery(Query):
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
-            finish_url = urljoin(
-                helper.sidecar_url.geturl(), f"/stop/kill/{self.query_id}"
+            finish_url = urlunparse(
+                helper.sidecar_url._replace(
+                    scheme="https", path=f"/stop/kill/{self.query_id}"
+                ),
             )
+
             r = httpx.post(
                 finish_url,
                 verify=False,
@@ -313,9 +316,12 @@ class IPACoordinatorQuery(IPAQuery):
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
-            finish_url = urljoin(
-                helper.sidecar_url.geturl(), f"/stop/finish/{self.query_id}"
+            finish_url = urlunparse(
+                helper.sidecar_url._replace(
+                    scheme="https", path=f"/stop/finish/{self.query_id}"
+                ),
             )
+
             r = httpx.post(
                 finish_url,
                 json={"identity": str(self.role.value), "signature": signature},
