@@ -210,7 +210,7 @@ class IPACoordinatorWaitForHelpersStep(Step):
         for sidecar_url in sidecar_urls:
             url = urlunparse(
                 sidecar_url._replace(
-                    scheme="ws", path=f"/start/ipa-helper/{self.query_id}/status"
+                    scheme="https", path=f"/start/ipa-helper/{self.query_id}/status"
                 ),
             )
             while True:
