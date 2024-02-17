@@ -215,7 +215,7 @@ class IPACoordinatorWaitForHelpersStep(Step):
             )
             while True:
                 print(url)
-                r = httpx.get(url).json()
+                r = httpx.get(url, verify=False).json()
                 print(r)
                 status = r.get("status")
                 match status:
