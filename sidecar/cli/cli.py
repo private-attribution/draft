@@ -73,7 +73,6 @@ def create_dynamic_config(
                     "rule": f"Host(`{helper_domain}`)",
                     "service": "service2",
                     "entryPoints": ["web-secure"],
-                    "tls": {"options": "default"},
                 },
             },
             "services": {
