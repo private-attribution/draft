@@ -34,6 +34,7 @@ class IPAQuery(Query):
             )
             r = httpx.post(
                 finish_url,
+                verify=False,
             )
             self.logger.info(f"sent post request: {r.text}")
 
@@ -318,6 +319,7 @@ class IPACoordinatorQuery(IPAQuery):
             r = httpx.post(
                 finish_url,
                 json={"identity": str(self.role.value), "signature": signature},
+                verify=False,
             )
             self.logger.info(f"sent post request: {finish_url}: {r.text}")
 
