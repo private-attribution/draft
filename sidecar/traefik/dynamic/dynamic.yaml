@@ -7,18 +7,8 @@ http:
       rule: "Host(`{{ env "SIDECAR_DOMAIN"}}`)"
       service: "sidecar-service"
       tls: {}
-    helper-router:
-      entryPoints:
-        - "web-secure"
-      rule: "Host(`{{ env "HELPER_DOMAIN"}}`)"
-      service: "helper-service"
-      tls: {}
   services:
     sidecar-service:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_PORT"}}"
-    helper-service:
-      loadBalancer:
-        servers:
-          - url: "http://localhost:{{ env "HELPER_PORT" }}"

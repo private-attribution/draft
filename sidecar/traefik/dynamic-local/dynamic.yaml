@@ -12,44 +12,24 @@ http:
       rule: "Host(`{{ env "SIDECAR_0_DOMAIN"}}`)"
       service: "sidecar-0-service"
       tls: {}
-    helper-0-router:
-      entryPoints:
-        - "web"
-      rule: "Host(`{{ env "HELPER_0_DOMAIN"}}`)"
-      service: "helper-0-service"
     sidecar-1-router:
       entryPoints:
         - "web-secure"
       rule: "Host(`{{ env "SIDECAR_1_DOMAIN"}}`)"
       service: "sidecar-1-service"
       tls: {}
-    helper-1-router:
-      entryPoints:
-        - "web"
-      rule: "Host(`{{ env "HELPER_1_DOMAIN"}}`)"
-      service: "helper-1-service"
     sidecar-2-router:
       entryPoints:
         - "web-secure"
       rule: "Host(`{{ env "SIDECAR_2_DOMAIN"}}`)"
       service: "sidecar-2-service"
       tls: {}
-    helper-2-router:
-      entryPoints:
-        - "web"
-      rule: "Host(`{{ env "HELPER_2_DOMAIN"}}`)"
-      service: "helper-2-service"
     sidecar-3-router:
       entryPoints:
         - "web-secure"
       rule: "Host(`{{ env "SIDECAR_3_DOMAIN"}}`)"
       service: "sidecar-3-service"
       tls: {}
-    helper-3-router:
-      entryPoints:
-        - "web"
-      rule: "Host(`{{ env "HELPER_3_DOMAIN"}}`)"
-      service: "helper-3-service"
   services:
     server-service:
       loadBalancer:
@@ -59,31 +39,15 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_0_PORT"}}"
-    helper-0-service:
-      loadBalancer:
-        servers:
-          - url: "http://localhost:{{ env "HELPER_0_PORT" }}"
     sidecar-1-service:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_1_PORT"}}"
-    helper-1-service:
-      loadBalancer:
-        servers:
-          - url: "http://localhost:{{ env "HELPER_1_PORT" }}"
     sidecar-2-service:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_2_PORT"}}"
-    helper-2-service:
-      loadBalancer:
-        servers:
-          - url: "http://localhost:{{ env "HELPER_2_PORT" }}"
     sidecar-3-service:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_3_PORT"}}"
-    helper-3-service:
-      loadBalancer:
-        servers:
-          - url: "http://localhost:{{ env "HELPER_3_PORT" }}"

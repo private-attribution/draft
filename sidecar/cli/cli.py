@@ -58,23 +58,26 @@ def build_domains(
     return sidecar_domain, helper_domain
 
 
+# pylint: disable=too-many-arguments
 def start_traefik_command(
     config_path: Path,
-    identity: int,
     helper_port: int,
     sidecar_port: int,
     root_domain: str,
+    helper_domain: str,
+    sidecar_domain: str,
 ):
-    sidecar_domain, helper_domain = build_domains(identity, root_domain)
+    helper_domain = helper_domain or f"helper.{root_domain}"
+    sidecar_domain = sidecar_domain or f"sidecar.{root_domain}"
     env = {
         **os.environ,
-        "SIDECAR_DOMAIN": sidecar_domain,
-        "SIDECAR_PORT": str(sidecar_port),
         "HELPER_DOMAIN": helper_domain,
+        "SIDECAR_DOMAIN": sidecar_domain,
         "HELPER_PORT": str(helper_port),
+        "SIDECAR_PORT": str(sidecar_port),
         "CERT_DIR": config_path,
     }
-    cmd = "sudo ./traefik --configFile=sidecar/traefik/traefik.yaml"
+    cmd = "sudo -E ./traefik --configFile=sidecar/traefik/traefik.yaml"
     return Command(cmd=cmd, env=env)
 
 
@@ -112,6 +115,8 @@ def start_traefik_local_command(
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
 @click.option("--root_domain", type=str, default="ipa-helper.dev")
+@click.option("--helper_domain", type=str, default="")
+@click.option("--sidecar_domain", type=str, default="")
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
@@ -119,6 +124,8 @@ def start_helper_sidecar(
     config_path: Path,
     root_path: Optional[Path],
     root_domain: str,
+    helper_domain: str,
+    sidecar_domain: str,
     helper_port: int,
     sidecar_port: int,
     identity: int,
@@ -132,10 +139,11 @@ def start_helper_sidecar(
     )
     traefik_command = start_traefik_command(
         config_path=config_path,
-        identity=identity,
         helper_port=helper_port,
         sidecar_port=sidecar_port,
         root_domain=root_domain,
+        helper_domain=helper_domain,
+        sidecar_domain=sidecar_domain,
     )
     start_commands_parallel([sidecar_command, traefik_command])
 
