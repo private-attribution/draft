@@ -99,6 +99,44 @@ SUPABASE_AUTH_GITHUB_CLIENT_ID="<CLIENT_ID>"
 SUPABASE_AUTH_GITHUB_SECRET="<CLIENT_SECRET>"
 ```
 
+**Traefik**
+
+install traefik
+
+```
+brew install traefik
+```
+
+update /etc/hosts with (requires sudo)
+
+```
+127.0.0.1 draft.test
+127.0.0.1 helper0.draft.test
+127.0.0.1 helper1.draft.test
+127.0.0.1 helper2.draft.test
+127.0.0.1 helper3.draft.test
+127.0.0.1 sidecar0.draft.test
+127.0.0.1 sidecar1.draft.test
+127.0.0.1 sidecar2.draft.test
+127.0.0.1 sidecar3.draft.test
+```
+
+make local certs
+
+install mkcert with
+
+```
+brew install mkcert
+```
+
+make the cert with
+
+```
+mkcert -cert-file "local_dev/config/cert.pem" -key-file "local_dev/config/key.pem" "draft.test" "*.draft.test"
+```
+
+**Run local dev**
+
 You're now ready to install, run, and develop on `draft`!
 
 To start the local development environment:

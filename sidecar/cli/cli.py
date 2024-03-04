@@ -4,7 +4,6 @@ from typing import Optional
 
 import click
 import click_pathlib
-import yaml
 
 from ..app.command import Command, start_commands_parallel
 from ..app.helpers import Role
@@ -45,69 +44,18 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
-def create_dynamic_config(
-    sidecar_domain: str,
-    helper_domain: str,
-    config_path: Path,
-    sidecar_port=int,
-    ipa_port=int,
-):
-    data = {
-        "tls": {
-            "options": {
-                "default": {
-                    "minVersion": "VersionTLS12",
-                    "cipherSuites": ["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"],
-                }
-            }
-        },
-        "http": {
-            "routers": {
-                "service1": {
-                    "rule": f"Host(`{sidecar_domain}`)",
-                    "service": "service1",
-                    "entryPoints": ["web-secure"],
-                    "tls": {"options": "default"},
-                },
-                "service2": {
-                    "rule": f"Host(`{helper_domain}`)",
-                    "service": "service2",
-                    "entryPoints": ["web"],
-                },
-            },
-            "services": {
-                "service1": {
-                    "loadBalancer": {
-                        "servers": [{"url": f"http://localhost:{sidecar_port}"}]
-                    }
-                },
-                "service2": {
-                    "loadBalancer": {
-                        "servers": [{"url": f"http://localhost:{ipa_port}"}]
-                    }
-                },
-            },
-        },
-    }
-    with config_path.open(mode="w") as f:
-        yaml.dump(data, f)
-
-
-def create_tls_config(cert_path: Path, key_path: Path, config_path: Path):
-    data = {
-        "tls": {
-            "stores": {
-                "default": {
-                    "defaultCertificate": {
-                        "certFile": str(cert_path.absolute()),
-                        "keyFile": str(key_path.absolute()),
-                    }
-                }
-            }
-        }
-    }
-    with config_path.open(mode="w") as f:
-        yaml.dump(data, f)
+def build_domains(
+    identity: int,
+    root_domain: str,
+) -> tuple[str, str]:
+    role = Role(int(identity))
+    if role == Role.COORDINATOR:
+        sidecar_domain = f"sidecar-coordinator.{root_domain}"
+        helper_domain = f"helper-coordinator.{root_domain}"
+    else:
+        sidecar_domain = f"sidecar{role.value}.{root_domain}"
+        helper_domain = f"helper{role.value}.{root_domain}"
+    return sidecar_domain, helper_domain
 
 
 def start_traefik_command(
@@ -117,34 +65,40 @@ def start_traefik_command(
     sidecar_port: int,
     root_domain: str,
 ):
-    role = Role(int(identity))
-    if role == Role.COORDINATOR:
-        sidecar_domain = f"sidecar-coordinator.{root_domain}"
-        helper_domain = f"helper-coordinator.{root_domain}"
-    else:
-        sidecar_domain = f"sidecar{role.value}.{root_domain}"
-        helper_domain = f"helper{role.value}.{root_domain}"
-    cert_path = config_path / Path("cert.pem")
-    key_path = config_path / Path("key.pem")
-    tls_config_path = Path("sidecar/traefik/dynamic/tls_conf.yaml")
-    create_tls_config(
-        cert_path=cert_path,
-        key_path=key_path,
-        config_path=tls_config_path,
-    )
-    dynamic_config_path = Path("sidecar/traefik/dynamic/dyanmic_conf.yaml")
-    create_dynamic_config(
-        sidecar_domain=sidecar_domain,
-        helper_domain=helper_domain,
-        config_path=dynamic_config_path,
-        sidecar_port=sidecar_port,
-        ipa_port=helper_port,
-    )
-
+    sidecar_domain, helper_domain = build_domains(identity, root_domain)
     env = {
         **os.environ,
+        "SIDECAR_DOMAIN": sidecar_domain,
+        "SIDECAR_PORT": str(sidecar_port),
+        "HELPER_DOMAIN": helper_domain,
+        "HELPER_PORT": str(helper_port),
+        "CERT_DIR": config_path,
     }
     cmd = "sudo ./traefik --configFile=sidecar/traefik/traefik.yaml"
+    return Command(cmd=cmd, env=env)
+
+
+def start_traefik_local_command(
+    config_path: Path,
+    helper_ports: tuple[int, ...],
+    sidecar_ports: tuple[int, ...],
+    server_port: int,
+    root_domain: str,
+):
+    env = {
+        **os.environ,
+        "CERT_DIR": config_path,
+        "SERVER_DOMAIN": root_domain,
+        "SERVER_PORT": str(server_port),
+    }
+    for identity, (h_port, s_port) in enumerate(zip(helper_ports, sidecar_ports)):
+        sidecar_domain, helper_domain = build_domains(identity, root_domain)
+        env[f"SIDECAR_{identity}_DOMAIN"] = sidecar_domain
+        env[f"SIDECAR_{identity}_PORT"] = str(s_port)
+        env[f"HELPER_{identity}_DOMAIN"] = helper_domain
+        env[f"HELPER_{identity}_PORT"] = str(h_port)
+
+    cmd = "traefik --configFile=sidecar/traefik/traefik-local.yaml"
     return Command(cmd=cmd, env=env)
 
 
@@ -202,25 +156,37 @@ def start_local_dev(
     helper_start_port: int,
     sidecar_start_port: int,
 ):
+    root_domain: str = "draft.test"
+    server_port: int = 7530
     npm_install_command = Command(
         cmd="npm --prefix server install",
     )
     npm_install_command.run_blocking_no_output_capture()
     npm_run_dev_command = Command(
-        cmd="npm --prefix server run dev",
+        cmd=f"npm --prefix server run dev -- --port {server_port}",
     )
+
+    helper_ports = {role: helper_start_port + int(role) for role in Role}
+    sidecar_ports = {role: sidecar_start_port + int(role) for role in Role}
 
     sidecar_commands = [
         start_helper_sidecar_command(
             config_path=config_path,
             identity=role,
-            helper_port=helper_start_port + int(role),
-            sidecar_port=sidecar_start_port + int(role),
+            helper_port=helper_ports[role],
+            sidecar_port=sidecar_ports[role],
             root_path=root_path,
         )
         for role in Role
     ]
-    commands = [npm_run_dev_command] + sidecar_commands
+    traefik_command = start_traefik_local_command(
+        config_path=config_path,
+        helper_ports=tuple(helper_ports.values()),
+        sidecar_ports=tuple(sidecar_ports.values()),
+        server_port=server_port,
+        root_domain=root_domain,
+    )
+    commands = sidecar_commands + [npm_run_dev_command, traefik_command]
     start_commands_parallel(commands)
 
 

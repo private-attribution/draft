@@ -87,19 +87,19 @@ export class RemoteServer {
 
   logsWebSocketURL(id: string): URL {
     const webSocketURL = new URL(`/ws/logs/${id}`, this.baseURL);
-    webSocketURL.protocol = "ws";
+    webSocketURL.protocol = "wss";
     return webSocketURL;
   }
 
   statusWebSocketURL(id: string): URL {
     const webSocketURL = new URL(`/ws/status/${id}`, this.baseURL);
-    webSocketURL.protocol = "ws";
+    webSocketURL.protocol = "wss";
     return webSocketURL;
   }
 
   statsWebSocketURL(id: string): URL {
     const webSocketURL = new URL(`/ws/stats/${id}`, this.baseURL);
-    webSocketURL.protocol = "ws";
+    webSocketURL.protocol = "wss";
     return webSocketURL;
   }
 
@@ -271,19 +271,26 @@ export const IPARemoteServers: RemoteServersType = {
   [RemoteServerNames.Coordinator]: new IPACoordinatorRemoteServer(
     RemoteServerNames.Coordinator,
     new URL(
-      process?.env?.NEXT_PUBLIC_COORDINATOR_URL ?? "http://localhost:17430",
+      process?.env?.NEXT_PUBLIC_COORDINATOR_URL ??
+        "https://sidecar-coordinator.draft.test",
     ),
   ),
   [RemoteServerNames.Helper1]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper1,
-    new URL(process?.env?.NEXT_PUBLIC_HELPER1_URL ?? "http://localhost:17431"),
+    new URL(
+      process?.env?.NEXT_PUBLIC_HELPER1_URL ?? "https://sidecar1.draft.test",
+    ),
   ),
   [RemoteServerNames.Helper2]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper2,
-    new URL(process?.env?.NEXT_PUBLIC_HELPER2_URL ?? "http://localhost:17432"),
+    new URL(
+      process?.env?.NEXT_PUBLIC_HELPER2_URL ?? "https://sidecar2.draft.test",
+    ),
   ),
   [RemoteServerNames.Helper3]: new IPAHelperRemoteServer(
     RemoteServerNames.Helper3,
-    new URL(process?.env?.NEXT_PUBLIC_HELPER3_URL ?? "http://localhost:17433"),
+    new URL(
+      process?.env?.NEXT_PUBLIC_HELPER3_URL ?? "https://sidecar3.draft.test",
+    ),
   ),
 };
