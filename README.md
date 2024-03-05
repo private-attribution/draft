@@ -172,16 +172,16 @@ pip install --editable .
 1. **Python3.11**: Install with `sudo yum install python3.11`
 2. **git**: Install with `sudo yum install git`
 3. **draft** (this package):
-  1. Clone with `git clone https://github.com/private-attribution/draft.git`
-  2. Enter directory `cd draft`.
-  3. Create virtualenv: `python3.11 -m venv .venv`
-  4. Use virtualeenv: `source .venv/bin/activate`
-  5. Upgrade pip: `pip install --upgrade pip`
-  6. Install: `pip install --editable .`
+    1. Clone with `git clone https://github.com/private-attribution/draft.git`
+    2. Enter directory `cd draft`.
+    3. Create virtualenv: `python3.11 -m venv .venv`
+    4. Use virtualeenv: `source .venv/bin/activate`
+    5. Upgrade pip: `pip install --upgrade pip`
+    6. Install: `pip install --editable .`
 4. **traefik**:
-  1. Download version 2.11: `curl https://github.com/traefik/traefik/releases/download/v2.11.0/traefik_v2.11.0_linux_amd64.tar.gz`
-  2. Validate checksum: `sha256sum traefik_v2.11.0_linux_amd64.tar.gz` should print `7f31f1cc566bd094f038579fc36e354fd545cf899523eb507c3cfcbbdb8b9552  traefik_v2.11.0_linux_amd64.tar.gz`
-  3. Extract the binary: `tar -zxvf traefik_v2.11.0_linux_amd64.tar.gz`
+    1. Download version 2.11: `wget https://github.com/traefik/traefik/releases/download/v2.11.0/traefik_v2.11.0_linux_amd64.tar.gz`
+    2. Validate checksum: `sha256sum traefik_v2.11.0_linux_amd64.tar.gz` should print `7f31f1cc566bd094f038579fc36e354fd545cf899523eb507c3cfcbbdb8b9552  traefik_v2.11.0_linux_amd64.tar.gz`
+    3. Extract the binary: `tar -zxvf traefik_v2.11.0_linux_amd64.tar.gz`
 
 
 ### Generating TLS certs with Let's Encrypt
@@ -192,7 +192,7 @@ You will need a domain name and TLS certificates for the sidecar to properly run
 2. Make sure you've installed the requirements above, and are using the virtual environment.
 3. Install `certbot`: `pip install certbot`
 4. `sudo .venv/bin/certbot certonly --standalone -m cert-renewal@example.com -d "sidecar.example.com,helper.example.com"`
-  1. Note that you must point directly to `.venv/bin/certbot` as `sudo` does not operate in the virtualenv.
+    1. Note that you must point directly to `.venv/bin/certbot` as `sudo` does not operate in the virtualenv.
 5. Accept the [Let's Encrypt terms](https://letsencrypt.org/documents/LE-SA-v1.3-September-21-2022.pdf).
 
 
@@ -208,13 +208,13 @@ One you know these:
 1. Make a config directory `mkdir config`
 2. Copy the default network config: `cp local_dev/config/network.toml config/.`
 3. Update that file.
-  1. Replace `helper1.draft.test` and `sidecar1.draft.test` with the respective domains for party with identity=1.
-  2. Repeat for identity=2 and identity=3.
-  3. Replace respective certificates with their public keys.
-  4. Replace `helper-coordinator.draft.test` and `sidecar-coordinator.draft.test` with domain for party with identity=0.
+    1. Replace `helper1.draft.test` and `sidecar1.draft.test` with the respective domains for party with identity=1.
+    2. Repeat for identity=2 and identity=3.
+    3. Replace respective certificates with their public keys.
+    4. Replace `helper-coordinator.draft.test` and `sidecar-coordinator.draft.test` with domain for party with identity=0.
 4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem key.pem`
 5. Generate IPA specific keys:
-  1. TODO
+    1. TODO
 
 
 ### Run draft
