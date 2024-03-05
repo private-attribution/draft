@@ -272,7 +272,7 @@ export const IPARemoteServers: RemoteServersType = {
     RemoteServerNames.Coordinator,
     new URL(
       process?.env?.NEXT_PUBLIC_COORDINATOR_URL ??
-        "https://sidecar-coordinator.draft.test",
+        "https://sidecar0.draft.test",
     ),
   ),
   [RemoteServerNames.Helper1]: new IPAHelperRemoteServer(

@@ -44,18 +44,6 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
-def build_sidecar_domain(
-    identity: int,
-    root_domain: str,
-) -> str:
-    role = Role(int(identity))
-    if role == Role.COORDINATOR:
-        sidecar_domain = f"sidecar-coordinator.{root_domain}"
-    else:
-        sidecar_domain = f"sidecar{role.value}.{root_domain}"
-    return sidecar_domain
-
-
 def start_traefik_command(
     config_path: Path,
     sidecar_port: int,
@@ -86,7 +74,7 @@ def start_traefik_local_command(
         "SERVER_PORT": str(server_port),
     }
     for identity, s_port in enumerate(sidecar_ports):
-        sidecar_domain = build_sidecar_domain(identity, root_domain)
+        sidecar_domain = f"sidecar{identity}.{root_domain}"
         env[f"SIDECAR_{identity}_DOMAIN"] = sidecar_domain
         env[f"SIDECAR_{identity}_PORT"] = str(s_port)
 

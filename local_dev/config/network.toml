@@ -61,7 +61,7 @@ version = "http2"
 
 [coordinator]
 url = "localhost:7430"
-sidecar_url = "sidecar-coordinator.draft.test"
+sidecar_url = "sidecar0.draft.test"
 certificate = """
 -----BEGIN CERTIFICATE-----
 MIIBHDCBwqADAgECAghMfLQt7MF1IDAKBggqhkjOPQQDAjAUMRIwEAYDVQQDDAls

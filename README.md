@@ -111,10 +111,6 @@ update /etc/hosts with (requires sudo)
 
 ```
 127.0.0.1 draft.test
-127.0.0.1 helper0.draft.test
-127.0.0.1 helper1.draft.test
-127.0.0.1 helper2.draft.test
-127.0.0.1 helper3.draft.test
 127.0.0.1 sidecar0.draft.test
 127.0.0.1 sidecar1.draft.test
 127.0.0.1 sidecar2.draft.test
@@ -182,6 +178,7 @@ pip install --editable .
     1. Download version 2.11: `wget https://github.com/traefik/traefik/releases/download/v2.11.0/traefik_v2.11.0_linux_amd64.tar.gz`
     2. Validate checksum: `sha256sum traefik_v2.11.0_linux_amd64.tar.gz` should print `7f31f1cc566bd094f038579fc36e354fd545cf899523eb507c3cfcbbdb8b9552  traefik_v2.11.0_linux_amd64.tar.gz`
     3. Extract the binary: `tar -zxvf traefik_v2.11.0_linux_amd64.tar.gz`
+5. **tmux**: `sudo yum install tmux`
 
 
 ### Generating TLS certs with Let's Encrypt
@@ -208,16 +205,21 @@ One you know these:
 1. Make a config directory `mkdir config`
 2. Copy the default network config: `cp local_dev/config/network.toml config/.`
 3. Update that file.
-    1. Replace `helper1.draft.test` and `sidecar1.draft.test` with the respective domains for party with identity=1.
-    2. Repeat for identity=2 and identity=3.
+    1. Replace `helper0.draft.test` and `sidecar0.draft.test` with the respective domains for party with identity=0.
+    2. Repeat for identity= 1, 2, and 3.
     3. Replace respective certificates with their public keys.
-    4. Replace `helper-coordinator.draft.test` and `sidecar-coordinator.draft.test` with domain for party with identity=0.
 4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem key.pem`
 5. Generate IPA specific keys:
     1. TODO
 
 
 ### Run draft
+
+You'll want this to continue to run, even if you disconnect from the host, so it's a good idea to start a tmux session:
+
+```
+tmux new -s draft-session
+```
 
 ```
 draft start-helper-sidecar --identity <identity> --root_domain example.com --config_path config
