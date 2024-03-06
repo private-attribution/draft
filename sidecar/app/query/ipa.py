@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -9,8 +8,6 @@ from urllib.parse import urlunparse
 
 import httpx
 import loguru
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from ..helpers import Role
 from ..local_paths import Paths
@@ -303,15 +300,7 @@ class IPACoordinatorQuery(IPAQuery):
         IPACoordinatorStartStep,
     ]
 
-    def sign_query_id(self):
-        return base64.b64encode(
-            settings.private_key.sign(
-                self.query_id.encode("utf8"), ec.ECDSA(hashes.SHA256())
-            )
-        ).decode("utf8")
-
     def send_terminate_signals(self):
-        signature = self.sign_query_id()
         self.logger.info("sending terminate signals")
         for helper in settings.helpers.values():
             if helper.role == self.role:
@@ -324,7 +313,6 @@ class IPACoordinatorQuery(IPAQuery):
 
             r = httpx.post(
                 finish_url,
-                json={"identity": str(self.role.value), "signature": signature},
                 verify=False,
             )
             self.logger.info(f"sent post request: {finish_url}: {r.text}")
