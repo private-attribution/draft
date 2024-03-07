@@ -154,8 +154,9 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin helper --manifest-path={self.manifest_path} "
-            f'--features="web-app real-world-infra compact-gate stall-detection" '
-            f"--no-default-features --target-dir={self.target_path} --release",
+            f'--features="web-app real-world-infra compact-gate stall-detection '
+            f'multi-threading" --no-default-features --target-dir={self.target_path} '
+            f"--release",
             logger=self.logger,
         )
 
