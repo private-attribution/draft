@@ -101,6 +101,7 @@ class FileOutputCommand(Command):
             shlex.split(self.cmd),
             stdout=self.output_file,
             env=self.env,
+            cwd=self.cwd,
         )
 
     def start(self):
@@ -116,6 +117,7 @@ class LoggerOutputCommand(Command):
         return subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
+            cwd=self.cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
