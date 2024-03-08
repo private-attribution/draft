@@ -163,30 +163,24 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
 
 @dataclass(kw_only=True)
 class IPAHelperCollectStepsStep(CommandStep):
-    manifest_path: Path
-    output_file_path: Path
-    script_path: Path
+    repo_path: Path
     logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
 
     @classmethod
     def build_from_query(cls, query: IPAQuery):
-        manifest_path = query.paths.repo_path / Path("Cargo.toml")
-        script_path = query.paths.repo_path / Path("scripts/collect_steps.py")
-        output_file_path = query.paths.repo_path / Path(
-            "ipa-core/src/protocol/step/steps.txt"
-        )
+        repo_path = query.paths.repo_path
         return cls(
-            manifest_path=manifest_path,
+            repo_path=repo_path,
             logger=query.logger,
-            output_file_path=output_file_path,
-            script_path=script_path,
         )
 
     def build_command(self) -> FileOutputCommand:
+        output_file_path = self.repo_path / Path("ipa-core/src/protocol/step/steps.txt")
         return FileOutputCommand(
-            cmd=f"python3 {self.script_path}",
-            output_file_path=self.output_file_path,
+            cmd=f"python3 scripts/collect_steps.py",
+            cwd=self.repo_path,
+            output_file_path=output_file_path,
         )
 
 

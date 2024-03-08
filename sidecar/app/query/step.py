@@ -80,6 +80,7 @@ class Step(ABC):
 
 @dataclass(kw_only=True)
 class CommandStep(Step, ABC):
+    # TODO : maybe delete env from here
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
     command: Command = field(init=False, repr=True)
 

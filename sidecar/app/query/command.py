@@ -16,6 +16,7 @@ import psutil
 class Command:
     cmd: str
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
+    cwd: Optional[Path] = field(default=None, repr=True)
     process: Optional[subprocess.Popen] = field(init=False, default=None, repr=True)
 
     @property
@@ -65,6 +66,7 @@ class Command:
         return subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
+            cwd=self.cwd,
         )
 
     def start(self):
