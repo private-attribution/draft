@@ -182,7 +182,7 @@ class IPAHelperCollectStepsStep(CommandStep):
 
     def build_command(self) -> FileOutputCommand:
         return FileOutputCommand(
-            cmd="python3 scripts/collect_scripts.py",
+            cmd="python3 scripts/collect_steps.py",
             output_file_path=self.output_file_path,
         )
 
