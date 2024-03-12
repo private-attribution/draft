@@ -178,7 +178,7 @@ class IPAHelperCollectStepsStep(CommandStep):
     def build_command(self) -> FileOutputCommand:
         output_file_path = self.repo_path / Path("ipa-core/src/protocol/step/steps.txt")
         return FileOutputCommand(
-            cmd=f"python3 scripts/collect_steps.py -m",
+            cmd="python3 scripts/collect_steps.py -m",
             cwd=self.repo_path,
             output_file_path=output_file_path,
         )
