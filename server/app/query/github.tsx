@@ -9,6 +9,13 @@ export interface Branch {
   commitHash: string;
 }
 
+// TODO: raise error if api key is expired
+if (process.env.OCTOKIT_GITHUB_API_KEY === undefined) {
+  console.warn(
+    "WARNING: Octokit requires a personal access token to function properly. Please add OCTOKIT_GITHUB_API_KEY to .env. It does not require any permissions.",
+  );
+}
+
 export async function Branches(owner: string, repo: string): Promise<Branch[]> {
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
@@ -16,7 +23,7 @@ export async function Branches(owner: string, repo: string): Promise<Branch[]> {
       owner: owner,
       repo: repo,
       per_page: 100,
-      auth: process.env.GITHUB_API_KEY,
+      auth: process.env.OCTOKIT_GITHUB_API_KEY,
     },
   );
 
@@ -30,9 +37,11 @@ export async function Branches(owner: string, repo: string): Promise<Branch[]> {
     }
   }
 
-  const mainBranch = branchesArray.find((branch) => branch.name === "main");
-  if (mainBranch) {
-    branchesArray.unshift(mainBranch);
+  const mainBranchIndex = branchesArray.findIndex(
+    (branch) => branch.name === "main",
+  );
+  if (mainBranchIndex != -1) {
+    branchesArray.unshift(branchesArray.splice(mainBranchIndex, 1)[0]);
   }
   branchesArray.unshift({ name: "N/A", commitHash: "" });
   return branchesArray;
@@ -45,7 +54,7 @@ export async function Commits(owner: string, repo: string): Promise<string[]> {
       owner: owner,
       repo: repo,
       per_page: 100,
-      auth: process.env.GITHUB_API_KEY,
+      auth: process.env.OCTOKIT_GITHUB_API_KEY,
     },
   );
 
