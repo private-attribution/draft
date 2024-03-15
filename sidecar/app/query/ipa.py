@@ -32,10 +32,7 @@ class IPAQuery(Query):
                 ),
             )
 
-            r = httpx.post(
-                finish_url,
-                verify=False,
-            )
+            r = httpx.post(finish_url)
             self.logger.info(f"sent post request: {r.text}")
 
     def crash(self):
@@ -239,9 +236,7 @@ class IPACoordinatorWaitForHelpersStep(Step):
                 ),
             )
             while True:
-                print(url)
-                r = httpx.get(url, verify=False).json()
-                print(r)
+                r = httpx.get(url).json()
                 status = r.get("status")
                 match status:
                     case Status.IN_PROGRESS.name:
@@ -335,10 +330,7 @@ class IPACoordinatorQuery(IPAQuery):
                 ),
             )
 
-            r = httpx.post(
-                finish_url,
-                verify=False,
-            )
+            r = httpx.post(finish_url)
             self.logger.info(f"sent post request: {finish_url}: {r.text}")
 
     def finish(self):
