@@ -102,7 +102,7 @@ class IPACheckoutCommitStep(LoggerOutputCommandStep):
 
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
-            cmd=f"git -C {self.repo_path} checkout {self.commit_hash}",
+            cmd=f"git -C {self.repo_path} checkout -f {self.commit_hash}",
             logger=self.logger,
         )
 
