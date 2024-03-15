@@ -94,7 +94,7 @@ In the output, you'll find an `ANON_KEY`. Update the `server/.env` file one more
 ```
 NEXT_PUBLIC_SUPABASE_URL="http://localhost:54321"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="<ANON_KEY>"
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL="https://draft.test"
 SUPABASE_AUTH_GITHUB_CLIENT_ID="<CLIENT_ID>"
 SUPABASE_AUTH_GITHUB_SECRET="<CLIENT_SECRET>"
 ```
@@ -129,6 +129,11 @@ make the cert with
 
 ```
 mkcert -cert-file "local_dev/config/cert.pem" -key-file "local_dev/config/key.pem" "draft.test" "*.draft.test"
+```
+
+If you get a warning about the cert not being installed (i.e., it's the first time you've used mkcert), also run:
+```
+mkcert -install
 ```
 
 **Run local dev**
