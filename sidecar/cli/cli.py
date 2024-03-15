@@ -1,4 +1,6 @@
 import os
+import shlex
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +22,7 @@ def start_helper_sidecar_command(
     helper_port: int,
     sidecar_port: int,
     root_path: Optional[Path] = None,
+    _env: Optional[dict[str, str]] = None,
 ):
     role = Role(int(identity))
     network_config = config_path / Path("network.toml")
@@ -30,8 +33,11 @@ def start_helper_sidecar_command(
     else:
         private_key_pem_path = config_path / Path(f"h{role.value}.key")
     cmd = "uvicorn sidecar.app.main:app"
+    if _env is None:
+        _env = {}
     env = {
         **os.environ,
+        **_env,
         "ROLE": str(role.value),
         "ROOT_PATH": root_path,
         "CONFIG_PATH": config_path,
@@ -150,6 +156,16 @@ def start_local_dev(
     helper_ports = {role: helper_start_port + int(role) for role in Role}
     sidecar_ports = {role: sidecar_start_port + int(role) for role in Role}
 
+    _env = {}
+    local_ca_process = subprocess.run(
+        shlex.split("mkcert -CAROOT"),
+        capture_output=True,
+        check=True,
+    )
+    _env["SSL_CERT_FILE"] = (
+        Path(local_ca_process.stdout.decode("utf8").strip()) / "rootCA.pem"
+    )
+
     sidecar_commands = [
         start_helper_sidecar_command(
             config_path=config_path,
@@ -157,6 +173,7 @@ def start_local_dev(
             helper_port=helper_ports[role],
             sidecar_port=sidecar_ports[role],
             root_path=root_path,
+            _env=_env,
         )
         for role in Role
     ]
