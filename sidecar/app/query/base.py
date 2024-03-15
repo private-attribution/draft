@@ -18,6 +18,10 @@ from .step import Status, Step
 queries: dict[str, "Query"] = {}
 
 
+class QueryExistsError(Exception):
+    pass
+
+
 @dataclass
 class Query:
     # pylint: disable=too-many-instance-attributes
@@ -45,7 +49,7 @@ class Query:
         )
         self.logger.debug(f"adding new Query {self}.")
         if queries.get(self.query_id) is not None:
-            raise Exception(f"{self.query_id} already exists")
+            raise QueryExistsError(f"{self.query_id} already exists")
         queries[self.query_id] = self
 
     @property
@@ -65,7 +69,14 @@ class Query:
         query = queries.get(query_id)
         if query:
             return query
-        query = cls(query_id)
+        try:
+            query = cls(query_id)
+        except QueryExistsError as e:
+            # avoid race condition on queries
+            query = queries.get(query_id)
+            if query:
+                return query
+            raise e
         if query.status_file_path.exists():
             with query.status_file_path.open("r") as f:
                 status_str = f.readline()
