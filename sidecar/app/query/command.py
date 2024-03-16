@@ -91,11 +91,6 @@ class FileOutputCommand(Command):
     output_file_path: Path
     output_file: Optional[TextIO] = field(repr=False, init=False)
 
-    def __post_init__(self):
-        # need to manually close in start method
-        # pylint: disable=consider-using-with
-        self.output_file = self.output_file_path.open("wb")
-
     def build_process(self):
         return subprocess.Popen(
             shlex.split(self.cmd),
@@ -105,6 +100,9 @@ class FileOutputCommand(Command):
         )
 
     def start(self):
+        # build_process needs to return, so this needs to be manually closed
+        # pylint: disable=consider-using-with
+        self.output_file = self.output_file_path.open("wb")
         super().start()
         self.output_file.close()
 

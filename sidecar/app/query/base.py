@@ -115,13 +115,19 @@ class Query:
 
     def start(self):
         self.start_time = time.time()
-        for step in self.steps:
-            self.logger.info(f"Starting: {step}")
-            self.status = step.status
-            self.current_step = step
-            step.start()
-            if not step.success:
-                self.crash()
+        try:
+            for step in self.steps:
+                if self.finished:
+                    break
+                self.logger.info(f"Starting: {step}")
+                self.status = step.status
+                self.current_step = step
+                step.start()
+                if not step.success:
+                    self.crash()
+        except Exception as e:
+            self.logger.error(e)
+            self.crash()
         if not self.finished:
             self.finish()
 
