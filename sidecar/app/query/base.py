@@ -125,7 +125,10 @@ class Query:
                 step.start()
                 if not step.success:
                     self.crash()
+        # pylint: disable=broad-exception-caught
         except Exception as e:
+            # intentially crash on any python exception
+            # as well as command failure
             self.logger.error(e)
             self.crash()
         if not self.finished:
