@@ -1,0 +1,14 @@
+http:
+  routers:
+    sidecar-router:
+      entryPoints:
+        - "web"
+        - "web-secure"
+      rule: "Host(`{{ env "SIDECAR_DOMAIN"}}`)"
+      service: "sidecar-service"
+      tls: {}
+  services:
+    sidecar-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SIDECAR_PORT"}}"

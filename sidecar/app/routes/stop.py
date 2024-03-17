@@ -1,16 +1,8 @@
-import base64
-
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import APIRouter
-from pydantic import BaseModel
 
-from ..helpers import Role
 from ..logger import logger
 from ..query.base import Query
 from ..query.step import Status
-from ..settings import settings
 
 router = APIRouter(
     prefix="/stop",
@@ -20,40 +12,10 @@ router = APIRouter(
 )
 
 
-def validate_query_signature(
-    query_id: str,
-    identity: int,
-    signature: bytes,
-) -> bool:
-    helpers = settings.helpers
-    role = Role(identity)
-    helper = helpers[role]
-    try:
-        helper.public_key.verify(
-            signature, query_id.encode("utf8"), ec.ECDSA(hashes.SHA256())
-        )
-        return True
-    except InvalidSignature:
-        return False
-
-
-# pyre-ignore: https://pyre-check.org/docs/errors/#dataclass-like-classes
-class SignedRequestModel(BaseModel):
-    identity: int
-    signature: bytes
-
-
 @router.post("/finish/{query_id}")
 def finish(
     query_id: str,
-    data: SignedRequestModel,
 ):
-    identity = data.identity
-    signature = base64.b64decode(data.signature)
-    logger.info(f"finish called for {query_id=}")
-    if not validate_query_signature(query_id, identity, signature):
-        logger.warning("signature invalid")
-        return {"message": "Invalid signature"}
     query = Query.get_from_query_id(query_id)
     if query is None:
         return {"message": "Query not found", "query_id": query_id}

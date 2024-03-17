@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import base64
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
-from urllib.parse import urljoin, urlunparse
+from urllib.parse import urlunparse
 
 import httpx
 import loguru
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from ..helpers import Role
 from ..local_paths import Paths
@@ -29,12 +26,13 @@ class IPAQuery(Query):
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
-            finish_url = urljoin(
-                helper.sidecar_url.geturl(), f"/stop/kill/{self.query_id}"
+            finish_url = urlunparse(
+                helper.sidecar_url._replace(
+                    scheme="https", path=f"/stop/kill/{self.query_id}"
+                ),
             )
-            r = httpx.post(
-                finish_url,
-            )
+
+            r = httpx.post(finish_url)
             self.logger.info(f"sent post request: {r.text}")
 
     def crash(self):
@@ -101,7 +99,7 @@ class IPACheckoutCommitStep(LoggerOutputCommandStep):
 
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
-            cmd=f"git -C {self.repo_path} checkout {self.commit_hash}",
+            cmd=f"git -C {self.repo_path} checkout -f {self.commit_hash}",
             logger=self.logger,
         )
 
@@ -153,9 +151,33 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin helper --manifest-path={self.manifest_path} "
-            f'--features="web-app real-world-infra compact-gate stall-detection" '
-            f"--no-default-features --target-dir={self.target_path} --release",
+            f'--features="web-app real-world-infra compact-gate stall-detection '
+            f'multi-threading" --no-default-features --target-dir={self.target_path} '
+            f"--release",
             logger=self.logger,
+        )
+
+
+@dataclass(kw_only=True)
+class IPAHelperCollectStepsStep(CommandStep):
+    repo_path: Path
+    logger: loguru.Logger = field(repr=False)
+    status: ClassVar[Status] = Status.COMPILING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        repo_path = query.paths.repo_path
+        return cls(
+            repo_path=repo_path,
+            logger=query.logger,
+        )
+
+    def build_command(self) -> FileOutputCommand:
+        output_file_path = self.repo_path / Path("ipa-core/src/protocol/step/steps.txt")
+        return FileOutputCommand(
+            cmd="python3 scripts/collect_steps.py -m",
+            cwd=self.repo_path,
+            output_file_path=output_file_path,
         )
 
 
@@ -167,6 +189,9 @@ class IPACoordinatorGenerateTestDataStep(CommandStep):
     max_breakdown_key: int
     max_trigger_value: int
     status: ClassVar[Status] = Status.COMPILING
+
+    def pre_run(self):
+        self.output_file_path.parent.mkdir(parents=True, exist_ok=True)
 
     @classmethod
     def build_from_query(cls, query: IPACoordinatorQuery):
@@ -199,20 +224,19 @@ class IPACoordinatorWaitForHelpersStep(Step):
         )
 
     def run(self):
-        helper_urls = [
+        sidecar_urls = [
             helper.sidecar_url
             for helper in settings.helpers.values()
             if helper.role != Role.COORDINATOR
         ]
-        for helper_url in helper_urls:
+        for sidecar_url in sidecar_urls:
             url = urlunparse(
-                helper_url._replace(
-                    scheme="ws", path=f"/start/ipa-helper/{self.query_id}/status"
+                sidecar_url._replace(
+                    scheme="https", path=f"/start/ipa-helper/{self.query_id}/status"
                 ),
             )
             while True:
                 r = httpx.get(url).json()
-                print(r)
                 status = r.get("status")
                 match status:
                     case Status.IN_PROGRESS.name:
@@ -295,26 +319,18 @@ class IPACoordinatorQuery(IPAQuery):
         IPACoordinatorStartStep,
     ]
 
-    def sign_query_id(self):
-        return base64.b64encode(
-            settings.private_key.sign(
-                self.query_id.encode("utf8"), ec.ECDSA(hashes.SHA256())
-            )
-        ).decode("utf8")
-
     def send_terminate_signals(self):
-        signature = self.sign_query_id()
         self.logger.info("sending terminate signals")
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
-            finish_url = urljoin(
-                helper.sidecar_url.geturl(), f"/stop/finish/{self.query_id}"
+            finish_url = urlunparse(
+                helper.sidecar_url._replace(
+                    scheme="https", path=f"/stop/finish/{self.query_id}"
+                ),
             )
-            r = httpx.post(
-                finish_url,
-                json={"identity": str(self.role.value), "signature": signature},
-            )
+
+            r = httpx.post(finish_url)
             self.logger.info(f"sent post request: {finish_url}: {r.text}")
 
     def finish(self):
@@ -375,5 +391,6 @@ class IPAHelperQuery(IPAQuery):
         IPAFetchUpstreamStep,
         IPACheckoutCommitStep,
         IPAHelperCompileStep,
+        IPAHelperCollectStepsStep,
         IPAStartHelperStep,
     ]

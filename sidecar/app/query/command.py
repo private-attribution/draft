@@ -16,6 +16,7 @@ import psutil
 class Command:
     cmd: str
     env: Optional[dict] = field(default_factory=lambda: {**os.environ}, repr=False)
+    cwd: Optional[Path] = field(default=None, repr=True)
     process: Optional[subprocess.Popen] = field(init=False, default=None, repr=True)
 
     @property
@@ -65,6 +66,7 @@ class Command:
         return subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
+            cwd=self.cwd,
         )
 
     def start(self):
@@ -89,19 +91,18 @@ class FileOutputCommand(Command):
     output_file_path: Path
     output_file: Optional[TextIO] = field(repr=False, init=False)
 
-    def __post_init__(self):
-        # need to manually close in start method
-        # pylint: disable=consider-using-with
-        self.output_file = self.output_file_path.open("wb")
-
     def build_process(self):
         return subprocess.Popen(
             shlex.split(self.cmd),
             stdout=self.output_file,
             env=self.env,
+            cwd=self.cwd,
         )
 
     def start(self):
+        # build_process needs to return, so this needs to be manually closed
+        # pylint: disable=consider-using-with
+        self.output_file = self.output_file_path.open("wb")
         super().start()
         self.output_file.close()
 
@@ -114,6 +115,7 @@ class LoggerOutputCommand(Command):
         return subprocess.Popen(
             shlex.split(self.cmd),
             env=self.env,
+            cwd=self.cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

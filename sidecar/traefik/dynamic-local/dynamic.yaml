@@ -1,0 +1,53 @@
+http:
+  routers:
+    server-router:
+      entryPoints:
+        - "web-secure"
+      rule: "Host(`{{ env "SERVER_DOMAIN"}}`)"
+      service: "server-service"
+      tls: {}
+    sidecar-0-router:
+      entryPoints:
+        - "web-secure"
+      rule: "Host(`{{ env "SIDECAR_0_DOMAIN"}}`)"
+      service: "sidecar-0-service"
+      tls: {}
+    sidecar-1-router:
+      entryPoints:
+        - "web-secure"
+      rule: "Host(`{{ env "SIDECAR_1_DOMAIN"}}`)"
+      service: "sidecar-1-service"
+      tls: {}
+    sidecar-2-router:
+      entryPoints:
+        - "web-secure"
+      rule: "Host(`{{ env "SIDECAR_2_DOMAIN"}}`)"
+      service: "sidecar-2-service"
+      tls: {}
+    sidecar-3-router:
+      entryPoints:
+        - "web-secure"
+      rule: "Host(`{{ env "SIDECAR_3_DOMAIN"}}`)"
+      service: "sidecar-3-service"
+      tls: {}
+  services:
+    server-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SERVER_PORT"}}"
+    sidecar-0-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SIDECAR_0_PORT"}}"
+    sidecar-1-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SIDECAR_1_PORT"}}"
+    sidecar-2-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SIDECAR_2_PORT"}}"
+    sidecar-3-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "SIDECAR_3_PORT"}}"

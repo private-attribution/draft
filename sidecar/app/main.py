@@ -8,9 +8,7 @@ app.include_router(websockets.router)
 app.include_router(start.router)
 app.include_router(stop.router)
 
-origins = [
-    "http://localhost:3000",
-]
+origins = ["https://draft.test", "https://draft-mpc.vercel.app"]
 
 app.add_middleware(
     CORSMiddleware,
