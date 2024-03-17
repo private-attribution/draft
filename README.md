@@ -4,7 +4,7 @@
 draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains 2 components:
 
 1. draft-server: a web front end and service that starts queries an displays logs from the MPC helper servers
-2. draft-sidecar: a sidecar back end API that runs next to the IPA binary on helper servers. this includes a CLI for setup and running.
+2. draft-sidecar: a sidecar back end API that runs next to the IPA binary on helper servers. This includes a CLI for setup and running.
 
 # Get started
 
@@ -228,7 +228,11 @@ One you know these:
     3. Replace respective certificates with their public keys.
 4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem key.pem`
 5. Generate IPA specific keys:
-    1. TODO
+    1. Compile `ipa` with `cargo build --bin helper --features="web-app real-world-infra compact-gate stall-detection multi-threading" --no-default-features --release`
+    2. Make the keys with `target/release/helper keygen --name localhost --tls-key h1.key --tls-cert h1.pem --mk-public-key h1_mk.pub --mk-private-key h1_mk.key` (replace h1 with for each helper)
+    3. Add the public keys content into `network.toml`
+    4. Add the public keys to `config/pub` (all helpers need all helper public keys).
+    4. For each helper, put their private keys in `config`.
 
 
 ### Run draft
