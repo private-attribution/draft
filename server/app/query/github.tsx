@@ -2,8 +2,6 @@
 
 import { Octokit } from "octokit";
 
-const octokit = new Octokit({ userAgent: "draft/v0.0.1" });
-
 export interface Branch {
   name: string;
   commitHash: string;
@@ -16,14 +14,26 @@ if (process.env.OCTOKIT_GITHUB_API_KEY === undefined) {
   );
 }
 
-export async function Branches(owner: string, repo: string): Promise<Branch[]> {
+const octokit = new Octokit({
+  userAgent: "draft/v0.0.1",
+  auth: process.env.OCTOKIT_GITHUB_API_KEY,
+});
+
+export async function Branches(
+  owner: string,
+  repo: string,
+  bypassCache: boolean,
+): Promise<Branch[]> {
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
     {
       owner: owner,
       repo: repo,
       per_page: 100,
-      auth: process.env.OCTOKIT_GITHUB_API_KEY,
+      request: {
+        cache: bypassCache ? "reload" : "default",
+      },
+      timestamp: new Date().getTime(),
     },
   );
 
@@ -32,30 +42,39 @@ export async function Branches(owner: string, repo: string): Promise<Branch[]> {
     for (const branch of branches) {
       branchesArray.push({
         name: branch.name,
-        commitHash: branch.commit.sha,
+        commitHash: branch.commit.sha.substring(0, 7),
       });
     }
   }
-
   const mainBranchIndex = branchesArray.findIndex(
     (branch) => branch.name === "main",
   );
   if (mainBranchIndex != -1) {
     branchesArray.unshift(branchesArray.splice(mainBranchIndex, 1)[0]);
   }
-  branchesArray.unshift({ name: "N/A", commitHash: "" });
   return branchesArray;
 }
 
-export async function Commits(owner: string, repo: string): Promise<string[]> {
+export async function Commits(
+  owner: string,
+  repo: string,
+  bypassCache: boolean,
+): Promise<string[]> {
+  const requestParams: any = {
+    owner: owner,
+    repo: repo,
+    per_page: 100,
+    request: {
+      cache: bypassCache ? "reload" : "default",
+    },
+    timestamp: new Date().getTime(),
+  };
+  if (bypassCache) {
+    requestParams.timestamp = new Date().getTime();
+  }
   const commitsIter = octokit.paginate.iterator(
     octokit.rest.repos.listCommits,
-    {
-      owner: owner,
-      repo: repo,
-      per_page: 100,
-      auth: process.env.OCTOKIT_GITHUB_API_KEY,
-    },
+    requestParams,
   );
 
   let commitsArray: string[] = [];
@@ -71,7 +90,11 @@ export async function isValidCommitHash(
   owner: string,
   repo: string,
   commitHash: string,
+  bypassCache: boolean,
 ): Promise<boolean> {
-  const commits = await Commits(owner, repo);
-  return commits.includes(commitHash);
+  const commits = await Commits(owner, repo, bypassCache);
+  const matchingCommits = commits.filter((commit) =>
+    commit.startsWith(commitHash),
+  );
+  return matchingCommits.length === 1;
 }
