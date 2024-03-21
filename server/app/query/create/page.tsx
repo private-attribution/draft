@@ -114,6 +114,10 @@ function IPAForm({
 }: {
   handleIPAFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  enum CommitSpecifier {
+    COMMIT_HASH,
+    BRANCH,
+  }
   const owner = "private-attribution";
   const repo = "ipa";
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -123,24 +127,11 @@ function IPAForm({
   const [selectedCommitHash, setSelectedCommitHash] = useState<string>("");
   const [validCommitHash, setValidCommitHash] = useState<boolean>(true);
   const commitHashInputRef = useRef<HTMLInputElement>(null);
-
-  enum CommitSpecifier {
-    COMMIT_HASH,
-    BRANCH,
-  }
   const [commitSpecifier, setCommitSpecifier] = useState<CommitSpecifier>(
     CommitSpecifier.BRANCH,
   );
-
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
-
-  function matchingCommitHashes(selectedCommitHash: string): string[] {
-    return commitHashes.filter((commit) =>
-      commit.startsWith(selectedCommitHash),
-    );
-  }
-
   const filteredCommitHashes =
     selectedCommitHash === ""
       ? []

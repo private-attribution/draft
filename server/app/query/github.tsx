@@ -31,10 +31,8 @@ export async function Branches(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
+    timestamp: new Date().getTime(),
   };
-  if (bypassCache) {
-    requestParams.timestamp = new Date().getTime();
-  }
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
     requestParams,
@@ -70,10 +68,8 @@ export async function Commits(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
+    timestamp: new Date().getTime(),
   };
-  if (bypassCache) {
-    requestParams.timestamp = new Date().getTime();
-  }
   const commitsIter = octokit.paginate.iterator(
     octokit.rest.repos.listCommits,
     requestParams,
