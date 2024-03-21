@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, FormEvent, useEffect, Fragment } from "react";
 import clsx from "clsx";
-import { Listbox, Transition } from "@headlessui/react";
+import { Listbox, Transition, Combobox } from "@headlessui/react";
 import {
   CheckIcon,
   ChevronUpDownIcon,
@@ -16,7 +16,7 @@ import {
   RemoteServersType,
 } from "@/app/query/servers";
 import NewQueryId from "@/app/query/haikunator";
-import { Branch, Branches, isValidCommitHash } from "@/app/query/github";
+import { Branch, Branches, Commits } from "@/app/query/github";
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
@@ -117,6 +117,7 @@ function IPAForm({
   const owner = "private-attribution";
   const repo = "ipa";
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [commitHashes, setCommitHashes] = useState<string[]>([]);
   const branchNames = branches.map((branch) => branch.name);
   const [selectedBranchName, setSelectedBranchName] = useState<string>("main");
   const [selectedCommitHash, setSelectedCommitHash] = useState<string>("");
@@ -133,6 +134,21 @@ function IPAForm({
 
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
+
+  function matchingCommitHashes(selectedCommitHash: string): string[] {
+    return commitHashes.filter((commit) =>
+      commit.startsWith(selectedCommitHash),
+    );
+  }
+
+  const filteredCommitHashes =
+    selectedCommitHash === ""
+      ? []
+      : commitHashes.filter((commit) => {
+          return commit
+            .toLowerCase()
+            .startsWith(selectedCommitHash.toLowerCase());
+        });
 
   useEffect(() => {
     const branch = branches.find(
@@ -155,12 +171,7 @@ function IPAForm({
     );
 
     const fetchCommitIsValid = async () => {
-      const _valid = await isValidCommitHash(
-        owner,
-        repo,
-        selectedCommitHash,
-        false,
-      );
+      const _valid = filteredCommitHashes.length > 0;
       setValidCommitHash(_valid);
     };
     if (branch) {
@@ -170,26 +181,32 @@ function IPAForm({
       setSelectedBranchName("[Specific commit]");
       fetchCommitIsValid().catch(console.error);
     }
-  }, [selectedCommitHash, commitSpecifier, CommitSpecifier.BRANCH, branches]);
+  }, [
+    selectedCommitHash,
+    commitSpecifier,
+    CommitSpecifier.BRANCH,
+    branches,
+    commitHashes,
+  ]);
 
   useEffect(() => {
     const fetchBranches = async () => {
       const _branches = await Branches(owner, repo, false);
       setBranches(_branches);
     };
+    const fetchCommitHashes = async () => {
+      const _commitHashes = await Commits(owner, repo, false);
+      setCommitHashes(_commitHashes);
+    };
     fetchBranches().catch(console.error);
+    fetchCommitHashes().catch(console.error);
   }, []);
 
   const refreshBranches = async (selectedCommitHash: string) => {
-    const data = await Branches(owner, repo, true);
-    setBranches(data);
-    const _valid = await isValidCommitHash(
-      owner,
-      repo,
-      selectedCommitHash,
-      true,
-    );
-    setValidCommitHash(_valid);
+    const _branches = await Branches(owner, repo, true);
+    setBranches(_branches);
+    const _commitHashes = await Commits(owner, repo, true);
+    setCommitHashes(_commitHashes);
   };
 
   return (
@@ -244,22 +261,37 @@ function IPAForm({
         >
           Commit Hash
         </label>
-        <input
-          type="string"
-          name="commit_hash"
-          id="commit_hash"
-          ref={commitHashInputRef}
-          className={clsx(
-            "block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-            !validCommitHash &&
-              "text-red-900 ring-red-300 placeholder:text-red-300 focus:ring-red-500",
-            disableCommitHash && "opacity-25",
-          )}
-          value={selectedCommitHash}
-          onChange={(e) => setSelectedCommitHash(e.target.value)}
-          aria-invalid="true"
-          aria-describedby="email-error"
-        />
+        <Combobox value={selectedCommitHash} onChange={setSelectedCommitHash}>
+          <Combobox.Input
+            onChange={(event) => setSelectedCommitHash(event.target.value)}
+            type="string"
+            name="commit_hash"
+            id="commit_hash"
+            ref={commitHashInputRef}
+            className={clsx(
+              "block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
+              !validCommitHash &&
+                "text-red-900 ring-red-300 placeholder:text-red-300 focus:ring-red-500",
+              disableCommitHash && "opacity-25",
+            )}
+          />
+          <Combobox.Options className="absolute z-10 w-full mt-1 overflow-auto max-h-60 text-gray-900 bg-white shadow-lg rounded-md border border-gray-300 divide-y divide-gray-200 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+            {filteredCommitHashes.map((commit) => (
+              <Combobox.Option key={commit} value={commit} as={Fragment}>
+                {({ active, selected }) => (
+                  <li
+                    className={clsx(
+                      "py-2 px-2.5",
+                      active ? "bg-blue-500 text-white" : "text-black",
+                    )}
+                  >
+                    {commit}
+                  </li>
+                )}
+              </Combobox.Option>
+            ))}
+          </Combobox.Options>
+        </Combobox>
 
         {!validCommitHash && (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 pt-10">

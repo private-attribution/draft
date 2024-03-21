@@ -87,16 +87,3 @@ export async function Commits(
   }
   return commitsArray;
 }
-
-export async function isValidCommitHash(
-  owner: string,
-  repo: string,
-  commitHash: string,
-  bypassCache: boolean,
-): Promise<boolean> {
-  const commits = await Commits(owner, repo, bypassCache);
-  const matchingCommits = commits.filter((commit) =>
-    commit.startsWith(commitHash),
-  );
-  return matchingCommits.length === 1;
-}
