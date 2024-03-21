@@ -24,17 +24,20 @@ export async function Branches(
   repo: string,
   bypassCache: boolean,
 ): Promise<Branch[]> {
+  const requestParams: any = {
+    owner: owner,
+    repo: repo,
+    per_page: 100,
+    request: {
+      cache: bypassCache ? "reload" : "default",
+    },
+  };
+  if (bypassCache) {
+    requestParams.timestamp = new Date().getTime();
+  }
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
-    {
-      owner: owner,
-      repo: repo,
-      per_page: 100,
-      request: {
-        cache: bypassCache ? "reload" : "default",
-      },
-      timestamp: new Date().getTime(),
-    },
+    requestParams,
   );
 
   let branchesArray: Branch[] = [];
@@ -67,7 +70,6 @@ export async function Commits(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: new Date().getTime(),
   };
   if (bypassCache) {
     requestParams.timestamp = new Date().getTime();
