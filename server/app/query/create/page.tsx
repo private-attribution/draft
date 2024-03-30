@@ -1,8 +1,12 @@
 "use client";
-import { useState, FormEvent, useEffect, Fragment } from "react";
+import { useState, useRef, FormEvent, useEffect, Fragment } from "react";
 import clsx from "clsx";
-import { Listbox, Transition } from "@headlessui/react";
-import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
+import { Listbox, Transition, Combobox } from "@headlessui/react";
+import {
+  CheckIcon,
+  ChevronUpDownIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import QueryStartedAlert from "@/app/alert";
@@ -12,7 +16,7 @@ import {
   RemoteServersType,
 } from "@/app/query/servers";
 import NewQueryId from "@/app/query/haikunator";
-import { Branch, Branches, isValidCommitHash } from "@/app/query/github";
+import { Branch, Branches, Commits } from "@/app/query/github";
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
@@ -110,24 +114,32 @@ function IPAForm({
 }: {
   handleIPAFormSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
-  const owner = "private-attribution";
-  const repo = "ipa";
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const branchNames = branches.map((branch) => branch.name);
-  const [selectedBranchName, setSelectedBranchName] = useState<string>("main");
-  const [selectedCommitHash, setSelectedCommitHash] = useState<string>("");
-  const [validCommitHash, setValidCommitHash] = useState<boolean>(true);
-
   enum CommitSpecifier {
     COMMIT_HASH,
     BRANCH,
   }
+  const owner = "private-attribution";
+  const repo = "ipa";
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [commitHashes, setCommitHashes] = useState<string[]>([]);
+  const branchNames = branches.map((branch) => branch.name);
+  const [selectedBranchName, setSelectedBranchName] = useState<string>("main");
+  const [selectedCommitHash, setSelectedCommitHash] = useState<string>("");
+  const [validCommitHash, setValidCommitHash] = useState<boolean>(true);
+  const commitHashInputRef = useRef<HTMLInputElement>(null);
   const [commitSpecifier, setCommitSpecifier] = useState<CommitSpecifier>(
     CommitSpecifier.BRANCH,
   );
-
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
+  const filteredCommitHashes =
+    selectedCommitHash === ""
+      ? []
+      : commitHashes.filter((commit) => {
+          return commit
+            .toLowerCase()
+            .startsWith(selectedCommitHash.toLowerCase());
+        });
 
   useEffect(() => {
     const branch = branches.find(
@@ -146,28 +158,47 @@ function IPAForm({
 
   useEffect(() => {
     const branch = branches.find(
-      (branch) => branch.name === selectedCommitHash,
+      (branch) => branch.commitHash === selectedCommitHash,
     );
+
     const fetchCommitIsValid = async () => {
-      const _valid = await isValidCommitHash(owner, repo, selectedCommitHash);
+      const _valid = filteredCommitHashes.length > 0;
       setValidCommitHash(_valid);
     };
     if (branch) {
       setSelectedBranchName(branch.name);
       setValidCommitHash(true);
     } else if (commitSpecifier != CommitSpecifier.BRANCH) {
-      setSelectedBranchName("N/A");
+      setSelectedBranchName("[Specific commit]");
       fetchCommitIsValid().catch(console.error);
     }
-  }, [selectedCommitHash, commitSpecifier, CommitSpecifier.COMMIT_HASH]);
+  }, [
+    selectedCommitHash,
+    commitSpecifier,
+    CommitSpecifier.BRANCH,
+    branches,
+    commitHashes,
+  ]);
 
   useEffect(() => {
     const fetchBranches = async () => {
-      const _branches = await Branches(owner, repo);
+      const _branches = await Branches(owner, repo, false);
       setBranches(_branches);
     };
+    const fetchCommitHashes = async () => {
+      const _commitHashes = await Commits(owner, repo, false);
+      setCommitHashes(_commitHashes);
+    };
     fetchBranches().catch(console.error);
+    fetchCommitHashes().catch(console.error);
   }, []);
+
+  const refreshBranches = async (selectedCommitHash: string) => {
+    const _branches = await Branches(owner, repo, true);
+    setBranches(_branches);
+    const _commitHashes = await Commits(owner, repo, true);
+    setCommitHashes(_commitHashes);
+  };
 
   return (
     <form
@@ -177,19 +208,40 @@ function IPAForm({
       <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         IPA Query
       </h2>
-      <div onClick={() => setCommitSpecifier(CommitSpecifier.BRANCH)}>
-        <PassedStateSelectMenu
-          id="branch"
-          label="Branch"
-          options={branchNames}
-          selected={selectedBranchName}
-          setSelected={setSelectedBranchName}
-          disabled={disableBranch}
-        />
+      <div className="flex items-end">
+        <div
+          className="flex-grow"
+          onClick={() => {
+            setCommitSpecifier(CommitSpecifier.BRANCH);
+          }}
+        >
+          <PassedStateSelectMenu
+            id="branch"
+            label="Branch"
+            options={branchNames}
+            selected={selectedBranchName}
+            setSelected={setSelectedBranchName}
+            disabled={disableBranch}
+          />
+        </div>
+        <button
+          className="relative cursor-default rounded-md bg-white py-2.5 px-3 ml-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+          onClick={(e) => {
+            e.preventDefault();
+            refreshBranches(selectedCommitHash);
+          }}
+        >
+          <ArrowPathIcon className="h-4 w-4" />
+        </button>
       </div>
       <div
         className="relative mt-2 rounded-md shadow-sm"
-        onClick={() => setCommitSpecifier(CommitSpecifier.COMMIT_HASH)}
+        onClick={() => {
+          setCommitSpecifier(CommitSpecifier.COMMIT_HASH);
+          if (commitHashInputRef.current) {
+            commitHashInputRef.current.select();
+          }
+        }}
       >
         <label
           htmlFor="commit_hash"
@@ -200,21 +252,37 @@ function IPAForm({
         >
           Commit Hash
         </label>
-        <input
-          type="string"
-          name="commit_hash"
-          id="commit_hash"
-          className={clsx(
-            "block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-            !validCommitHash &&
-              "text-red-900 ring-red-300 placeholder:text-red-300 focus:ring-red-500",
-            disableCommitHash && "opacity-25",
-          )}
-          value={selectedCommitHash}
-          onChange={(e) => setSelectedCommitHash(e.target.value)}
-          aria-invalid="true"
-          aria-describedby="email-error"
-        />
+        <Combobox value={selectedCommitHash} onChange={setSelectedCommitHash}>
+          <Combobox.Input
+            onChange={(event) => setSelectedCommitHash(event.target.value)}
+            type="string"
+            name="commit_hash"
+            id="commit_hash"
+            ref={commitHashInputRef}
+            className={clsx(
+              "block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 ring-1 ring-inset focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
+              !validCommitHash &&
+                "text-red-900 ring-red-300 placeholder:text-red-300 focus:ring-red-500",
+              disableCommitHash && "opacity-25",
+            )}
+          />
+          <Combobox.Options className="absolute z-10 w-full mt-1 overflow-auto max-h-60 text-gray-900 bg-white shadow-lg rounded-md border border-gray-300 divide-y divide-gray-200 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+            {filteredCommitHashes.map((commit) => (
+              <Combobox.Option key={commit} value={commit} as={Fragment}>
+                {({ active, selected }) => (
+                  <li
+                    className={clsx(
+                      "py-2 px-2.5",
+                      active ? "bg-blue-500 text-white" : "text-black",
+                    )}
+                  >
+                    {commit}
+                  </li>
+                )}
+              </Combobox.Option>
+            ))}
+          </Combobox.Options>
+        </Combobox>
 
         {!validCommitHash && (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 pt-10">
@@ -343,15 +411,28 @@ function PassedStateSelectMenu({
               disabled && "opacity-25",
             )}
           >
-            <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
-              <span className="block truncate">{selected}</span>
-              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                <ChevronUpDownIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </span>
-            </Listbox.Button>
+            {disabled ? (
+              // Listbox.Button overrides the onClick, but we only need that to reactivate.
+              <div className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                <span className="block truncate">{selected}</span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <ChevronUpDownIcon
+                    className="h-5 w-5 text-gray-400"
+                    aria-hidden="true"
+                  />
+                </span>
+              </div>
+            ) : (
+              <Listbox.Button className="relative w-full cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                <span className="block truncate">{selected}</span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <ChevronUpDownIcon
+                    className="h-5 w-5 text-gray-400"
+                    aria-hidden="true"
+                  />
+                </span>
+              </Listbox.Button>
+            )}
 
             <Transition
               show={open}
