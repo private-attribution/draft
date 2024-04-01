@@ -217,7 +217,7 @@ function IPAForm({
         >
           <PassedStateSelectMenu
             id="branch"
-            label="Branch"
+            label="Branch / PR"
             options={branchNames}
             selected={selectedBranchName}
             setSelected={setSelectedBranchName}

@@ -65,6 +65,26 @@ class IPACloneStep(LoggerOutputCommandStep):
 
 
 @dataclass(kw_only=True)
+class IPAUpdateRemoteOriginStep(LoggerOutputCommandStep):
+    repo_path: Path
+    status: ClassVar[Status] = Status.STARTING
+
+    @classmethod
+    def build_from_query(cls, query: IPAQuery):
+        return cls(
+            repo_path=query.paths.repo_path,
+            logger=query.logger,
+        )
+
+    def build_command(self) -> LoggerOutputCommand:
+        return LoggerOutputCommand(
+            cmd=f"git -C {self.repo_path} config --add remote.origin.fetch "
+            "'+refs/pull/*/head:refs/remotes/origin/pr/*'",
+            logger=self.logger,
+        )
+
+
+@dataclass(kw_only=True)
 class IPAFetchUpstreamStep(LoggerOutputCommandStep):
     repo_path: Path
     status: ClassVar[Status] = Status.STARTING
@@ -388,6 +408,7 @@ class IPAHelperQuery(IPAQuery):
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,
+        IPAUpdateRemoteOriginStep,
         IPAFetchUpstreamStep,
         IPACheckoutCommitStep,
         IPAHelperCompileStep,

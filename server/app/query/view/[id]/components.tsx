@@ -103,6 +103,15 @@ export function LogViewer({
             {log.logLine}
           </div>
         ))}
+        <div
+          key="last"
+          className={clsx(
+            "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line animate-pulse",
+            sourceCodePro.className,
+          )}
+        >
+          {">_"}
+        </div>
       </div>
     </div>
   );

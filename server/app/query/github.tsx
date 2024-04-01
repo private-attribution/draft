@@ -2,9 +2,15 @@
 
 import { Octokit } from "octokit";
 
+enum BranchType {
+  Branch,
+  PullRequest,
+}
+
 export interface Branch {
   name: string;
   commitHash: string;
+  branchType: BranchType;
 }
 
 // TODO: raise error if api key is expired
@@ -44,9 +50,37 @@ export async function Branches(
       branchesArray.push({
         name: branch.name,
         commitHash: branch.commit.sha.substring(0, 7),
+        branchType: BranchType.Branch,
       });
     }
   }
+
+  const requestParams2: any = {
+    owner: owner,
+    repo: repo,
+    state: "open",
+    per_page: 100,
+    request: {
+      cache: bypassCache ? "reload" : "default",
+    },
+    timestamp: new Date().getTime(),
+  };
+
+  const pullRequestsIter = octokit.paginate.iterator(
+    octokit.rest.pulls.list,
+    requestParams2,
+  );
+
+  for await (const { data: pullRequests } of pullRequestsIter) {
+    for (const pullRequest of pullRequests) {
+      branchesArray.push({
+        name: `#${pullRequest.number}: ${pullRequest.title}`,
+        commitHash: pullRequest.head.sha.substring(0, 7),
+        branchType: BranchType.PullRequest,
+      });
+    }
+  }
+
   const mainBranchIndex = branchesArray.findIndex(
     (branch) => branch.name === "main",
   );
