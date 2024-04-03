@@ -30,7 +30,7 @@ export async function Branches(
   repo: string,
   bypassCache: boolean,
 ): Promise<Branch[]> {
-  const requestParams: any = {
+  const branchesRequestParams: any = {
     owner: owner,
     repo: repo,
     per_page: 100,
@@ -41,7 +41,7 @@ export async function Branches(
   };
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
-    requestParams,
+    branchesRequestParams,
   );
 
   let branchesArray: Branch[] = [];
@@ -55,7 +55,7 @@ export async function Branches(
     }
   }
 
-  const requestParams2: any = {
+  const pullsRequestParams: any = {
     owner: owner,
     repo: repo,
     state: "open",
@@ -68,7 +68,7 @@ export async function Branches(
 
   const pullRequestsIter = octokit.paginate.iterator(
     octokit.rest.pulls.list,
-    requestParams2,
+    pullsRequestParams,
   );
 
   for await (const { data: pullRequests } of pullRequestsIter) {
