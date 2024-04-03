@@ -2,15 +2,9 @@
 
 import { Octokit } from "octokit";
 
-enum BranchType {
-  Branch,
-  PullRequest,
-}
-
 export interface Branch {
   name: string;
   commitHash: string;
-  branchType: BranchType;
 }
 
 // TODO: raise error if api key is expired
@@ -50,7 +44,6 @@ export async function Branches(
       branchesArray.push({
         name: branch.name,
         commitHash: branch.commit.sha.substring(0, 7),
-        branchType: BranchType.Branch,
       });
     }
   }
@@ -76,7 +69,6 @@ export async function Branches(
       branchesArray.push({
         name: `#${pullRequest.number}: ${pullRequest.title}`,
         commitHash: pullRequest.head.sha.substring(0, 7),
-        branchType: BranchType.PullRequest,
       });
     }
   }
