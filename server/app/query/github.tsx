@@ -24,7 +24,7 @@ export async function Branches(
   repo: string,
   bypassCache: boolean,
 ): Promise<Branch[]> {
-  const requestParams: any = {
+  const branchesRequestParams: any = {
     owner: owner,
     repo: repo,
     per_page: 100,
@@ -35,7 +35,7 @@ export async function Branches(
   };
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
-    requestParams,
+    branchesRequestParams,
   );
 
   let branchesArray: Branch[] = [];
@@ -47,6 +47,32 @@ export async function Branches(
       });
     }
   }
+
+  const pullsRequestParams: any = {
+    owner: owner,
+    repo: repo,
+    state: "open",
+    per_page: 100,
+    request: {
+      cache: bypassCache ? "reload" : "default",
+    },
+    timestamp: new Date().getTime(),
+  };
+
+  const pullRequestsIter = octokit.paginate.iterator(
+    octokit.rest.pulls.list,
+    pullsRequestParams,
+  );
+
+  for await (const { data: pullRequests } of pullRequestsIter) {
+    for (const pullRequest of pullRequests) {
+      branchesArray.push({
+        name: `#${pullRequest.number}: ${pullRequest.title}`,
+        commitHash: pullRequest.head.sha.substring(0, 7),
+      });
+    }
+  }
+
   const mainBranchIndex = branchesArray.findIndex(
     (branch) => branch.name === "main",
   );
