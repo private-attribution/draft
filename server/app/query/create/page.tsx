@@ -31,7 +31,6 @@ export default function Page() {
       const newQueryId = NewQueryId();
       setQueryId(newQueryId);
       // Send a POST request to start the process
-      console.log("sending post");
       const formData = new FormData(event.currentTarget);
       for (const remoteServer of Object.values(remoteServers)) {
         const response = await fetch(remoteServer.startURL(newQueryId), {
@@ -39,11 +38,8 @@ export default function Page() {
           body: formData,
         });
         const data = await response.json();
-        console.log(remoteServer);
-        console.log(data);
       }
 
-      // const data = await response.json();
       await new Promise((f) => setTimeout(f, 1000));
 
       // Redirect to /query/view/<newQueryId>
