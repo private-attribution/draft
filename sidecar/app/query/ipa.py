@@ -171,33 +171,10 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin helper --manifest-path={self.manifest_path} "
-            f'--features="web-app real-world-infra compact-gate stall-detection '
-            f'multi-threading" --no-default-features --target-dir={self.target_path} '
+            f'--features="web-app real-world-infra compact-gate stall-detection" '
+            f"--no-default-features --target-dir={self.target_path} "
             f"--release",
             logger=self.logger,
-        )
-
-
-@dataclass(kw_only=True)
-class IPAHelperCollectStepsStep(CommandStep):
-    repo_path: Path
-    logger: loguru.Logger = field(repr=False)
-    status: ClassVar[Status] = Status.COMPILING
-
-    @classmethod
-    def build_from_query(cls, query: IPAQuery):
-        repo_path = query.paths.repo_path
-        return cls(
-            repo_path=repo_path,
-            logger=query.logger,
-        )
-
-    def build_command(self) -> FileOutputCommand:
-        output_file_path = self.repo_path / Path("ipa-core/src/protocol/step/steps.txt")
-        return FileOutputCommand(
-            cmd="python3 scripts/collect_steps.py -m",
-            cwd=self.repo_path,
-            output_file_path=output_file_path,
         )
 
 
@@ -412,6 +389,5 @@ class IPAHelperQuery(IPAQuery):
         IPAFetchUpstreamStep,
         IPACheckoutCommitStep,
         IPAHelperCompileStep,
-        IPAHelperCollectStepsStep,
         IPAStartHelperStep,
     ]
