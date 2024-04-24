@@ -308,6 +308,7 @@ class IPACoordinatorQuery(IPAQuery):
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,
+        IPAUpdateRemoteOriginStep,
         IPAFetchUpstreamStep,
         IPACheckoutCommitStep,
         IPACorrdinatorCompileStep,

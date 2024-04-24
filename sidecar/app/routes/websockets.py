@@ -24,7 +24,7 @@ async def use_websocket(websocket):
         yield websocket
     except (WebSocketDisconnect, ConnectionClosedOK, ConnectionClosedError):
         pass
-    finally:
+    else:
         await websocket.close()
 
 
