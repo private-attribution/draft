@@ -31,7 +31,7 @@ export async function Branches(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: bypassCache ? new Date().getTime() : "",
+    timestamp: bypassCache ? new Date().getTime().toString() : "",
   };
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
@@ -56,7 +56,7 @@ export async function Branches(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: bypassCache ? new Date().getTime() : "",
+    timestamp: bypassCache ? new Date().getTime().toString() : "",
   };
 
   const pullRequestsIter = octokit.paginate.iterator(
@@ -95,7 +95,7 @@ export async function Commits(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: bypassCache ? new Date().getTime() : "",
+    timestamp: bypassCache ? new Date().getTime().toString() : "",
   };
   const commitsIter = octokit.paginate.iterator(
     octokit.rest.repos.listCommits,
