@@ -182,7 +182,7 @@ function IPAForm({
       setBranches(_branches);
     };
     const fetchCommitHashes = async () => {
-      const _commitHashes = await Commits(owner, repo, false);
+      const _commitHashes = await Commits(owner, repo, false, 300);
       setCommitHashes(_commitHashes);
     };
     fetchBranches().catch(console.error);
@@ -192,7 +192,7 @@ function IPAForm({
   const refreshBranches = async (selectedCommitHash: string) => {
     const _branches = await Branches(owner, repo, true);
     setBranches(_branches);
-    const _commitHashes = await Commits(owner, repo, true);
+    const _commitHashes = await Commits(owner, repo, true, 300);
     setCommitHashes(_commitHashes);
   };
 

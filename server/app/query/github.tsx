@@ -31,7 +31,7 @@ export async function Branches(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: new Date().getTime(),
+    timestamp: bypassCache ? new Date().getTime() : "",
   };
   const branchesIter = octokit.paginate.iterator(
     octokit.rest.repos.listBranches,
@@ -56,7 +56,7 @@ export async function Branches(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: new Date().getTime(),
+    timestamp: bypassCache ? new Date().getTime() : "",
   };
 
   const pullRequestsIter = octokit.paginate.iterator(
@@ -86,6 +86,7 @@ export async function Commits(
   owner: string,
   repo: string,
   bypassCache: boolean,
+  maxCommits: number,
 ): Promise<string[]> {
   const requestParams: any = {
     owner: owner,
@@ -94,7 +95,7 @@ export async function Commits(
     request: {
       cache: bypassCache ? "reload" : "default",
     },
-    timestamp: new Date().getTime(),
+    timestamp: bypassCache ? new Date().getTime() : "",
   };
   const commitsIter = octokit.paginate.iterator(
     octokit.rest.repos.listCommits,
@@ -102,9 +103,14 @@ export async function Commits(
   );
 
   let commitsArray: string[] = [];
+  let pages: number = 0;
   for await (const { data: commits } of commitsIter) {
     for (const commit of commits) {
       commitsArray.push(commit.sha);
+    }
+    pages++;
+    if (pages * 100 > maxCommits) {
+      break;
     }
   }
   return commitsArray;
