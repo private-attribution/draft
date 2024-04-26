@@ -1,6 +1,8 @@
 import os
 import shlex
+import signal
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -16,12 +18,34 @@ def cli():
     pass
 
 
+def stop_process_by_pid_path_success(pid_path: Path):
+    if pid_path.exists():
+        with pid_path.open("r") as f:
+            pid = f.read().strip()
+    else:
+        return False
+
+    if not pid:
+        pid_path.unlink()
+        return False
+
+    pid = int(pid)
+    try:
+        os.kill(pid, signal.SIGINT)
+    except ProcessLookupError:
+        return False
+    finally:
+        pid_path.unlink()
+
+    return True
+
+
 def start_helper_sidecar_command(
     config_path: Path,
     identity: int,
     helper_port: int,
     sidecar_port: int,
-    root_path: Optional[Path] = None,
+    root_path: Path,
     _env: Optional[dict[str, str]] = None,
 ):
     role = Role(int(identity))
@@ -102,9 +126,9 @@ def start_traefik_local_command(
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
-def start_helper_sidecar(
+def run_helper_sidecar(
     config_path: Path,
-    root_path: Optional[Path],
+    root_path: Path,
     root_domain: str,
     sidecar_domain: str,
     helper_port: int,
@@ -127,6 +151,7 @@ def start_helper_sidecar(
     start_commands_parallel([sidecar_command, traefik_command])
 
 
+# pylint: disable=too-many-arguments
 @cli.command
 @click.option(
     "--config_path",
@@ -134,12 +159,80 @@ def start_helper_sidecar(
     default=Path("local_dev/config"),
     show_default=True,
 )
-@click.option("--root_path", type=click_pathlib.Path(), default=None)
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+@click.option("--root_domain", type=str, default="ipa-helper.dev")
+@click.option("--sidecar_domain", type=str, default="")
+@click.option("--helper_port", type=int, default=7430)
+@click.option("--sidecar_port", type=int, default=17430)
+@click.option("--identity", required=True, type=int)
+def start_helper_sidecar(
+    config_path: Path,
+    root_path: Path,
+    root_domain: str,
+    sidecar_domain: str,
+    helper_port: int,
+    sidecar_port: int,
+    identity: int,
+):
+    local_path = root_path / Path(".draft")
+    local_path.mkdir(parents=True, exist_ok=True)
+    logs_path = local_path / Path("logs")
+    logs_path.mkdir(parents=True, exist_ok=True)
+    pids_path = local_path / Path("pids")
+    pids_path.mkdir(parents=True, exist_ok=True)
+
+    script_path = root_path / Path("etc/start_helper_sidecar.sh")
+
+    start_command = Command(
+        cmd=f"{script_path} {config_path} {root_path} {root_domain} "
+        f"{sidecar_domain} {helper_port} {sidecar_port} {identity}",
+    )
+    start_command.run_blocking_no_output_capture()
+    print("draft local-dev started")
+
+
+@cli.command
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+def stop_helper_sidecar(
+    root_path: Path,
+):
+    pid_path = root_path / Path(".draft/pids/helper_sidecar.pid")
+    stop_success = stop_process_by_pid_path_success(pid_path)
+    if stop_success:
+        logs_path = root_path / Path(".draft/logs/helper_sidecar.log")
+        with logs_path.open("w"):
+            pass
+        print("draft helper-sidecar stopped")
+    else:
+        print("draft helper-sidecar is not running")
+        sys.exit(1)
+
+
+@cli.command
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+def follow_helper_sidecar_logs(
+    root_path: Path,
+):
+    logs_path = root_path / Path(".draft/logs/helper_sidecar.log")
+    follow_command = Command(
+        cmd=f"tail -f {logs_path}",
+    )
+    follow_command.run_blocking_no_output_capture()
+
+
+@cli.command
+@click.option(
+    "--config_path",
+    type=click_pathlib.Path(exists=True),
+    default=Path("local_dev/config"),
+    show_default=True,
+)
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
 @click.option("--helper_start_port", type=int, default=7430)
 @click.option("--sidecar_start_port", type=int, default=17430)
-def start_local_dev(
+def run_local_dev(
     config_path: Path,
-    root_path: Optional[Path],
+    root_path: Path,
     helper_start_port: int,
     sidecar_start_port: int,
 ):
@@ -184,7 +277,70 @@ def start_local_dev(
         root_domain=root_domain,
     )
     commands = sidecar_commands + [npm_run_dev_command, traefik_command]
+
     start_commands_parallel(commands)
+
+
+@cli.command
+@click.option(
+    "--config_path",
+    type=click_pathlib.Path(exists=True),
+    default=Path("local_dev/config"),
+    show_default=True,
+)
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+@click.option("--helper_start_port", type=int, default=7430)
+@click.option("--sidecar_start_port", type=int, default=17430)
+def start_local_dev(
+    config_path: Path,
+    root_path: Path,
+    helper_start_port: int,
+    sidecar_start_port: int,
+):
+    local_path = root_path / Path(".draft")
+    local_path.mkdir(parents=True, exist_ok=True)
+    logs_path = local_path / Path("logs")
+    logs_path.mkdir(parents=True, exist_ok=True)
+    pids_path = local_path / Path("pids")
+    pids_path.mkdir(parents=True, exist_ok=True)
+
+    script_path = root_path / Path("etc/start_local_dev.sh")
+
+    start_command = Command(
+        cmd=f"{script_path} {config_path} {root_path} "
+        f"{helper_start_port} {sidecar_start_port}",
+    )
+    start_command.run_blocking_no_output_capture()
+    print("draft local-dev started")
+
+
+@cli.command
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+def stop_local_dev(
+    root_path: Path,
+):
+    pid_path = root_path / Path(".draft/pids/local_dev.pid")
+    stop_success = stop_process_by_pid_path_success(pid_path)
+    if stop_success:
+        logs_path = root_path / Path(".draft/logs/local_dev.log")
+        with logs_path.open("w"):
+            pass
+        print("draft local-dev stopped")
+    else:
+        print("draft local-dev is not running")
+        sys.exit(1)
+
+
+@cli.command
+@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+def follow_local_dev_logs(
+    root_path: Path,
+):
+    logs_path = root_path / Path(".draft/logs/local_dev.log")
+    follow_command = Command(
+        cmd=f"tail -f {logs_path}",
+    )
+    follow_command.run_blocking_no_output_capture()
 
 
 if __name__ == "__main__":

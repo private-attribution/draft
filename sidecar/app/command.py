@@ -4,10 +4,14 @@ from __future__ import annotations
 import os
 import select
 import shlex
+import signal
 import subprocess
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Optional
+
+import psutil
 
 
 @dataclass
@@ -71,7 +75,19 @@ class PopenContextManager:
             )
             self.processes.append(process)
 
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
         return self.processes
+
+    def signal_handler(self, sig, _frame):
+        print(f"Handling signal: {sig}")
+        for process in self.processes:
+            for child in psutil.Process(process.pid).children(recursive=True):
+                child.terminate()
+                print(f"Terminating: {child}")
+            process.terminate()
+            print(f"Terminating: {process}")
+        sys.exit(0)
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         for process in self.processes:
