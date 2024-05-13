@@ -11,7 +11,6 @@ def gen_path(v: Any) -> Path:
     return Path(v)
 
 
-# pyre-ignore: https://pyre-check.org/docs/errors/#dataclass-like-classes
 class Settings(BaseSettings):
     root_path: Annotated[Path, BeforeValidator(gen_path)]
     config_path: Annotated[Path, BeforeValidator(gen_path)]
@@ -32,4 +31,5 @@ class Settings(BaseSettings):
         return self._helpers
 
 
+# pyre-ignore: https://pyre-check.org/docs/errors/#dataclass-like-classes
 settings = Settings()

@@ -7,6 +7,7 @@ __pycache__*
 tmp/
 IGNORE-ME*
 .pyre/*
+.draft
 
 # local env files
 .env*
@@ -14,3 +15,9 @@ IGNORE-ME*
 # local certs
 local_dev/config/cert.pem
 local_dev/config/key.pem
+
+# generated config directory
+config/
+
+# installed traefik binary
+traefik

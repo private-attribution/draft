@@ -6,12 +6,14 @@ readme = "README.md"
 license = {file = "LICENSE.md"}
 
 dependencies=[
+  "ansible",
   "Click",
   "click-pathlib",
   "websockets",
   "uvicorn",
   "fastapi",
   "psutil",
+  "types-psutil",
   "loguru",
   "pydantic_settings",
   "python-multipart",

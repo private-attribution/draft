@@ -1,0 +1,16 @@
+- name: Deploy updates to Draft
+  hosts: all
+  tasks:
+    # - name: Stop helper sidecar
+    #   command: '{{ ansible_env.HOME }}/draft/.venv/bin/draft stop-helper-sidecar'
+    - name: Pull new commits from GitHub
+      git:
+        repo: 'https://github.com/private-attribution/draft.git'
+        dest: '{{ ansible_env.HOME }}/draft'
+        update: yes
+    - name: Checkout and pull main branch
+      command: git pull origin main
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft'
+    # - name: Start helper sidecar
+    #   command: '{{ ansible_env.HOME }}/draft/.venv/bin/draft start-helper-sidecar'
