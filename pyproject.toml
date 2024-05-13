@@ -13,6 +13,7 @@ dependencies=[
   "uvicorn",
   "fastapi",
   "psutil",
+  "types-psutil",
   "loguru",
   "pydantic_settings",
   "python-multipart",
