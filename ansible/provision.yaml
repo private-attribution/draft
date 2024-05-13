@@ -70,12 +70,23 @@
         checksum: 'sha256:7f31f1cc566bd094f038579fc36e354fd545cf899523eb507c3cfcbbdb8b9552'
       when: traefik_installed.rc != 0
 
+    - name: Ensure extraction directory exists
+      file:
+        path: '{{ ansible_env.HOME }}/traefix_extract/'
+        state: directory
+
     - name: Extract Traefik
       unarchive:
         src: '{{ ansible_env.HOME }}/traefik_v2.11.0_linux_amd64.tar.gz'
-        dest: '{{ ansible_env.HOME }}/draft'
+        dest: '{{ ansible_env.HOME }}/traefix_extract/'
         remote_src: yes
       when: traefik_installed.rc != 0
+
+    - name: Copy Traefik binary into draft directory
+      copy:
+        src: '{{ ansible_env.HOME }}/traefix_extract/traefik'
+        dest: '{{ ansible_env.HOME }}/draft'
+        remote_src: yes
 
     - name: Run draft start-helper-sidecar
       command: '{{ ansible_env.HOME }}/draft/.venv/bin/draft start-helper-sidecar'

@@ -6,6 +6,7 @@ readme = "README.md"
 license = {file = "LICENSE.md"}
 
 dependencies=[
+  "ansible",
   "Click",
   "click-pathlib",
   "websockets",
