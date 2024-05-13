@@ -183,21 +183,19 @@ The public content will also need to be pasted into `local_dev/config/network.to
 
 *Instructions for AWS Linux 2023*
 
-1. **Python3.11**: Install with `sudo yum install python3.11`
-2. **git**: Install with `sudo yum install git`
-3. **draft** (this package):
-    1. Clone with `git clone https://github.com/private-attribution/draft.git`
-    2. Enter directory `cd draft`.
-    3. Create virtualenv: `python3.11 -m venv .venv`
-    4. Use virtualeenv: `source .venv/bin/activate`
-    5. Upgrade pip: `pip install --upgrade pip`
-    6. Install: `pip install --editable .`
-4. **traefik**:
-    1. Download version 2.11: `wget https://github.com/traefik/traefik/releases/download/v2.11.0/traefik_v2.11.0_linux_amd64.tar.gz`
-    2. Validate checksum: `sha256sum traefik_v2.11.0_linux_amd64.tar.gz` should print `7f31f1cc566bd094f038579fc36e354fd545cf899523eb507c3cfcbbdb8b9552  traefik_v2.11.0_linux_amd64.tar.gz`
-    3. Extract the binary: `tar -zxvf traefik_v2.11.0_linux_amd64.tar.gz`
-5. **tmux**: `sudo yum install tmux`
+1. Provision an EC2 instance. Download the provided `ssh_connect.pem` key and add it to `~/.ssh`.
+2. Point a subdomain of a domain you control to the public IP address.
+3. Add the host to your `~/.ssh/config` file:
+```
+Host ipa
+    Hostname <subdomain-name-for-helper>
+    User ec2-user
+    IdentityFile ~/.ssh/ssh_connect.pem
+```
+4. Update the `draft/ansible/inventory.ini` file to only include a single host. (Unless you are running all 4 servers.)
+5. Provision your machine: `ansible-playbook -i ansible/inventory.ini ansible/provision.yaml`
 
+To deploy new changes in draft, run: `ansible-playbook -i ansible/inventory.ini ansible/deploy.yaml`
 
 ### Generating TLS certs with Let's Encrypt
 
@@ -237,16 +235,11 @@ One you know these:
 
 ### Run draft
 
-You'll want this to continue to run, even if you disconnect from the host, so it's a good idea to start a tmux session:
-
-```
-tmux new -s draft-session
-```
-
 ```
 draft start-helper-sidecar --identity <identity> --root_domain example.com --config_path config
 ```
 
+This will start the sidecar in the background. To confirm, visit `example.com/status`.
 
 
 

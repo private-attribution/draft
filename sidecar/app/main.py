@@ -19,6 +19,6 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+@app.get("/status")
+async def status():
+    return {"status": "up"}
