@@ -76,3 +76,6 @@
         dest: '{{ ansible_env.HOME }}/draft'
         remote_src: yes
       when: traefik_installed.rc != 0
+
+    - name: Run draft start-helper-sidecar
+      command: '{{ ansible_env.HOME }}/draft/.venv/bin/draft start-helper-sidecar'
