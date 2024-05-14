@@ -188,7 +188,7 @@ def start_helper_sidecar(
         f"{sidecar_domain} {helper_port} {sidecar_port} {identity}",
     )
     start_command.run_blocking_no_output_capture()
-    print("draft local-dev started")
+    print("draft helper_sidecar started")
 
 
 @cli.command

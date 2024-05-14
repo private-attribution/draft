@@ -86,7 +86,17 @@
       copy:
         src: '{{ ansible_env.HOME }}/traefix_extract/traefik'
         dest: '{{ ansible_env.HOME }}/draft'
+        mode: '0775'
         remote_src: yes
 
-    - name: Run draft start-helper-sidecar
-      command: '{{ ansible_env.HOME }}/draft/.venv/bin/draft start-helper-sidecar'
+    - name: Start helper sidecar
+      shell: >
+        source .venv/bin/activate &&
+        draft start-helper-sidecar
+        --identity {{ identity }}
+        --root_domain {{ root_domain }}
+        --sidecar_domain sidecar{{ identity }}.{{ root_domain }}
+        --config_path {{ ansible_env.HOME }}/draft/config
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft'
+        executable: /bin/bash
