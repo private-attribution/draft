@@ -87,7 +87,7 @@ def start_traefik_command(
         "SIDECAR_PORT": str(sidecar_port),
         "CERT_DIR": config_path,
     }
-    cmd = "sudo -E ./traefik --configFile=sidecar/traefik/traefik.yaml"
+    cmd = "./traefik --configFile=sidecar/traefik/traefik.yaml"
     return Command(cmd=cmd, env=env)
 
 
