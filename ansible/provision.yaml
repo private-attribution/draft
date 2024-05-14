@@ -90,9 +90,7 @@
         remote_src: yes
 
     - name: Grant CAP_NET_BIND_SERVICE capability to traefik binary
-      command:
-        cmd: 'setcap cap_net_bind_service=+ep {{ ansible_env.HOME }}/draft/traefik'
-      warn: no
+      command: 'setcap cap_net_bind_service=+ep {{ ansible_env.HOME }}/draft/traefik'
       become: yes
 
     - name: Start helper sidecar
