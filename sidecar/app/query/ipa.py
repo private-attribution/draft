@@ -169,9 +169,12 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     @classmethod
     def build_from_query(cls, query: IPAHelperQuery):
         manifest_path = query.paths.repo_path / Path("Cargo.toml")
-        target_path = query.paths.repo_path / Path(f"target-{query.paths.commit_hash}")
         gate_type = query.gate_type
         stall_detection = query.stall_detection
+        target_path = query.paths.repo_path / Path(
+            f"target-{query.paths.commit_hash}-{gate_type}"
+            f"{'-stall-detection' if stall_detection else ''}"
+        )
         return cls(
             manifest_path=manifest_path,
             target_path=target_path,
