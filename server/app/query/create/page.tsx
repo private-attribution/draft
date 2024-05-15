@@ -295,12 +295,20 @@ function IPAForm({
           Not a valid commit hash.
         </p>
       )}
-      <SelectMenu
-        id="size"
-        label="Input Size"
-        options={["1000", "10000", "100000", "1000000"]}
-        defaultValue="1000"
-      />
+
+      <div className="relative pt-4">
+        <div className="block text-sm font-medium leading-6 text-gray-900">
+          Size
+        </div>
+
+        <input
+          type="number"
+          name="size"
+          defaultValue="1000"
+          className="relative w-full border-0 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+        />
+      </div>
+
       <SelectMenu
         id="max_breakdown_key"
         label="Maximum Number of Breakdown Keys"
