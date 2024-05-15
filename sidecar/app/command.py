@@ -82,10 +82,11 @@ class PopenContextManager:
     def signal_handler(self, sig, _frame):
         print(f"Handling signal: {sig}")
         for process in self.processes:
-            for child in psutil.Process(process.pid).children(recursive=True):
-                child.terminate()
-                print(f"Terminating: {child}")
-            process.terminate()
+            if psutil.pid_exists(process.pid):
+                for child in psutil.Process(process.pid).children(recursive=True):
+                    child.terminate()
+                    print(f"Terminating: {child}")
+                process.terminate()
             print(f"Terminating: {process}")
         sys.exit(0)
 

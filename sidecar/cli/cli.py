@@ -265,7 +265,7 @@ def run_local_dev(
             identity=role,
             helper_port=helper_ports[role],
             sidecar_port=sidecar_ports[role],
-            root_path=root_path,
+            root_path=root_path / Path(f"tmp/sidecar/{role.value}"),
             _env=_env,
         )
         for role in Role
