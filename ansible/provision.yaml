@@ -18,6 +18,21 @@
       become: yes
       when: python_installed.rc != 0
 
+    - name: Check if rust toolchain is installed
+      command: rustup --version
+      register: rustup_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Install Rustup
+      shell: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+      args:
+        executable: /bin/bash
+      when: rustup_installed.rc != 0
+
+    - name: Update Rust to 1.77
+      command: rustup update 1.77.0
+
     - name: Check if Git is installed
       command: git --version
       register: git_installed
