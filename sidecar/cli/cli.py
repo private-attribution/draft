@@ -159,7 +159,7 @@ def run_helper_sidecar(
     default=Path("local_dev/config"),
     show_default=True,
 )
-@click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
+@click.option("--root_path", type=click_pathlib.Path(), default=None)
 @click.option("--root_domain", type=str, default="ipa-helper.dev")
 @click.option("--sidecar_domain", type=str, default="")
 @click.option("--helper_port", type=int, default=7430)
@@ -265,7 +265,7 @@ def run_local_dev(
             identity=role,
             helper_port=helper_ports[role],
             sidecar_port=sidecar_ports[role],
-            root_path=root_path,
+            root_path=root_path / Path(f"tmp/sidecar/{role.value}"),
             _env=_env,
         )
         for role in Role
