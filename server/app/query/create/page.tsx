@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, FormEvent, useEffect, Fragment } from "react";
 import clsx from "clsx";
-import { Listbox, Transition, Combobox } from "@headlessui/react";
+import { Listbox, Transition, Combobox, Switch } from "@headlessui/react";
 import {
   CheckIcon,
   ChevronUpDownIcon,
@@ -126,6 +126,7 @@ function IPAForm({
   const [commitSpecifier, setCommitSpecifier] = useState<CommitSpecifier>(
     CommitSpecifier.BRANCH,
   );
+  const [stallDetectionEnabled, setStallDetectionEnabled] = useState(true);
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
   const filteredCommitHashes =
@@ -242,7 +243,7 @@ function IPAForm({
         <label
           htmlFor="commit_hash"
           className={clsx(
-            "block text-md font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
+            "block text-sm font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
             disableCommitHash && "opacity-25",
           )}
         >
@@ -294,7 +295,6 @@ function IPAForm({
           Not a valid commit hash.
         </p>
       )}
-
       <SelectMenu
         id="size"
         label="Input Size"
@@ -319,6 +319,34 @@ function IPAForm({
         options={["16", "32", "64", "128", "256"]}
         defaultValue="64"
       />
+      <SelectMenu
+        id="gate_type"
+        label="Gate Type"
+        options={["compact", "descriptive"]}
+        defaultValue="compact"
+      />
+      <div className="items-center pt-4">
+        <div className="block text-sm font-medium leading-6 text-gray-900">
+          Stall detection
+        </div>
+        <div className="block pt-1 text-sm font-medium leading-6 text-gray-900">
+          <Switch
+            checked={stallDetectionEnabled}
+            onChange={setStallDetectionEnabled}
+            name="stall_detection"
+            className={`${
+              stallDetectionEnabled ? "bg-blue-600" : "bg-gray-200"
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          >
+            <span
+              className={`${
+                stallDetectionEnabled ? "translate-x-6" : "translate-x-1"
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
+        </div>
+      </div>
+
       <button
         type="submit"
         className={clsx(
@@ -394,7 +422,7 @@ function PassedStateSelectMenu({
         <>
           <Listbox.Label
             className={clsx(
-              "block text-sm font-medium leading-6 text-gray-900",
+              "block pt-4 text-sm font-medium leading-6 text-gray-900",
               labelClassName,
               disabled && "opacity-25",
             )}
@@ -403,7 +431,7 @@ function PassedStateSelectMenu({
           </Listbox.Label>
           <div
             className={clsx(
-              "relative mt-2",
+              "relative",
               selectClassName,
               disabled && "opacity-25",
             )}

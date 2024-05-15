@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar
 from urllib.parse import urlunparse
@@ -15,6 +16,11 @@ from ..settings import settings
 from .base import Query
 from .command import FileOutputCommand, LoggerOutputCommand
 from .step import CommandStep, LoggerOutputCommandStep, Status, Step
+
+
+class GateType(StrEnum):
+    COMPACT = "compact-gate"
+    DESCRIPTIVE = "descriptive-gate"
 
 
 @dataclass(kw_only=True)
@@ -155,23 +161,30 @@ class IPACorrdinatorCompileStep(LoggerOutputCommandStep):
 class IPAHelperCompileStep(LoggerOutputCommandStep):
     manifest_path: Path
     target_path: Path
+    gate_type: GateType
+    stall_detection: bool
     logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
 
     @classmethod
-    def build_from_query(cls, query: IPAQuery):
+    def build_from_query(cls, query: IPAHelperQuery):
         manifest_path = query.paths.repo_path / Path("Cargo.toml")
         target_path = query.paths.repo_path / Path(f"target-{query.paths.commit_hash}")
+        gate_type = query.gate_type
+        stall_detection = query.stall_detection
         return cls(
             manifest_path=manifest_path,
             target_path=target_path,
+            gate_type=gate_type,
+            stall_detection=stall_detection,
             logger=query.logger,
         )
 
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin helper --manifest-path={self.manifest_path} "
-            f'--features="web-app real-world-infra compact-gate stall-detection" '
+            f'--features="web-app real-world-infra {self.gate_type} '
+            f"{'stall-detection' if self.stall_detection else ''}\" "
             f"--no-default-features --target-dir={self.target_path} "
             f"--release",
             logger=self.logger,
@@ -383,6 +396,8 @@ class IPAStartHelperStep(LoggerOutputCommandStep):
 @dataclass(kw_only=True)
 class IPAHelperQuery(IPAQuery):
     port: int
+    gate_type: GateType
+    stall_detection: bool
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,

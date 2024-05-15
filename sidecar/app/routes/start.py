@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Form
 from ..local_paths import Paths
 from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
-from ..query.ipa import IPACoordinatorQuery, IPAHelperQuery
+from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
 from ..query.step import Status
 from ..settings import settings
 
@@ -39,6 +39,8 @@ def demo_logger(
 def start_ipa_helper(
     query_id: str,
     commit_hash: Annotated[str, Form()],
+    gate_type: Annotated[str, Form()],
+    stall_detection: Annotated[bool, Form()],
     background_tasks: BackgroundTasks,
 ):
     role = settings.role
@@ -53,6 +55,8 @@ def start_ipa_helper(
     query = IPAHelperQuery(
         paths=paths,
         query_id=query_id,
+        gate_type=GateType[gate_type.upper()],
+        stall_detection=stall_detection,
         port=settings.helper_port,
     )
     background_tasks.add_task(query.start)
