@@ -7,7 +7,7 @@ from typing import Optional
 class Paths:
     repo_path: Path
     config_path: Path
-    commit_hash: str
+    compiled_id: str
     _test_data_path: Optional[Path] = None
 
     @property
@@ -22,7 +22,7 @@ class Paths:
 
     @property
     def target_path(self) -> Path:
-        return self.repo_path / Path(f"target-{self.commit_hash}")
+        return self.repo_path / Path(f"target-{self.compiled_id}")
 
     @property
     def helper_binary_path(self) -> Path:

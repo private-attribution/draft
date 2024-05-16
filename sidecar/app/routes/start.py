@@ -41,22 +41,32 @@ def start_ipa_helper(
     commit_hash: Annotated[str, Form()],
     gate_type: Annotated[str, Form()],
     stall_detection: Annotated[bool, Form()],
+    multi_threading: Annotated[bool, Form()],
     background_tasks: BackgroundTasks,
 ):
+    # pylint: disable=too-many-arguments
     role = settings.role
     if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
 
+    compiled_id = (
+        f"{commit_hash}_{gate_type}"
+        f"{'_stall-detection' if stall_detection else ''}"
+        f"{'_multi-threading' if multi_threading else ''}"
+    )
+
     paths = Paths(
         repo_path=settings.root_path / Path("ipa"),
         config_path=settings.config_path,
-        commit_hash=commit_hash,
+        compiled_id=compiled_id,
     )
     query = IPAHelperQuery(
         paths=paths,
+        commit_hash=commit_hash,
         query_id=query_id,
         gate_type=GateType[gate_type.upper()],
         stall_detection=stall_detection,
+        multi_threading=multi_threading,
         port=settings.helper_port,
     )
     background_tasks.add_task(query.start)
@@ -92,12 +102,13 @@ def start_ipa_test_query(
     paths = Paths(
         repo_path=settings.root_path / Path("ipa"),
         config_path=settings.config_path,
-        commit_hash=commit_hash,
+        compiled_id=commit_hash,
     )
     test_data_path = paths.repo_path / Path("test_data/input")
     query = IPACoordinatorQuery(
         query_id=query_id,
         paths=paths,
+        commit_hash=commit_hash,
         test_data_file=test_data_path / Path(f"events-{size}.txt"),
         size=size,
         max_breakdown_key=max_breakdown_key,
