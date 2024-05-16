@@ -26,6 +26,7 @@ class GateType(StrEnum):
 @dataclass(kw_only=True)
 class IPAQuery(Query):
     paths: Paths
+    commit_hash: str
 
     def send_kill_signals(self):
         self.logger.info("sending kill signals")
@@ -119,7 +120,7 @@ class IPACheckoutCommitStep(LoggerOutputCommandStep):
     def build_from_query(cls, query: IPAQuery):
         return cls(
             repo_path=query.paths.repo_path,
-            commit_hash=query.paths.commit_hash,
+            commit_hash=query.commit_hash,
             logger=query.logger,
         )
 
@@ -140,10 +141,9 @@ class IPACorrdinatorCompileStep(LoggerOutputCommandStep):
     @classmethod
     def build_from_query(cls, query: IPAQuery):
         manifest_path = query.paths.repo_path / Path("Cargo.toml")
-        target_path = query.paths.repo_path / Path(f"target-{query.paths.commit_hash}")
         return cls(
             manifest_path=manifest_path,
-            target_path=target_path,
+            target_path=query.paths.target_path,
             logger=query.logger,
         )
 
@@ -163,6 +163,7 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     target_path: Path
     gate_type: GateType
     stall_detection: bool
+    multi_threading: bool
     logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
 
@@ -171,23 +172,22 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
         manifest_path = query.paths.repo_path / Path("Cargo.toml")
         gate_type = query.gate_type
         stall_detection = query.stall_detection
-        target_path = query.paths.repo_path / Path(
-            f"target-{query.paths.commit_hash}-{gate_type}"
-            f"{'-stall-detection' if stall_detection else ''}"
-        )
+        multi_threading = query.multi_threading
         return cls(
             manifest_path=manifest_path,
-            target_path=target_path,
+            target_path=query.paths.target_path,
             gate_type=gate_type,
             stall_detection=stall_detection,
+            multi_threading=multi_threading,
             logger=query.logger,
         )
 
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"cargo build --bin helper --manifest-path={self.manifest_path} "
-            f'--features="web-app real-world-infra {self.gate_type} '
-            f"{'stall-detection' if self.stall_detection else ''}\" "
+            f'--features="web-app real-world-infra {self.gate_type}'
+            f"{' stall-detection' if self.stall_detection else ''}"
+            f"{' multi-threading' if self.multi_threading else ''}\" "
             f"--no-default-features --target-dir={self.target_path} "
             f"--release",
             logger=self.logger,
@@ -401,6 +401,7 @@ class IPAHelperQuery(IPAQuery):
     port: int
     gate_type: GateType
     stall_detection: bool
+    multi_threading: bool
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,
