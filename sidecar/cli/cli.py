@@ -94,6 +94,7 @@ def start_traefik_command(
 def start_traefik_local_command(
     config_path: Path,
     sidecar_ports: tuple[int, ...],
+    helper_ports: tuple[int, ...],
     server_port: int,
     root_domain: str,
 ):
@@ -103,10 +104,18 @@ def start_traefik_local_command(
         "SERVER_DOMAIN": root_domain,
         "SERVER_PORT": str(server_port),
     }
-    for identity, s_port in enumerate(sidecar_ports):
+    for identity, (s_port, h_port) in enumerate(zip(sidecar_ports, helper_ports)):
         sidecar_domain = f"sidecar{identity}.{root_domain}"
         env[f"SIDECAR_{identity}_DOMAIN"] = sidecar_domain
+        helper_domain = f"helper{identity}.{root_domain}"
+        env[f"HELPER_{identity}_DOMAIN"] = helper_domain
         env[f"SIDECAR_{identity}_PORT"] = str(s_port)
+        env[f"HELPER_{identity}_PORT"] = str(h_port)
+
+    env["COORDINATOR_DOMAIN"] = f"coordinator.{root_domain}"
+    del env["HELPER_0_DOMAIN"]
+    env["COORDINATOR_PORT"] = env["HELPER_0_PORT"]
+    del env["HELPER_0_PORT"]
 
     cmd = "traefik --configFile=sidecar/traefik/traefik-local.yaml"
     return Command(cmd=cmd, env=env)
@@ -273,6 +282,7 @@ def run_local_dev(
     traefik_command = start_traefik_local_command(
         config_path=config_path,
         sidecar_ports=tuple(sidecar_ports.values()),
+        helper_ports=tuple(helper_ports.values()),
         server_port=server_port,
         root_domain=root_domain,
     )
