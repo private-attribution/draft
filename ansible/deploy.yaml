@@ -24,6 +24,7 @@
         draft start-helper-sidecar
         --identity {{ identity }}
         --root_domain {{ root_domain }}
+        --helper_domain helper{{ identity}}.{{ root_domain }}
         --sidecar_domain sidecar{{ identity }}.{{ root_domain }}
         --config_path {{ ansible_env.HOME }}/draft/config
       args:

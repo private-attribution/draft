@@ -1,0 +1,65 @@
+- name: Generate IPA keys
+  hosts: all
+  vars:
+    local_public_key_directory: "{{ lookup('env', 'PWD') }}/.draft/deployed_public_keys"
+  tasks:
+    - name: Check if local directory exists
+      local_action:
+        module: stat
+        path: "{{ local_public_key_directory }}"
+      register: local_directory_status
+    - name: Fail if local directory does not exist
+      fail:
+        msg: "The local directory {{ local_public_key_directory }} does not exist. Please create it."
+      when: not local_directory_status.stat.exists
+    - name: Create directories if they do not exist
+      file:
+        path: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}"
+        state: directory
+    - name: Pull the latest changes if the directory exists
+      git:
+        repo: 'https://github.com/private-attribution/ipa'
+        dest: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}/ipa"
+        version: main
+        update: yes
+
+    - name: Get the current git hash
+      git_info:
+        repo: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}/ipa"
+      register: git_info
+    - name: Define target_dir
+      set_fact:
+        target_dir: "target-keygen-{{ git_info.after }}"
+    - name: Check if binary exists
+      stat:
+        path: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}/ipa/{{ target_dir }}/your_binary"
+      register: binary_status
+
+    - name: Run cargo build
+      command: cargo build --bin helper --features="web-app real-world-infra compact-gate" --no-default-features --release --target-dir="target-keygen"
+      args:
+        chdir: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}/ipa"
+      when: not binary_status.stat.exists
+
+
+    - name: Remove the specified files
+      file:
+        path: "{{ ansible_env.HOME }}/draft/config/{{ item }}"
+        state: absent
+      loop:
+        - "h{{ identity }}.key"
+        - "h{{ identity }}_mk.key"
+        - "pub/h{{ identity }}.pem"
+        - "pub/h{{ identity }}_mk.pub"
+    - name: Run helper keygen
+      command: "target-keygen/release/helper keygen --name helper{{ identity }}.{{ root_domain }} --tls-cert {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}.pem --tls-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}.key --mk-public-key {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}_mk.pub --mk-private-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}_mk.key"
+      args:
+        chdir: "{{ ansible_env.HOME }}/draft/tmp/sidecar/{{ identity }}/ipa"
+    - name: Fetch the newly created files
+      fetch:
+        src: "{{ ansible_env.HOME }}/draft/config/pub/{{ item }}"
+        dest: "{{ local_public_key_directory }}/"
+        flat: yes
+      loop:
+        - "h{{ identity }}.pem"
+        - "h{{ identity }}_mk.pub"

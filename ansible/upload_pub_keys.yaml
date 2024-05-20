@@ -1,0 +1,25 @@
+- hosts: all
+  vars:
+    local_public_key_directory: "{{ lookup('env', 'PWD') }}/.draft/deployed_public_keys"
+  tasks:
+    - name: Define remote_directory
+      set_fact:
+        remote_directory: "{{ ansible_env.HOME }}/draft/config"
+    - name: Upload keys to remote hosts
+      copy:
+        src: "{{ local_public_key_directory }}/{{ item }}"
+        dest: "{{ remote_directory }}/pub"
+      loop:
+        - "h0.pem"
+        - "h0_mk.pub"
+        - "h1.pem"
+        - "h1_mk.pub"
+        - "h2.pem"
+        - "h2_mk.pub"
+        - "h3.pem"
+        - "h3_mk.pub"
+
+    - name: Upload network.toml to remote hosts
+      copy:
+        src: "{{ local_public_key_directory }}/network.toml"
+        dest: "{{ remote_directory }}/network.toml"
