@@ -86,16 +86,16 @@ tcp:
     coordinator-service:
       loadBalancer:
         servers:
-          - address: "127.0.0.1:{{ env "COORDINATOR_PORT"}}"
+          - address: "localhost:{{ env "COORDINATOR_PORT"}}"
     helper-1-service:
       loadBalancer:
         servers:
-          - address: "127.0.0.1:{{ env "HELPER_1_PORT"}}"
+          - address: "localhost:{{ env "HELPER_1_PORT"}}"
     helper-2-service:
       loadBalancer:
         servers:
-          - address: "127.0.0.1:{{ env "HELPER_2_PORT"}}"
+          - address: "localhost:{{ env "HELPER_2_PORT"}}"
     helper-3-service:
       loadBalancer:
         servers:
-          - address: "127.0.0.1:{{ env "HELPER_3_PORT"}}"
+          - address: "localhost:{{ env "HELPER_3_PORT"}}"
