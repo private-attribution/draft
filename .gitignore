@@ -20,4 +20,4 @@ local_dev/config/key.pem
 config/
 
 # installed traefik binary
-traefik
+/traefik
