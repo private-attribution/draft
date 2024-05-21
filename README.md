@@ -170,9 +170,9 @@ We check in self signed certs that are only for local development (and are not s
 They will periodically expire. You can regenerate them with a compiled helper binary:
 
 ```
-target/release/helper keygen --name localhost --tls-key local_dev/config/h1.key --tls-cert local_dev/config/pub/h1.pem --mk-public-key local_dev/config/pub/h1_mk.pub --mk-private-key local_dev/config/h1_mk.key
-target/release/helper keygen --name localhost --tls-key local_dev/config/h2.key --tls-cert local_dev/config/pub/h2.pem --mk-public-key local_dev/config/pub/h2_mk.pub --mk-private-key local_dev/config/h2_mk.key
-target/release/helper keygen --name localhost --tls-key local_dev/config/h3.key --tls-cert local_dev/config/pub/h3.pem --mk-public-key local_dev/config/pub/h3_mk.pub --mk-private-key local_dev/config/h3_mk.key
+target/release/helper keygen --name helper1.draft.test --tls-key local_dev/config/h1.key --tls-cert local_dev/config/pub/h1.pem --mk-public-key local_dev/config/pub/h1_mk.pub --mk-private-key local_dev/config/h1_mk.key
+target/release/helper keygen --name helper2.draft.test --tls-key local_dev/config/h2.key --tls-cert local_dev/config/pub/h2.pem --mk-public-key local_dev/config/pub/h2_mk.pub --mk-private-key local_dev/config/h2_mk.key
+target/release/helper keygen --name helper3.draft.test --tls-key local_dev/config/h3.key --tls-cert local_dev/config/pub/h3.pem --mk-public-key local_dev/config/pub/h3_mk.pub --mk-private-key local_dev/config/h3_mk.key
 ```
 
 The public content will also need to be pasted into `local_dev/config/network.toml` for each helper.

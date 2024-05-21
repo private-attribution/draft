@@ -12,3 +12,19 @@ http:
       loadBalancer:
         servers:
           - url: "http://localhost:{{ env "SIDECAR_PORT"}}"
+
+tcp:
+  routers:
+    helper-router:
+      entryPoints:
+        - "web-secure"
+      rule: "HostSNI(`{{ env "HELPER_DOMAIN"}}`)"
+      service: "helper-service"
+      tls:
+        passthrough: true
+
+  services:
+    helper-service:
+      loadBalancer:
+        servers:
+          - address: "127.0.0.1:{{ env "HELPER_PORT"}}"

@@ -74,17 +74,23 @@ def start_helper_sidecar_command(
     return Command(cmd=cmd, env=env)
 
 
+# pylint: disable=too-many-arguments
 def start_traefik_command(
     config_path: Path,
-    sidecar_port: int,
     root_domain: str,
-    sidecar_domain: str,
+    helper_domain: str | None,
+    sidecar_domain: str | None,
+    helper_port: int,
+    sidecar_port: int,
 ):
     sidecar_domain = sidecar_domain or f"sidecar.{root_domain}"
+    helper_domain = helper_domain or f"helper.{root_domain}"
     env = {
         **os.environ,
         "SIDECAR_DOMAIN": sidecar_domain,
+        "HELPER_DOMAIN": helper_domain,
         "SIDECAR_PORT": str(sidecar_port),
+        "HELPER_PORT": str(helper_port),
         "CERT_DIR": config_path,
     }
     cmd = "./traefik --configFile=sidecar/traefik/traefik.yaml"
@@ -93,9 +99,10 @@ def start_traefik_command(
 
 def start_traefik_local_command(
     config_path: Path,
+    root_domain: str,
+    helper_ports: tuple[int, ...],
     sidecar_ports: tuple[int, ...],
     server_port: int,
-    root_domain: str,
 ):
     env = {
         **os.environ,
@@ -103,10 +110,18 @@ def start_traefik_local_command(
         "SERVER_DOMAIN": root_domain,
         "SERVER_PORT": str(server_port),
     }
-    for identity, s_port in enumerate(sidecar_ports):
+    for identity, (s_port, h_port) in enumerate(zip(sidecar_ports, helper_ports)):
         sidecar_domain = f"sidecar{identity}.{root_domain}"
         env[f"SIDECAR_{identity}_DOMAIN"] = sidecar_domain
+        helper_domain = f"helper{identity}.{root_domain}"
+        env[f"HELPER_{identity}_DOMAIN"] = helper_domain
         env[f"SIDECAR_{identity}_PORT"] = str(s_port)
+        env[f"HELPER_{identity}_PORT"] = str(h_port)
+
+    env["COORDINATOR_DOMAIN"] = f"coordinator.{root_domain}"
+    del env["HELPER_0_DOMAIN"]
+    env["COORDINATOR_PORT"] = env["HELPER_0_PORT"]
+    del env["HELPER_0_PORT"]
 
     cmd = "traefik --configFile=sidecar/traefik/traefik-local.yaml"
     return Command(cmd=cmd, env=env)
@@ -122,7 +137,8 @@ def start_traefik_local_command(
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
 @click.option("--root_domain", type=str, default="ipa-helper.dev")
-@click.option("--sidecar_domain", type=str, default="")
+@click.option("--helper_domain", type=str, default=None)
+@click.option("--sidecar_domain", type=str, default=None)
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
@@ -130,7 +146,8 @@ def run_helper_sidecar(
     config_path: Path,
     root_path: Path,
     root_domain: str,
-    sidecar_domain: str,
+    helper_domain: str | None,
+    sidecar_domain: str | None,
     helper_port: int,
     sidecar_port: int,
     identity: int,
@@ -144,9 +161,11 @@ def run_helper_sidecar(
     )
     traefik_command = start_traefik_command(
         config_path=config_path,
-        sidecar_port=sidecar_port,
         root_domain=root_domain,
+        helper_domain=helper_domain,
         sidecar_domain=sidecar_domain,
+        helper_port=helper_port,
+        sidecar_port=sidecar_port,
     )
     start_commands_parallel([sidecar_command, traefik_command])
 
@@ -161,6 +180,7 @@ def run_helper_sidecar(
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
 @click.option("--root_domain", type=str, default="ipa-helper.dev")
+@click.option("--helper_domain", type=str, default="")
 @click.option("--sidecar_domain", type=str, default="")
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
@@ -169,6 +189,7 @@ def start_helper_sidecar(
     config_path: Path,
     root_path: Path,
     root_domain: str,
+    helper_domain: str,
     sidecar_domain: str,
     helper_port: int,
     sidecar_port: int,
@@ -185,7 +206,7 @@ def start_helper_sidecar(
 
     start_command = Command(
         cmd=f"{script_path} {config_path} {root_path} {root_domain} "
-        f"{sidecar_domain} {helper_port} {sidecar_port} {identity}",
+        f"{helper_domain} {sidecar_domain} {helper_port} {sidecar_port} {identity}",
     )
     start_command.run_blocking_no_output_capture()
     print("draft helper_sidecar started")
@@ -272,9 +293,10 @@ def run_local_dev(
     ]
     traefik_command = start_traefik_local_command(
         config_path=config_path,
+        root_domain=root_domain,
+        helper_ports=tuple(helper_ports.values()),
         sidecar_ports=tuple(sidecar_ports.values()),
         server_port=server_port,
-        root_domain=root_domain,
     )
     commands = sidecar_commands + [npm_run_dev_command, traefik_command]
 
