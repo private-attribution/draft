@@ -5,10 +5,11 @@
     - name: Define remote_directory
       set_fact:
         remote_directory: "{{ ansible_env.HOME }}/draft/config"
-    - name: Upload keys to remote hosts
-      copy:
-        src: "{{ local_public_key_directory }}/{{ item }}"
-        dest: "{{ remote_directory }}/pub"
+    - name: Define keys
+      local_action:
+        module: stat
+        path: "{{ local_public_key_directory }}/{{ item }}"
+      register: public_keys
       loop:
         - "h0.pem"
         - "h0_mk.pub"
@@ -19,7 +20,30 @@
         - "h3.pem"
         - "h3_mk.pub"
 
+    - name: Define network.toml
+      local_action:
+        module: stat
+        path: "{{ local_public_key_directory }}/network.toml"
+      register: network_toml
+
+    - name: Fail if any keys are missing
+      fail:
+        msg: "Keys not found locally: {{ public_keys.results | selectattr('stat.exists','equalto', False) | map(attribute='item') | list }}"
+      when: public_keys.results | selectattr('stat.exists','equalto', False) | list | count > 0
+
+    - name: Fail network.toml is missing
+      fail:
+        msg: "Key {{ local_public_key_directory}}/network.toml not found locally."
+      when: not network_toml.stat.exists
+
+
+    - name: Upload keys to remote hosts
+      copy:
+        src: "{{ item.stat.path }}"
+        dest: "{{ remote_directory }}/pub"
+      loop: "{{ public_keys.results }}"
+
     - name: Upload network.toml to remote hosts
       copy:
-        src: "{{ local_public_key_directory }}/network.toml"
+        src: "{{ network_toml.stat.path }}"
         dest: "{{ remote_directory }}/network.toml"
