@@ -128,6 +128,7 @@ function IPAForm({
   );
   const [stallDetectionEnabled, setStallDetectionEnabled] = useState(true);
   const [multiThreadingEnabled, setMultiThreadingEnabled] = useState(true);
+  const [disableMetricsEnabled, setDisableMetricsEnabled] = useState(false);
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
   const filteredCommitHashes =
@@ -372,6 +373,28 @@ function IPAForm({
             <span
               className={`${
                 multiThreadingEnabled ? "translate-x-6" : "translate-x-1"
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
+        </div>
+      </div>
+
+      <div className="items-center pt-4">
+        <div className="block text-sm font-medium leading-6 text-gray-900">
+          Disable metrics
+        </div>
+        <div className="block pt-1 text-sm font-medium leading-6 text-gray-900">
+          <Switch
+            checked={disableMetricsEnabled}
+            onChange={setDisableMetricsEnabled}
+            name="disable_metrics"
+            className={`${
+              disableMetricsEnabled ? "bg-blue-600" : "bg-gray-200"
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          >
+            <span
+              className={`${
+                disableMetricsEnabled ? "translate-x-6" : "translate-x-1"
               } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
