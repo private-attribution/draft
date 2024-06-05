@@ -10,7 +10,7 @@ IGNORE-ME*
 .draft
 
 # local env files
-.env*
+.env*.local
 
 # local certs
 local_dev/config/cert.pem
