@@ -54,6 +54,14 @@ export async function middleware(request: NextRequest) {
     },
   );
 
+  if (process.env.NODE_ENV === "development" && process.env.BYPASS_AUTH === "true") {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: 'demo@draft.test',
+      password: 'password',
+    })
+    console.log(data);
+    return response
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();
