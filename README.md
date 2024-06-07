@@ -1,10 +1,10 @@
 # DRAFT - Distributed Relay and Automation Facilitation Tool
 ![image of a draft beer tap](server/public/beer-tap.png)
 
-draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains 2 components:
+draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains two components:
 
-1. draft-server: a web front end and service that starts queries an displays logs from the MPC helper servers
-2. draft-sidecar: a sidecar back end API that runs next to the IPA binary on helper servers. This includes a CLI for setup and running.
+1. draft-server: a web front end and service that starts queries an displays logs from the MPC helper servers.
+2. draft-sidecar: a sidecar backend API that runs next to the IPA binary on helper servers. This includes a CLI for setup and running.
 
 
 # Get started
@@ -31,7 +31,7 @@ To deploy new changes in draft, run: `ansible-playbook -i ansible/inventory.ini 
 
 ### Generating TLS certs with Let's Encrypt
 
-You will need a domain name and TLS certificates for the sidecar to properly run over HTTPS. The following instructions assume your domain is `example.com`, please replace with the domain you'd like to use. You will need to create two sub-domains, `sidecar.example.com` and `helper.example.com`. (Note, you could also use a sub-domain as your base domain, e.g., `test.example.com` with two sub-domains of that: `sidecar.test.example.com` and `helper.test.example.com`.)
+You will need a domain name and TLS certificates for the sidecar to properly run over HTTPS. The following instructions assume your domain is `example.com`, please replace with the domain you'd like to use. You will need to create two subdomains, `sidecar.example.com` and `helper.example.com`. (Note, you could also use a subdomain as your base domain, e.g., `test.example.com` with two sub-domains of that: `sidecar.test.example.com` and `helper.test.example.com`.)
 
 1. Set up DNS records for `sidecar.example.com` and `helper.example.com` pointing to a server you control.
 2. Make sure you've installed the requirements above, and are using the virtual environment.
@@ -76,7 +76,7 @@ This will start the sidecar in the background. To confirm, visit `example.com/st
 
 ## Local Dev
 
-`draft` provides a fully functional local development setup, to work on both the frontend web interface, as well as the sidecar.
+`draft` provides a fully functional local development setup to work on both the frontend web interface and the sidecar.
 
 ### Running local development
 
@@ -124,7 +124,7 @@ The `ln` at the end is because Supabase requires interacting with the local Dock
 
 ### Installation
 
-Make sure the repo is cloned and you're working in the root directory of the repo:
+Make sure the repo is cloned, and you're working in the root directory of the repo:
 
 ```
 git clone https://github.com/eriktaubeneck/draft.git
@@ -178,9 +178,9 @@ pip install --editable .
 
 ## Appendix
 
-### IPA specific certs
+### IPA-specific certs
 
-We check in self signed certs that are only for local development (and are not secure! They are in a public repo!)
+We check in self-signed certs that are only for local development (and are not secure! They are in a public repo!)
 
 They will periodically expire. You can regenerate them with a compiled helper binary:
 
