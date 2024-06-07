@@ -21,8 +21,10 @@ import {
   initialRunTimeByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";
+import { getQuery, Query } from "@/data/query";
 
 export default function Query({ params }: { params: { id: string } }) {
+  const [query, setQuery] = useState<Query | null>(null);
   // display controls
   const [logsHidden, setLogsHidden] = useState<boolean>(true);
   const [statsHidden, setStatsHidden] = useState<boolean>(true);
@@ -44,9 +46,11 @@ export default function Query({ params }: { params: { id: string } }) {
   }
 
   const kill = async (remoteServers: RemoteServersType) => {
+    const query: Query = await getQuery(params.id);
+
     const fetchPromises = Object.values(remoteServers).map(
       async (remoteServer) => {
-        await fetch(remoteServer.killURL(params.id), {
+        await fetch(remoteServer.killURL(query.uuid), {
           method: "POST",
         });
       },
@@ -56,26 +60,30 @@ export default function Query({ params }: { params: { id: string } }) {
   };
 
   useEffect(() => {
-    let webSockets: WebSocket[] = [];
-    for (const remoteServer of Object.values(IPARemoteServers)) {
-      const loggingWs = remoteServer.openLogSocket(params.id, setLogs);
-      const statusWs = remoteServer.openStatusSocket(
-        params.id,
-        setStatusByRemoteServer,
-      );
-      const statsWs = remoteServer.openStatsSocket(
-        params.id,
-        setStatsByRemoteServer,
-        setRunTimeByRemoteServer,
-      );
-      webSockets = [...webSockets, loggingWs, statusWs, statsWs];
-    }
-
-    return () => {
-      for (const ws of webSockets) {
-        ws.close();
+    (async () => {
+      const query: Query = await getQuery(params.id);
+      setQuery(query);
+      let webSockets: WebSocket[] = [];
+      for (const remoteServer of Object.values(IPARemoteServers)) {
+        const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
+        const statusWs = remoteServer.openStatusSocket(
+          query.uuid,
+          setStatusByRemoteServer,
+        );
+        const statsWs = remoteServer.openStatsSocket(
+          query.uuid,
+          setStatsByRemoteServer,
+          setRunTimeByRemoteServer,
+        );
+        webSockets = [...webSockets, loggingWs, statusWs, statsWs];
       }
-    };
+
+      return () => {
+        for (const ws of webSockets) {
+          ws.close();
+        }
+      };
+    })();
   }, [params]);
 
   return (

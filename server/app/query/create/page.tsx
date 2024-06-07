@@ -15,8 +15,11 @@ import {
   IPARemoteServers,
   RemoteServersType,
 } from "@/app/query/servers";
-import NewQueryId from "@/app/query/haikunator";
 import { Branch, Branches, Commits } from "@/app/query/github";
+import { createNewQuery, Query } from "@/data/query";
+import { Database } from "@/data/supabaseTypes";
+
+type QueryType = Database["public"]["Enums"]["query_type"];
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
@@ -24,26 +27,29 @@ export default function Page() {
 
   const handleFormSubmit = async (
     event: FormEvent<HTMLFormElement>,
+    queryType: QueryType,
     remoteServers: RemoteServersType,
   ) => {
     event.preventDefault();
     try {
-      const newQueryId = NewQueryId();
-      setQueryId(newQueryId);
-      // Send a POST request to start the process
       const formData = new FormData(event.currentTarget);
+      const query: Query = await createNewQuery(formData, queryType);
+
+      setQueryId(query.displayId);
+
+      // Send a POST request to start the process
       for (const remoteServer of Object.values(remoteServers)) {
-        const response = await fetch(remoteServer.startURL(newQueryId), {
+        const response = await fetch(remoteServer.startURL(query.uuid), {
           method: "POST",
           body: formData,
         });
-        const data = await response.json();
+        const _data = await response.json();
       }
 
       await new Promise((f) => setTimeout(f, 1000));
 
       // Redirect to /query/view/<newQueryId>
-      router.push(`/query/view/${newQueryId}`);
+      router.push(`/query/view/${query.displayId}`);
     } catch (error) {
       console.error("Error starting process:", error);
     }
@@ -52,11 +58,11 @@ export default function Page() {
   const handleDemoLogsFormSubmit = async (
     event: FormEvent<HTMLFormElement>,
   ) => {
-    await handleFormSubmit(event, DemoLoggerRemoteServers);
+    await handleFormSubmit(event, "DEMO_LOGGER", DemoLoggerRemoteServers);
   };
 
   const handleIPAFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    await handleFormSubmit(event, IPARemoteServers);
+    await handleFormSubmit(event, "IPA", IPARemoteServers);
   };
 
   return (
