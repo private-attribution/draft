@@ -49,7 +49,7 @@ For this stage, you'll need to know a few things about the other parties involve
 3. Everyone's *identity* (e.g., 0, 1, 2, 3)
 
 
-One you know these:
+Once you know these:
 1. Make a config directory `mkdir config`
 2. Copy the default network config: `cp local_dev/config/network.toml config/.`
 3. Update that file.
@@ -57,7 +57,7 @@ One you know these:
     2. Repeat for identity= 1, 2, and 3.
     3. Replace respective certificates with their public keys.
 4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem key.pem`
-5. Generate IPA specific keys:
+5. Generate IPA-specific keys:
     1. Compile `ipa` with `cargo build --bin helper --features="web-app real-world-infra compact-gate stall-detection multi-threading" --no-default-features --release`
     2. Make the keys with `target/release/helper keygen --name localhost --tls-key h1.key --tls-cert h1.pem --mk-public-key h1_mk.pub --mk-private-key h1_mk.key` (replace h1 with for each helper)
     3. Add the public keys content into `network.toml`
