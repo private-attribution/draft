@@ -31,7 +31,7 @@ To deploy new changes in draft, run: `ansible-playbook -i ansible/inventory.ini 
 
 ### Generating TLS certs with Let's Encrypt
 
-You will need a domain name and TLS certificates for the sidecar to properly run over HTTPS. The following instructions assume your domain is `example.com`, please replace with the domain you'd like to use. You will need to create two subdomains, `sidecar.example.com` and `helper.example.com`. (Note, you could also use a subdomain as your base domain, e.g., `test.example.com` with two sub-domains of that: `sidecar.test.example.com` and `helper.test.example.com`.)
+You will need a domain name and TLS certificates for the sidecar to properly run over HTTPS. The following instructions assume your domain is `example.com`, please replace with the domain you'd like to use. You will need to create two subdomains, `sidecar.example.com` and `helper.example.com`. (Note, you could also use a subdomain as your base domain, e.g., `test.example.com` with two subdomains of that: `sidecar.test.example.com` and `helper.test.example.com`.)
 
 1. Set up DNS records for `sidecar.example.com` and `helper.example.com` pointing to a server you control.
 2. Make sure you've installed the requirements above, and are using the virtual environment.
