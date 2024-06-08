@@ -59,7 +59,6 @@ export async function middleware(request: NextRequest) {
       email: 'demo@draft.test',
       password: 'password',
     })
-    console.log(data);
     return response
   }
   const {
@@ -67,7 +66,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const allowedPathsRegex = new RegExp(`^(/|/login|/auth/callback|/docs/.+)$`);
-  if (!user && !allowedPathsRegex.test(request.nextUrl.pathname)) {
+  if ((!user || user.email === 'demo@draft.test') && !allowedPathsRegex.test(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = `/404`;
     return NextResponse.rewrite(url);
