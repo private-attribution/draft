@@ -22,6 +22,7 @@ type StatusClassNameMixinsType = {
 };
 
 const StatusClassNameMixins: StatusClassNameMixinsType = {
+  QUEUED: "bg-slate-300 dark:bg-slate-700",
   STARTING: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
   COMPILING: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",
   WAITING_TO_START: "bg-emerald-300 dark:bg-emerald-700 animate-pulse",

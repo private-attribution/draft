@@ -13,6 +13,7 @@ export interface ServerLog {
 }
 
 export enum Status {
+  QUEUED = "QUEUED",
   STARTING = "STARTING",
   COMPILING = "COMPILING",
   WAITING_TO_START = "WAITING_TO_START",
