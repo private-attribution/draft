@@ -17,5 +17,5 @@ function getCurrentTimestamp()  {
 }
 
 export default function NewQueryId(): string {
-  return haikunator.haikunate({tokenLength: 0}) + getCurrentTimestamp();
+  return encodeURIComponent(haikunator.haikunate({tokenLength: 0}) + getCurrentTimestamp());
 }
