@@ -52,6 +52,41 @@ export type Database = {
         }
         Relationships: []
       }
+      helper_party_api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string
+          hashed_api_key: string | null
+          helper_party_uuid: string
+          revoked: boolean
+          uuid: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          hashed_api_key?: string | null
+          helper_party_uuid: string
+          revoked?: boolean
+          uuid?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          hashed_api_key?: string | null
+          helper_party_uuid?: string
+          revoked?: boolean
+          uuid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helper_party_api_keys_helper_party_uuid_fkey"
+            columns: ["helper_party_uuid"]
+            isOneToOne: false
+            referencedRelation: "helper_parties"
+            referencedColumns: ["uuid"]
+          },
+        ]
+      }
       helper_party_network_members: {
         Row: {
           created_at: string
