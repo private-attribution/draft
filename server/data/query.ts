@@ -15,7 +15,7 @@ export interface Query {
   displayId: string;
   type: QueryType;
   status: Status;
-  formData: Json;
+  params: Json;
   createdAt: string;
   startedAt: string | null;
   endedAt: string | null;
@@ -27,7 +27,7 @@ function processQueryData(data: QueryRow): Query {
     displayId: data.display_id,
     type: data.type as QueryType,
     status: data.status as Status,
-    formData: data.form_data,
+    params: data.params,
     createdAt: data.created_at,
     startedAt: data.started_at,
     endedAt: data.ended_at,
@@ -69,10 +69,10 @@ export async function getQuery(displayId: string): Promise<Query> {
 }
 
 export async function createNewQuery(
-  formData: FormData,
+  params: FormData,
   queryType: QueryType,
 ): Promise<Query> {
-  const json = JSON.stringify(Object.fromEntries(formData));
+  const json = JSON.stringify(Object.fromEntries(params));
   const cookieStore = cookies();
 
   const supabase = createServerClient<Database>(
@@ -104,7 +104,7 @@ export async function createNewQuery(
       display_id: uniqueDisplayId,
       status: "QUEUED",
       type: queryType,
-      form_data: json,
+      params: json,
     })
     .select()
     .returns<QueryRow>()

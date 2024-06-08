@@ -8,7 +8,7 @@ uuid uuid default gen_random_uuid() primary key,
 display_id varchar(255) unique not null,
 type query_type not null,
 status status not null,
-form_data jsonb not null default '{}'::jsonb,
+params jsonb not null default '{}'::jsonb,
 created_at timestamp default current_timestamp not null,
 started_at timestamp,
 ended_at timestamp

@@ -32,8 +32,8 @@ export default function Page() {
   ) => {
     event.preventDefault();
     try {
-      const formData = new FormData(event.currentTarget);
-      const query: Query = await createNewQuery(formData, queryType);
+      const params = new FormData(event.currentTarget);
+      const query: Query = await createNewQuery(params, queryType);
 
       setQueryId(query.displayId);
 
@@ -41,7 +41,7 @@ export default function Page() {
       for (const remoteServer of Object.values(remoteServers)) {
         const response = await fetch(remoteServer.startURL(query.uuid), {
           method: "POST",
-          body: formData,
+          body: params,
         });
         const _data = await response.json();
       }
