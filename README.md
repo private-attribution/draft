@@ -3,7 +3,7 @@
 
 draft is a project designed to help test [IPA](https://github.com/private-attribution/ipa) at scale. It contains two components:
 
-1. draft-server: a web front end and service that starts queries an displays logs from the MPC helper servers.
+1. draft-server: a web front end and service that starts queries and displays logs from the MPC helper servers.
 2. draft-sidecar: a sidecar backend API that runs next to the IPA binary on helper servers. This includes a CLI for setup and running.
 
 
