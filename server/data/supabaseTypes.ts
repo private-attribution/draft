@@ -34,6 +34,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      helper_parties: {
+        Row: {
+          created_at: string
+          display_name: string
+          uuid: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          uuid?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          uuid?: string
+        }
+        Relationships: []
+      }
+      helper_party_network_members: {
+        Row: {
+          created_at: string
+          helper_party_network_uuid: string
+          helper_party_uuid: string
+        }
+        Insert: {
+          created_at?: string
+          helper_party_network_uuid: string
+          helper_party_uuid: string
+        }
+        Update: {
+          created_at?: string
+          helper_party_network_uuid?: string
+          helper_party_uuid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helper_party_network_members_helper_party_network_uuid_fkey"
+            columns: ["helper_party_network_uuid"]
+            isOneToOne: false
+            referencedRelation: "helper_party_networks"
+            referencedColumns: ["uuid"]
+          },
+          {
+            foreignKeyName: "helper_party_network_members_helper_party_uuid_fkey"
+            columns: ["helper_party_uuid"]
+            isOneToOne: false
+            referencedRelation: "helper_parties"
+            referencedColumns: ["uuid"]
+          },
+        ]
+      }
+      helper_party_networks: {
+        Row: {
+          created_at: string
+          display_name: string
+          size: number
+          uuid: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          size: number
+          uuid?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          size?: number
+          uuid?: string
+        }
+        Relationships: []
+      }
       queries: {
         Row: {
           created_at: string
