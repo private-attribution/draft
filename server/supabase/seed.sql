@@ -6,7 +6,6 @@ INSERT INTO public.helper_parties (uuid, display_name) VALUES ('de218b52-1ec7-4a
 INSERT INTO public.helper_parties (uuid, display_name) VALUES ('b8848f0f-65c4-499f-82b4-1e3a119ba31e', 'Local test helper 2');
 INSERT INTO public.helper_parties (uuid, display_name) VALUES ('91993b4a-4131-4b9f-a132-d4a5839e3c6c', 'Local test helper 3');
 
-
 --
 -- Data for Name: helper_party_networks; Type: TABLE DATA; Schema: public; Owner: postgres
 --

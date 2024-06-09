@@ -147,6 +147,45 @@ export type Database = {
         }
         Relationships: []
       }
+      helper_party_query_status_updates: {
+        Row: {
+          helper_party_uuid: string
+          query_uuid: string
+          started_at: string
+          status: Database["public"]["Enums"]["status"]
+          uuid: string
+        }
+        Insert: {
+          helper_party_uuid: string
+          query_uuid: string
+          started_at?: string
+          status: Database["public"]["Enums"]["status"]
+          uuid?: string
+        }
+        Update: {
+          helper_party_uuid?: string
+          query_uuid?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["status"]
+          uuid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helper_party_query_status_updates_helper_party_uuid_fkey"
+            columns: ["helper_party_uuid"]
+            isOneToOne: false
+            referencedRelation: "helper_parties"
+            referencedColumns: ["uuid"]
+          },
+          {
+            foreignKeyName: "helper_party_query_status_updates_query_uuid_fkey"
+            columns: ["query_uuid"]
+            isOneToOne: false
+            referencedRelation: "queries"
+            referencedColumns: ["uuid"]
+          },
+        ]
+      }
       queries: {
         Row: {
           created_at: string
