@@ -41,6 +41,10 @@ Requirements:
 3. [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
 4. Docker
 
+#### Pre-commit Hooks
+
+Github is setup to run pre-commit hooks specified in .pre-commit-config.yaml. If you want to use it locally, in the virtual environment, run `pre-commit install`.
+
 #### macOS install
 
 

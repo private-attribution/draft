@@ -5,3 +5,4 @@ README.md
 supabase/.temp*
 tailwind.config.ts
 tsconfig.json
+.next/*
