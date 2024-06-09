@@ -1,0 +1,7 @@
+data/supabaseTypes.ts
+next.config.js
+postcss.config.js
+README.md
+supabase/.temp*
+tailwind.config.ts
+tsconfig.json
