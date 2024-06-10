@@ -27,7 +27,6 @@ create table
 helper_party_networks (
 uuid uuid default gen_random_uuid() primary key,
 display_name varchar(255) unique not null,
-size smallint not null,
 created_at timestamp default current_timestamp not null
 );
 

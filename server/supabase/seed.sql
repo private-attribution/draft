@@ -11,7 +11,7 @@ INSERT INTO public.helper_parties (uuid, display_name, created_at) VALUES ('9199
 -- Data for Name: helper_party_networks; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.helper_party_networks (uuid, display_name, size, created_at) VALUES ('a8c892ae-8cee-472f-95f0-e25b1fec9759', 'Local test network', 3, '2024-06-05 20:38:40.956239');
+INSERT INTO public.helper_party_networks (uuid, display_name, created_at) VALUES ('a8c892ae-8cee-472f-95f0-e25b1fec9759', 'Local test network', '2024-06-05 20:38:40.956239');
 
 --
 -- Data for Name: helper_party_network_members; Type: TABLE DATA; Schema: public; Owner: postgres
