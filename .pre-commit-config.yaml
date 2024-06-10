@@ -32,3 +32,9 @@ repos:
       files: ^server/
       types_or: [javascript, jsx, ts, tsx]
       pass_filenames: false
+    - id: prettier
+      name: prettier
+      entry: npx --prefix server prettier --config=server/.prettierrc --ignore-path=server/.prettierignore --check server
+      language: system
+      files: ^server/
+      types_or: [javascript, jsx, ts, tsx]
