@@ -1,23 +1,10 @@
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { createClient, PostgrestError } from "@supabase/supabase-js";
-import { Database } from "@/data/supabaseTypes";
-import { truncate } from "fs";
+import { validateApiKey } from "@/data/helper_party_api_key";
+import { updateStatusFunction } from "@/data/helper_party_query_status";
 
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  },
-);
-
-export default async function POST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const apiKey = req.headers.get("x-api-key");
 
   const {
@@ -59,58 +46,4 @@ export default async function POST(req: NextRequest) {
     );
   }
   return NextResponse.json({ message: "Status updated successfully" });
-}
-
-async function validateApiKey(
-  helperPartyUUID: string,
-  key: string,
-): Promise<{ isValid: boolean; error: Error | undefined }> {
-  const currentTimestamp = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("helper_party_api_keys")
-    .select("hashed_api_key, revoked, expires_at")
-    .eq("helper_party_uuid", helperPartyUUID)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching API key from database:", error);
-    throw error;
-  }
-
-  if (!data) {
-    console.error(`helperParty<$helperPartyUUID> has no API keys`);
-    return { isValid: false, error: Error("No API key found.") };
-  }
-
-  for (let row of data) {
-    let valid = await bcrypt.compare(key, row.hashed_api_key);
-    if (valid) {
-      switch (true) {
-        case row.revoked: {
-          return { isValid: false, error: Error("API key revoked.") };
-        }
-        case row.expires_at < currentTimestamp: {
-          return { isValid: false, error: Error("API key expired.") };
-        }
-        default: {
-          return { isValid: true, error: undefined };
-        }
-      }
-    }
-  }
-  return { isValid: false, error: Error("API key invalid.") };
-}
-
-async function updateStatusFunction(
-  helperPartyUUID: string,
-  queryUUID: string,
-  status: string,
-): Promise<PostgrestError | null> {
-  console.log("Status updated to:", status);
-  const { error } = await supabase.from("helper_party_query_status").insert({
-    helper_party_uuid: helperPartyUUID,
-    query_uuid: queryUUID,
-    status: status,
-  });
-  return error;
 }
