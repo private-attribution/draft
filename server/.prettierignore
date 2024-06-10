@@ -1,0 +1,13 @@
+# Auto-generated file
+data/supabaseTypes.ts
+postcss.config.js
+supabase/.temp*
+tailwind.config.ts
+.next/*
+
+# Config files
+next.config.js
+tsconfig.json
+
+# Not JS
+README.md

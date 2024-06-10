@@ -349,7 +349,6 @@ function IPAForm({
           <Switch
             checked={stallDetectionEnabled}
             onChange={setStallDetectionEnabled}
-            name="stall_detection"
             className={`${
               stallDetectionEnabled ? "bg-blue-600" : "bg-gray-200"
             } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
@@ -360,6 +359,12 @@ function IPAForm({
               } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
+          {/* Hidden input to ensure the field is always included in the form data */}
+          <input
+            type="hidden"
+            name="stall_detection"
+            value={stallDetectionEnabled.toString()}
+          />
         </div>
       </div>
 
@@ -371,7 +376,6 @@ function IPAForm({
           <Switch
             checked={multiThreadingEnabled}
             onChange={setMultiThreadingEnabled}
-            name="multi_threading"
             className={`${
               multiThreadingEnabled ? "bg-blue-600" : "bg-gray-200"
             } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
@@ -382,6 +386,11 @@ function IPAForm({
               } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
+          <input
+            type="hidden"
+            name="multi_threading"
+            value={multiThreadingEnabled.toString()}
+          />
         </div>
       </div>
 
@@ -393,7 +402,6 @@ function IPAForm({
           <Switch
             checked={disableMetricsEnabled}
             onChange={setDisableMetricsEnabled}
-            name="disable_metrics"
             className={`${
               disableMetricsEnabled ? "bg-blue-600" : "bg-gray-200"
             } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
@@ -404,6 +412,11 @@ function IPAForm({
               } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
+          <input
+            type="hidden"
+            name="disable_metrics"
+            value={disableMetricsEnabled.toString()}
+          />
         </div>
       </div>
 
