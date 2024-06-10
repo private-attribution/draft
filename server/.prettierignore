@@ -1,8 +1,13 @@
+# Auto-generated file
 data/supabaseTypes.ts
-next.config.js
 postcss.config.js
-README.md
 supabase/.temp*
 tailwind.config.ts
-tsconfig.json
 .next/*
+
+# Config files
+next.config.js
+tsconfig.json
+
+# Not JS
+README.md
