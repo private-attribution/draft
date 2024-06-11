@@ -15,14 +15,14 @@ draft is a project designed to help test [IPA](https://github.com/private-attrib
 
 *Instructions for AWS Linux 2023*
 
-1. Provision an EC2 instance. Download the provided `ssh_connect.pem` key and add it to `~/.ssh`.
+1. Provision an EC2 instance. Download the provided ssh PEM file (e.g., `<ssh_key.pem>`) and add it to `~/.ssh`.
 2. Point a subdomain of a domain you control to the public IP address.
 3. Add the host to your `~/.ssh/config` file:
 ```
 Host ipa
     Hostname <subdomain-name-for-helper>
     User ec2-user
-    IdentityFile ~/.ssh/ssh_connect.pem
+    IdentityFile ~/.ssh/<ssh_key.pem>
 ```
 4. Update the `draft/ansible/inventory.ini` file to only include a single host. (Unless you are running all 4 servers.)
 5. Provision your machine: `ansible-playbook -i ansible/inventory.ini ansible/provision.yaml`
@@ -133,11 +133,11 @@ The `ln` at the end is because Supabase requires interacting with the local Dock
 Make sure the repo is cloned, and you're working in the root directory of the repo:
 
 ```
-git clone https://github.com/eriktaubeneck/draft.git
+git clone https://github.com/private-attribution/draft.git
 cd draft
 ```
 
-**Start colima and supabse:**
+**Start colima and supabase:**
 
 ```
 colima start
