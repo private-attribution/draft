@@ -55,6 +55,44 @@ export type Database = {
         }
         Relationships: []
       }
+      helper_party_api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string
+          hashed_api_key: string
+          helper_party_uuid: string
+          modified_at: string | null
+          modified_reason: string | null
+          uuid: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          hashed_api_key: string
+          helper_party_uuid: string
+          modified_at?: string | null
+          modified_reason?: string | null
+          uuid?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          hashed_api_key?: string
+          helper_party_uuid?: string
+          modified_at?: string | null
+          modified_reason?: string | null
+          uuid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helper_party_api_keys_helper_party_uuid_fkey"
+            columns: ["helper_party_uuid"]
+            isOneToOne: false
+            referencedRelation: "helper_parties"
+            referencedColumns: ["uuid"]
+          },
+        ]
+      }
       helper_party_network_members: {
         Row: {
           created_at: string
