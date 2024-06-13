@@ -2,10 +2,11 @@ create table
 helper_party_api_keys (
 uuid uuid default gen_random_uuid() primary key,
 helper_party_uuid uuid references helper_parties not null,
-hashed_api_key varchar(255) not null,
+hashed_api_key text not null,
 created_at timestamp default current_timestamp not null,
 expires_at timestamp default current_timestamp + interval '1 year' not null,
-revoked boolean default false not null
+modified_at timestamp default null,
+modified_reason text default null
 );
 
 alter table helper_party_api_keys enable row level security;
