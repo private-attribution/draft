@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/data/helper_party_api_key";
 import { updateStatusFunction } from "@/data/helper_party_query_status";
+import { Status } from "@/app/query/servers";
 
 export async function POST(req: NextRequest) {
   const apiKey = req.headers.get("x-api-key");
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     helper_party_uuid: helperPartyUUID,
     query_uuid: queryUUID,
   } = (await req.json()) as {
-    status: string;
+    status: Status;
     helper_party_uuid: string;
     query_uuid: string;
   };

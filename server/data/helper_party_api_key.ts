@@ -1,13 +1,13 @@
 "use server";
 
 import bcrypt from "bcrypt";
-import { buildSupabaseServerClient } from "@/data/supabase_server_client";
+import { createSupabaseServiceClient } from "@/data/supabase_server_service_client";
 
 export async function validateApiKey(
   helperPartyUUID: string,
   key: string,
 ): Promise<{ isValid: boolean; error: Error | undefined }> {
-  const supabase = buildSupabaseServerClient();
+  const supabase = await createSupabaseServiceClient();
   const currentTimestamp = new Date().toISOString();
   const { data, error } = await supabase
     .from("helper_party_api_keys")
@@ -24,8 +24,8 @@ export async function validateApiKey(
     };
   }
 
-  if (!data) {
-    console.error(`helperParty<$helperPartyUUID> has no API keys`);
+  if (!data.length) {
+    console.error(`helperParty<${helperPartyUUID}> has no API keys`);
     return { isValid: false, error: Error("No API key found.") };
   }
 

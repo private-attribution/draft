@@ -34,7 +34,7 @@ function processQueryData(data: QueryRow): Query {
 }
 
 export async function getQuery(displayId: string): Promise<Query> {
-  const supabase = buildSupabaseServerClient();
+  const supabase = await buildSupabaseServerClient();
 
   const { status, data, error } = await supabase
     .from("queries")
@@ -60,7 +60,7 @@ export async function createNewQuery(
   queryType: QueryType,
 ): Promise<Query> {
   const json = JSON.stringify(Object.fromEntries(params));
-  const supabase = buildSupabaseServerClient();
+  const supabase = await buildSupabaseServerClient();
   const newQueryId = NewQueryId();
 
   const { data: uniqueDisplayId, error: rpcError } = await supabase.rpc(

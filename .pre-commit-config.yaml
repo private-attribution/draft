@@ -38,3 +38,10 @@ repos:
       language: system
       files: ^server/
       types_or: [javascript, jsx, ts, tsx]
+    - id: jest-tests
+      name: jest-tests
+      entry: npm --prefix server run test
+      language: system
+      files: ^server/
+      types_or: [javascript, jsx, ts, tsx]
+      pass_filenames: false
