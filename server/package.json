@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "//": "run in band to avoid db overlap. not idea but works for now",
+    "//": "run in band to avoid db overlap. not ideal but works for now",
     "test": "jest --runInBand"
   },
   "dependencies": {
