@@ -17,7 +17,7 @@ jobs:
     - uses: actions/setup-python@v3
     - uses: supabase/setup-cli@v1
     - run: supabase init
-    - run: supabase db start
+    - run: supabase start
     - run: supabase status
 
     - name: Install dependencies
