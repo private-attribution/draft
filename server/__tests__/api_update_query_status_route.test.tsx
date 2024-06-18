@@ -15,7 +15,7 @@ describe("POST updateStatus API Route Integration Test", () => {
       .eq("query_uuid", testQueryUUID);
 
     if (error) {
-      throw error;
+      console.error("Cleanup database failed:", error);
     }
   });
 
