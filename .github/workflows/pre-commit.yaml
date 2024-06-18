@@ -18,6 +18,7 @@ jobs:
     - uses: supabase/setup-cli@v1
     - run: supabase init
     - run: supabase db start
+    - run: supabase status
 
     - name: Install dependencies
       run: |
