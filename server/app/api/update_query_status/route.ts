@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
-  const { isValid, error } = await validateApiKey(helperPartyUUID, apiKey);
+  const isValid = await validateApiKey(helperPartyUUID, apiKey);
   if (!isValid) {
-    return NextResponse.json({ error: error?.message }, { status: 401 });
+    return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
   }
 
   const updateStatusError = await updateStatusFunction(
