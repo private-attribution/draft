@@ -1,9 +1,8 @@
 "use server";
 
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 import { Database, Json } from "@/data/supabaseTypes";
+import { buildSupabaseServerClient } from "@/data/supabase_server_client";
 import { Status } from "@/app/query/servers";
 import NewQueryId from "@/app/query/haikunator";
 
@@ -35,19 +34,7 @@ function processQueryData(data: QueryRow): Query {
 }
 
 export async function getQuery(displayId: string): Promise<Query> {
-  const cookieStore = cookies();
-
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    },
-  );
+  const supabase = await buildSupabaseServerClient();
 
   const { status, data, error } = await supabase
     .from("queries")
@@ -73,20 +60,7 @@ export async function createNewQuery(
   queryType: QueryType,
 ): Promise<Query> {
   const json = JSON.stringify(Object.fromEntries(params));
-  const cookieStore = cookies();
-
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    },
-  );
-
+  const supabase = await buildSupabaseServerClient();
   const newQueryId = NewQueryId();
 
   const { data: uniqueDisplayId, error: rpcError } = await supabase.rpc(

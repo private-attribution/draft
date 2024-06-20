@@ -4,10 +4,13 @@ postcss.config.js
 supabase/.temp*
 tailwind.config.ts
 .next/*
+coverage/*
 
 # Config files
 next.config.js
 tsconfig.json
+babel.config.js
+
 
 # Not JS
 README.md
