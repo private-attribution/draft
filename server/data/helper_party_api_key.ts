@@ -8,6 +8,8 @@ export async function validateApiKey(
   key: string,
 ): Promise<boolean> {
   const supabase = await createSupabaseServiceClient();
+  // toISOString() always and only returns UTC timestamps
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
   const currentTimestamp = new Date().toISOString();
   const { data, error } = await supabase
     .from("helper_party_api_keys")
