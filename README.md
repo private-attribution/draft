@@ -169,7 +169,7 @@ make the cert with
 mkcert -cert-file "local_dev/config/cert.pem" -key-file "local_dev/config/key.pem" "draft.test" "*.draft.test"
 ```
 
-If you get a warning about the cert not being installed (i.e., it's the first time you've used mkcert), also run:
+If you get a warning about the cert not being installed (i.e., it's the first time you've used mkcert), make sure it's installed with the following command. This will likely require a browser restart.
 ```
 mkcert -install
 ```
