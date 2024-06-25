@@ -110,10 +110,7 @@ Github is set up to run pre-commit hooks specified in .pre-commit-config.yaml. I
 
 #### macOS install prerequisites
 
-```brew install python3```
-```brew install node```
-```brew install supabase/tap/supabase```
-```brew install traefik```
+`brew install python3 node supabase/tap/supabase traefik`
 
 
 **Docker**
