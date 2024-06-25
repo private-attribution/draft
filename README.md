@@ -149,7 +149,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="<ANON_KEY>"
 **Add local draft.test domain to `/etc/hosts`:**
 
 ```
-echo "#draft local domains\n127.0.0.1 draft.test\n127.0.0.1 sidecar0.draft.test\n127.0.0.1 sidecar1.draft.test\n127.0.0.1 sidecar2.draft.test\n127.0.0.1 sidecar3.draft.test" | sudo tee -a /etc/hosts
+echo "#draft local domains\n127.0.0.1 draft.test\n127.0.0.1 sidecar0.draft.test\n127.0.0.1 sidecar1.draft.test\n127.0.0.1 sidecar2.draft.test\n127.0.0.1 sidecar3.draft.test \n127.0.0.1 helper1.draft.test\n127.0.0.1 helper2.draft.test\n127.0.0.1 helper3.draft.test" | sudo tee -a /etc/hosts
 ```
 
 **make local certs**
