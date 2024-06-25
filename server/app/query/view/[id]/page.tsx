@@ -23,8 +23,7 @@ import {
 import { StatsComponent } from "@/app/query/view/[id]/charts";
 import { getQuery, Query } from "@/data/query";
 
-export default function Query({ params }: { params: { id: string } }) {
-  const [query, setQuery] = useState<Query | null>(null);
+export default function QueryPage({ params }: { params: { id: string } }) {
   // display controls
   const [logsHidden, setLogsHidden] = useState<boolean>(true);
   const [statsHidden, setStatsHidden] = useState<boolean>(true);
@@ -62,7 +61,6 @@ export default function Query({ params }: { params: { id: string } }) {
   useEffect(() => {
     (async () => {
       const query: Query = await getQuery(params.id);
-      setQuery(query);
       let webSockets: WebSocket[] = [];
       for (const remoteServer of Object.values(IPARemoteServers)) {
         const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
