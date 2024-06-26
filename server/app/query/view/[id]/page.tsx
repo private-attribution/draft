@@ -150,7 +150,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             </dt>
             <dd className="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <ul
-                role="list"
+<ul className="divide-y divide-gray-200 rounded-md border border-gray-200">
                 className="divide-y divide-gray-200 rounded-md border border-gray-200"
               >
                 {Object.entries(
