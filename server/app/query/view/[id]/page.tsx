@@ -166,13 +166,8 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                           <span className="truncate font-medium"> {key}</span>
                         </div>
                       </div>
-                      <div className="ml-4 flex-shrink-0">
-                        <a
-                          href="#"
-                          className="font-medium text-indigo-600 hover:text-indigo-500"
-                        >
-                          {value as string}
-                        </a>
+                      <div className="ml-4 flex-shrink-0 font-medium text-sky-700">
+                        {value as string}
                       </div>
                     </li>
                   );
