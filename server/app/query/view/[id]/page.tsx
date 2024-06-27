@@ -27,6 +27,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
   // display controls
   const [logsHidden, setLogsHidden] = useState<boolean>(true);
   const [statsHidden, setStatsHidden] = useState<boolean>(true);
+  const [query, setQuery] = useState<Query | null>(null);
 
   const [logs, setLogs] = useState<ServerLog[]>([]);
   const [statusByRemoteServer, setStatusByRemoteServer] =
@@ -61,6 +62,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     (async () => {
       const query: Query = await getQuery(params.id);
+      setQuery(query);
       let webSockets: WebSocket[] = [];
       // useEffect() gets called twice locally
       // so this prevents the logs from being shown twice
@@ -188,7 +190,48 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             </dl>
           </div>
         </button>
-        {!logsHidden && <LogViewer logs={logs} />}
+        {!logsHidden && (
+          <>
+            <div>
+              <ul
+                role="list"
+                className="divide-y divide-gray-100 dark:divide-gray-900 border-b border-gray-200 dark:border-gray-800"
+              >
+                {Object.values(IPARemoteServers).map(
+                  (remoteServer: RemoteServer) => {
+                    return (
+                      <>
+                        <li className="flex items-center justify-between py-2 pl-4 pr-5 text-sm leading-6">
+                          <div className="flex w-0 flex-1 items-center">
+                            <div className="ml-4 flex min-w-0 flex-1 gap-2">
+                              <span className="truncate font-medium">
+                                {remoteServer.remoteServerNameStr}-{query?.uuid}
+                                .log
+                              </span>
+                            </div>
+                          </div>
+                          {query && (
+                            <div className="ml-4 flex-shrink-0">
+                              <a
+                                href={remoteServer
+                                  .logURL(query.uuid)
+                                  .toString()}
+                                className="font-medium text-indigo-600 hover:text-indigo-500"
+                              >
+                                Download
+                              </a>
+                            </div>
+                          )}
+                        </li>
+                      </>
+                    );
+                  },
+                )}
+              </ul>
+            </div>
+            <LogViewer logs={logs} />
+          </>
+        )}
       </div>
     </>
   );

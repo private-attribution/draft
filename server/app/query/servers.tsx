@@ -87,6 +87,10 @@ export class RemoteServer {
     throw new Error("Not Implemented");
   }
 
+  logURL(id: string): URL {
+    return new URL(`/start/${id}/log-file`, this.baseURL);
+  }
+
   logsWebSocketURL(id: string): URL {
     const webSocketURL = new URL(`/ws/logs/${id}`, this.baseURL);
     webSocketURL.protocol = "wss";
