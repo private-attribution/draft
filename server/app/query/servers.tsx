@@ -10,6 +10,7 @@ export enum RemoteServerNames {
 export interface ServerLog {
   remoteServer: RemoteServer;
   logLine: string;
+  timestamp: number;
 }
 
 export enum Status {
@@ -122,13 +123,45 @@ export class RemoteServer {
   ): WebSocket {
     const ws = this.logsSocket(id);
     ws.onmessage = (event) => {
-      const newLog: ServerLog = {
-        remoteServer: this,
-        logLine: event.data,
-      };
+      let newLog: ServerLog;
+      try {
+        const logValue = JSON.parse(event.data);
+        newLog = {
+          remoteServer: this,
+          logLine: logValue.record.message,
+          timestamp: logValue.record.time.timestamp,
+        };
+      } catch (e) {
+        newLog = {
+          remoteServer: this,
+          logLine: event.data,
+          timestamp: Date.now(),
+        };
+      }
 
-      // only retain last 1000 logs
-      setLogs((prevLogs) => [...prevLogs.slice(-1000), newLog]);
+      // only retain last 10,000 logs
+      const maxNumLogs = 10000;
+      setLogs((prevLogs) => {
+        if (
+          prevLogs.length === 0 ||
+          newLog.timestamp >= prevLogs[prevLogs.length - 1].timestamp
+        ) {
+          // most the time, we put the new log at the end of the array
+          return [...prevLogs.slice(-maxNumLogs), newLog];
+        } else {
+          // if the timestamp is out of order, e.g., less than the
+          // end of the array, we put it in the right location
+          const lastPreviousLogIndex = prevLogs.findLastIndex(
+            (log) => log.timestamp < newLog.timestamp,
+          );
+
+          return [
+            ...prevLogs.slice(-maxNumLogs, lastPreviousLogIndex),
+            newLog,
+            ...prevLogs.slice(lastPreviousLogIndex),
+          ];
+        }
+      });
     };
     ws.onclose = (event) => {
       console.log(

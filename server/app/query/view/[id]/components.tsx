@@ -88,31 +88,45 @@ export function LogViewer({
   return (
     <div
       className={clsx(
-        "w-full bg-white dark:bg-slate-950 overflow-y-scroll max-h-96 text-start indent-[-128px] pl-32 text-wrap",
+        "w-full bg-white dark:bg-slate-950 overflow-y-scroll max-h-96 text-start text-wrap",
         className,
       )}
     >
       <div className="px-4 py-5 sm:p-6">
-        {logs.map((log, index) => (
+        <dl>
+          {logs.map((log, index) => {
+            const date = new Date(log.timestamp * 1000);
+            return (
+              <div className="flex" key={index}>
+                <dt
+                  className={clsx(
+                    "flex-none w-80 text-slate-900 dark:text-slate-100 text-xs",
+                    sourceCodePro.className,
+                  )}
+                >
+                  {date.toISOString()} | {log.remoteServer.remoteServerNameStr}:
+                </dt>
+                <dd
+                  className={clsx(
+                    "text-slate-900 dark:text-slate-100 text-xs",
+                    sourceCodePro.className,
+                  )}
+                >
+                  {log.logLine}
+                </dd>
+              </div>
+            );
+          })}
           <div
-            key={index}
+            key="last"
             className={clsx(
-              "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line",
+              "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line animate-pulse",
               sourceCodePro.className,
             )}
           >
-            {log.logLine}
+            {">_"}
           </div>
-        ))}
-        <div
-          key="last"
-          className={clsx(
-            "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line animate-pulse",
-            sourceCodePro.className,
-          )}
-        >
-          {">_"}
-        </div>
+        </dl>
       </div>
     </div>
   );

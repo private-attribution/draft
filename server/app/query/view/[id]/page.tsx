@@ -62,6 +62,9 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     (async () => {
       const query: Query = await getQuery(params.id);
       let webSockets: WebSocket[] = [];
+      // useEffect() gets called twice locally
+      // so this prevents the logs from being shown twice
+      setLogs([]);
       for (const remoteServer of Object.values(IPARemoteServers)) {
         const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
         const statusWs = remoteServer.openStatusSocket(
