@@ -160,9 +160,9 @@ export class RemoteServer {
           );
 
           return [
-            ...prevLogs.slice(-maxNumLogs, lastPreviousLogIndex),
+            ...prevLogs.slice(-maxNumLogs, lastPreviousLogIndex + 1),
             newLog,
-            ...prevLogs.slice(lastPreviousLogIndex),
+            ...prevLogs.slice(lastPreviousLogIndex - 1),
           ];
         }
       });
