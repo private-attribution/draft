@@ -43,7 +43,7 @@ class Query:
         self._status_dir.mkdir(exist_ok=True)
         self._logger_id = logger.add(
             self.log_file_path,
-            format="{extra[role]}: {message}",
+            serialize=True,
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
         )
