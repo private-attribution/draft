@@ -37,7 +37,7 @@ repos:
       entry: npx --prefix server prettier --config=server/.prettierrc --ignore-path=server/.prettierignore --check server
       language: system
       files: ^server/
-      types_or: [javascript, jsx, ts, tsx]
+      types_or: [javascript, jsx, ts, tsx, json]
     - id: jest-tests
       name: jest-tests
       entry: npm --prefix server run test
