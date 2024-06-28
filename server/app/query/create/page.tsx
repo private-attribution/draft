@@ -84,9 +84,9 @@ function DemoLogsForm({
   return (
     <form
       onSubmit={handleDemoLogsFormSubmit}
-      className="rounded-md bg-slate-50 px-8 py-6 w-96"
+      className="w-96 rounded-md bg-slate-50 px-8 py-6"
     >
-      <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+      <h2 className="mb-2 text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         Demo Logger Query
       </h2>
       <SelectMenu
@@ -208,14 +208,14 @@ function IPAForm({
   return (
     <form
       onSubmit={handleIPAFormSubmit}
-      className="rounded-md bg-slate-50 px-8 py-6 w-96"
+      className="w-96 rounded-md bg-slate-50 px-8 py-6"
     >
-      <h2 className="text-2xl mb-2 font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+      <h2 className="mb-2 text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
         IPA Query
       </h2>
       <div className="flex items-end">
         <div
-          className="flex-grow"
+          className="grow"
           onClick={() => {
             setCommitSpecifier(CommitSpecifier.BRANCH);
           }}
@@ -230,13 +230,13 @@ function IPAForm({
           />
         </div>
         <button
-          className="relative cursor-default rounded-md bg-white py-2.5 px-3 ml-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+          className="relative ml-1 cursor-default rounded-md bg-white px-3 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
           onClick={(e) => {
             e.preventDefault();
             refreshBranches(selectedCommitHash);
           }}
         >
-          <ArrowPathIcon className="h-4 w-4" />
+          <ArrowPathIcon className="size-4" />
         </button>
       </div>
       <div
@@ -251,7 +251,7 @@ function IPAForm({
         <label
           htmlFor="commit_hash"
           className={clsx(
-            "block text-sm font-medium leading-6 text-gray-900 pt-4 pl-[-30px]",
+            "block pl-[-30px] pt-4 text-sm font-medium leading-6 text-gray-900",
             disableCommitHash && "opacity-25",
           )}
         >
@@ -271,13 +271,13 @@ function IPAForm({
               disableCommitHash && "opacity-25",
             )}
           />
-          <Combobox.Options className="absolute z-10 w-full mt-1 overflow-auto max-h-60 text-gray-900 bg-white shadow-lg rounded-md border border-gray-300 divide-y divide-gray-200 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+          <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full divide-y divide-gray-200 overflow-auto rounded-md border border-gray-300 bg-white text-gray-900 shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
             {filteredCommitHashes.map((commit) => (
               <Combobox.Option key={commit} value={commit} as={Fragment}>
                 {({ active, selected }) => (
                   <li
                     className={clsx(
-                      "py-2 px-2.5",
+                      "px-2.5 py-2",
                       active ? "bg-blue-500 text-white" : "text-black",
                     )}
                   >
@@ -292,7 +292,7 @@ function IPAForm({
         {!validCommitHash && (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 pt-10">
             <ExclamationCircleIcon
-              className="h-5 w-5 text-red-500"
+              className="size-5 text-red-500"
               aria-hidden="true"
             />
           </div>
@@ -313,7 +313,7 @@ function IPAForm({
           type="number"
           name="size"
           defaultValue="1000"
-          className="relative w-full border-0 cursor-default rounded-md bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+          className="relative w-full cursor-default rounded-md border-0 bg-white py-1.5 pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
         />
       </div>
 
@@ -351,12 +351,12 @@ function IPAForm({
             onChange={setStallDetectionEnabled}
             className={`${
               stallDetectionEnabled ? "bg-blue-600" : "bg-gray-200"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+            } relative inline-flex size-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           >
             <span
               className={`${
                 stallDetectionEnabled ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+              } inline-block size-4 rounded-full bg-white transition-transform`}
             />
           </Switch>
           {/* Hidden input to ensure the field is always included in the form data */}
@@ -378,12 +378,12 @@ function IPAForm({
             onChange={setMultiThreadingEnabled}
             className={`${
               multiThreadingEnabled ? "bg-blue-600" : "bg-gray-200"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+            } relative inline-flex size-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           >
             <span
               className={`${
                 multiThreadingEnabled ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+              } inline-block size-4 rounded-full bg-white transition-transform`}
             />
           </Switch>
           <input
@@ -404,12 +404,12 @@ function IPAForm({
             onChange={setDisableMetricsEnabled}
             className={`${
               disableMetricsEnabled ? "bg-blue-600" : "bg-gray-200"
-            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+            } relative inline-flex size-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           >
             <span
               className={`${
                 disableMetricsEnabled ? "translate-x-6" : "translate-x-1"
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+              } inline-block size-4 rounded-full bg-white transition-transform`}
             />
           </Switch>
           <input
@@ -515,7 +515,7 @@ function PassedStateSelectMenu({
                 <span className="block truncate">{selected}</span>
                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                   <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
+                    className="size-5 text-gray-400"
                     aria-hidden="true"
                   />
                 </span>
@@ -525,7 +525,7 @@ function PassedStateSelectMenu({
                 <span className="block truncate">{selected}</span>
                 <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                   <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
+                    className="size-5 text-gray-400"
                     aria-hidden="true"
                   />
                 </span>
@@ -541,7 +541,7 @@ function PassedStateSelectMenu({
             >
               <Listbox.Options
                 className={clsx(
-                  "absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm",
+                  "absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm",
                 )}
               >
                 {options.map((value) => (
@@ -573,7 +573,7 @@ function PassedStateSelectMenu({
                               "absolute inset-y-0 right-0 flex items-center pr-4",
                             )}
                           >
-                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                            <CheckIcon className="size-5" aria-hidden="true" />
                           </span>
                         ) : null}
                       </>

@@ -30,12 +30,12 @@ export default async function LoginPage() {
 
   return (
     <>
-      <div className="px-6 py-12 shadow sm:rounded-lg sm:px-12 h-screen">
+      <div className="h-screen px-6 py-12 shadow sm:rounded-lg sm:px-12">
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
           <div className="bg-white px-6 py-12 shadow sm:rounded-lg sm:px-12">
             <div className="flex min-h-full flex-1 flex-col justify-center py-6 sm:px-6 lg:px-8">
               <Link href="/" className="-m-1.5 pb-8">
-                <GlobeAltIcon className="h-12 w-12 stroke-indigo-500 mx-auto" />
+                <GlobeAltIcon className="mx-auto size-12 stroke-indigo-500" />
               </Link>
               <h2 className="text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
                 Sign in with GitHub

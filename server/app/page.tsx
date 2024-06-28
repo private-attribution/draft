@@ -26,24 +26,24 @@ export default async function Example() {
   const isLoggedIn = Boolean(session?.user);
 
   return (
-    <div className="bg-gradient-to-b from-zinc-500 to-zinc-900 h-screen">
+    <div className="h-screen bg-gradient-to-b from-zinc-500 to-zinc-900">
       <main>
         {/* Hero section */}
         <div className="relative isolate h-screen overflow-hidden bg-gray-900 pb-16 pt-14 sm:pb-20">
           <Image
             src={background_img}
             alt=""
-            className="absolute inset-0 -z-10 h-full w-full object-cover blur brightness-50"
+            className="absolute inset-0 -z-10 size-full object-cover blur brightness-50"
           />
 
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
               <div className="hidden sm:mb-8 sm:flex sm:justify-center">
                 <a href="https://github.com/private-attribution/draft/">
-                  <div className="relative rounded-full px-2 py-1 text-md text-white font-semibold leading-6 atext-gray-400 ring-1 ring-white/10 hover:ring-white/20">
+                  <div className="relative rounded-full px-2 py-1 text-base font-semibold leading-6 text-gray-300 ring-1 ring-white/10 hover:ring-white/20">
                     Check out <span className="font-mono font-thin">draft</span>{" "}
                     on Github
-                    <GitHubIcon className="inline-flex h-4 w-auto fill-white pl-1 mb-1" />
+                    <GitHubIcon className="mb-1 inline-flex h-4 w-auto fill-gray-300 pl-1" />
                   </div>
                 </a>
               </div>
