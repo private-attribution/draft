@@ -83,7 +83,8 @@ export default function Header({ user }: { user: any }) {
                       <Menu.Button className="relative flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-slate-950 dark:focus:ring-indigo-700">
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
-                        <img
+                        <img // eslint-disable-line @next/next/no-img-element
+                          // loaded from github, so no need for next/Image
                           className="size-8 rounded-full"
                           src={user.user_metadata.avatar_url}
                           alt=""
@@ -157,7 +158,8 @@ export default function Header({ user }: { user: any }) {
             <div className="border-t border-gray-200 pb-3 pt-4">
               <div className="flex items-center px-4">
                 <div className="shrink-0">
-                  <img
+                  <img // eslint-disable-line @next/next/no-img-element
+                    // loaded from github, so no need for next/Image
                     className="size-10 rounded-full"
                     src={user.user_metadata.avatar_url}
                     alt=""

@@ -183,6 +183,7 @@ function IPAForm({
     CommitSpecifier.BRANCH,
     branches,
     commitHashes,
+    filteredCommitHashes.length,
   ]);
 
   useEffect(() => {
