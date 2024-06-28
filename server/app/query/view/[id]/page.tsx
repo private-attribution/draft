@@ -110,46 +110,31 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-b border-gray-300">
-        <dl className="divide-y divide-gray-200">
-          <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">
-              Display name:
-            </dt>
-            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-              {params.id}
-            </dd>
-          </div>
+      <div className="mt-6 border-t border-b border-gray-300 dark:border-gray-700">
+        <dl className="divide-y divide-gray-200 dark:divide-gray-800">
+          {[
+            ["Display name", params.id],
+            ["UUID", query?.uuid],
+            ["Created at", query?.createdAt],
+            ["Type", query?.type],
+          ].map(([name, value]) => {
+            return (
+              <div
+                className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"
+                key={name?.toLowerCase().replaceAll(" ", "_")}
+              >
+                <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                  {name}:
+                </dt>
+                <dd className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300 sm:col-span-2 sm:mt-0">
+                  {value}
+                </dd>
+              </div>
+            );
+          })}
 
           <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">
-              UUID:
-            </dt>
-            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-              {query?.uuid}
-            </dd>
-          </div>
-
-          <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">
-              Created At:
-            </dt>
-            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-              {query?.createdAt}
-            </dd>
-          </div>
-
-          <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">
-              Type:
-            </dt>
-            <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-              {query?.type}
-            </dd>
-          </div>
-
-          <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-            <dt className="text-sm font-medium leading-6 text-gray-900">
+            <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
               Params:
             </dt>
             <dd className="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
