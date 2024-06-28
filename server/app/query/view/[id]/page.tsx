@@ -127,9 +127,9 @@ export default function QueryPage({ params }: { params: { id: string } }) {
 
   return (
     <>
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight dark:text-gray-100">
             Query Details
           </h2>
         </div>
@@ -144,7 +144,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-b border-gray-300 dark:border-gray-700">
+      <div className="mt-6 border-y border-gray-300 dark:border-gray-700">
         <dl className="divide-y divide-gray-200 dark:divide-gray-800">
           {[
             ["Display name", params.id],
@@ -160,7 +160,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                 <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
                   {name}:
                 </dt>
-                <dd className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300 sm:col-span-2 sm:mt-0">
+                <dd className="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0 dark:text-gray-300">
                   {value}
                 </dd>
               </div>
@@ -184,7 +184,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                           <span className="truncate font-medium"> {key}</span>
                         </div>
                       </div>
-                      <div className="ml-4 flex-shrink-0 font-medium text-sky-700">
+                      <div className="ml-4 shrink-0 font-medium text-sky-700">
                         {value as string}
                       </div>
                     </li>
@@ -196,15 +196,15 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         </dl>
       </div>
 
-      <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
+      <div className="mx-auto mt-10 w-full max-w-7xl overflow-hidden rounded-lg bg-slate-50 text-left shadow dark:bg-slate-950">
         <button
           onClick={flipStatsHidden}
-          className="w-full h-full border-b border-gray-300 dark:border-gray-700"
+          className="size-full border-b border-gray-300 dark:border-gray-700"
         >
-          <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex justify-between px-4 py-5 font-bold text-slate-900 sm:p-6 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={statsHidden} />
-              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900 dark:text-gray-100">
+              <h3 className="pl-2 text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">
                 Stats
               </h3>
             </div>
@@ -220,7 +220,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={remoteServer.remoteServerName}
-                      className="w-48 overflow-hidden rounded-lg bg-white dark:bg-slate-900 px-4 py-2 shadow"
+                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow dark:bg-slate-900"
                     >
                       <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-300">
                         {remoteServer.toString()} Run Time
@@ -247,12 +247,12 @@ export default function QueryPage({ params }: { params: { id: string } }) {
 
         <button
           onClick={flipLogsHidden}
-          className="w-full h-full border-b border-gray-300 dark:border-gray-700"
+          className="size-full border-b border-gray-300 dark:border-gray-700"
         >
-          <div className="flex justify-between px-4 py-5 sm:p-6 font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex justify-between px-4 py-5 font-bold text-slate-900 sm:p-6 dark:text-slate-100">
             <div className="flex">
               <HiddenSectionChevron sectionHidden={logsHidden} />
-              <h3 className="text-base pl-2 font-semibold leading-6 text-gray-900 dark:text-gray-100">
+              <h3 className="pl-2 text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">
                 Logs
               </h3>
             </div>
@@ -266,7 +266,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={remoteServer.remoteServerName}
-                      className="w-48 overflow-hidden rounded-lg bg-white dark:bg-slate-900 px-4 py-2 shadow"
+                      className="w-48 overflow-hidden rounded-lg bg-white px-4 py-2 shadow dark:bg-slate-900"
                     >
                       <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-300">
                         {remoteServer.remoteServerNameStr} Status
@@ -287,7 +287,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
               <div>
                 <ul
                   role="list"
-                  className="divide-y divide-gray-100 dark:divide-gray-900 border-b border-gray-200 dark:border-gray-800"
+                  className="divide-y divide-gray-100 border-b border-gray-200 dark:divide-gray-900 dark:border-gray-800"
                 >
                   {Object.values(IPARemoteServers).map(
                     (remoteServer: RemoteServer) => {
@@ -299,7 +299,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                               type="checkbox"
                               defaultChecked={true}
                               onChange={handleCheckbox}
-                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                             />
                             <div className="flex w-0 flex-1 items-center">
                               <div className="ml-4 flex min-w-0 flex-1 gap-2">
@@ -311,7 +311,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                               </div>
                             </div>
                             {query && (
-                              <div className="ml-4 flex-shrink-0">
+                              <div className="ml-4 shrink-0">
                                 <a
                                   href={remoteServer
                                     .logURL(query.uuid)

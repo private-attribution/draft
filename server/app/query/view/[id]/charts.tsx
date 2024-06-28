@@ -117,18 +117,18 @@ export function StatsComponent({
   };
 
   return (
-    <div className={clsx(`w-full pt-2 bg-white dark:bg-slate-950`, className)}>
-      <h2 className="w-full px-2 text-md font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-md sm:tracking-tight">
+    <div className={clsx(`w-full bg-white pt-2 dark:bg-slate-950`, className)}>
+      <h2 className="w-full px-2 text-base font-bold leading-7 text-gray-900 sm:truncate sm:text-base sm:tracking-tight dark:text-gray-100">
         {remoteServer.toString()} Server
       </h2>
 
       <div className="md:flex">
-        <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
+        <div className="mb-4 w-full px-2 md:mb-0 md:w-1/2">
           {memoryChartData && (
             <Line data={memoryChartData} options={memoryChartOptions} />
           )}
         </div>
-        <div className="w-full md:w-1/2 mb-4 md:mb-0 px-2">
+        <div className="mb-4 w-full px-2 md:mb-0 md:w-1/2">
           {cpuChartData && (
             <Line data={cpuChartData} options={cpuChartOptions} />
           )}

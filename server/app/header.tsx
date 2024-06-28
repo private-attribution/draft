@@ -18,14 +18,14 @@ export default function Header({ user }: { user: any }) {
   return (
     <Disclosure
       as="nav"
-      className="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
+      className="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950"
     >
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between">
               <div className="flex">
-                <div className="flex flex-shrink-0 items-center">
+                <div className="flex shrink-0 items-center">
                   <Link href="/">
                     <Image
                       src={beerTap}
@@ -67,12 +67,12 @@ export default function Header({ user }: { user: any }) {
                 <div className="hidden sm:ml-6 sm:flex sm:items-center">
                   <button
                     type="button"
-                    className="relative rounded-full bg-white dark:bg-slate-950 p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-700 focus:ring-offset-2"
+                    className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-slate-950 dark:focus:ring-indigo-700"
                   >
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">View notifications</span>
                     <BellIcon
-                      className="h-6 w-6 fill-white dark:fill-slate-900"
+                      className="size-6 fill-white dark:fill-slate-900"
                       aria-hidden="true"
                     />
                   </button>
@@ -80,11 +80,12 @@ export default function Header({ user }: { user: any }) {
                   {/* Profile dropdown */}
                   <Menu as="div" className="relative ml-3">
                     <div>
-                      <Menu.Button className="relative flex max-w-xs items-center rounded-full bg-white dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-700 focus:ring-offset-2">
+                      <Menu.Button className="relative flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-slate-950 dark:focus:ring-indigo-700">
                         <span className="absolute -inset-1.5" />
                         <span className="sr-only">Open user menu</span>
-                        <img
-                          className="h-8 w-8 rounded-full"
+                        <img // eslint-disable-line @next/next/no-img-element
+                          // loaded from github, so no need for next/Image
+                          className="size-8 rounded-full"
                           src={user.user_metadata.avatar_url}
                           alt=""
                         />
@@ -99,7 +100,7 @@ export default function Header({ user }: { user: any }) {
                       leaveFrom="transform opacity-100 scale-100"
                       leaveTo="transform opacity-0 scale-95"
                     >
-                      <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                      <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
                         {userNavigation.map((item) => (
                           <Menu.Item key={item.name}>
                             {({ active }) => (
@@ -125,9 +126,9 @@ export default function Header({ user }: { user: any }) {
                     <span className="absolute -inset-0.5" />
                     <span className="sr-only">Open main menu</span>
                     {open ? (
-                      <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+                      <XMarkIcon className="block size-6" aria-hidden="true" />
                     ) : (
-                      <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+                      <Bars3Icon className="block size-6" aria-hidden="true" />
                     )}
                   </Disclosure.Button>
                 </div>
@@ -156,9 +157,10 @@ export default function Header({ user }: { user: any }) {
             </div>
             <div className="border-t border-gray-200 pb-3 pt-4">
               <div className="flex items-center px-4">
-                <div className="flex-shrink-0">
-                  <img
-                    className="h-10 w-10 rounded-full"
+                <div className="shrink-0">
+                  <img // eslint-disable-line @next/next/no-img-element
+                    // loaded from github, so no need for next/Image
+                    className="size-10 rounded-full"
                     src={user.user_metadata.avatar_url}
                     alt=""
                   />
@@ -173,11 +175,11 @@ export default function Header({ user }: { user: any }) {
                 </div>
                 <button
                   type="button"
-                  className="relative ml-auto flex-shrink-0 rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  className="relative ml-auto shrink-0 rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   <span className="absolute -inset-1.5" />
                   <span className="sr-only">View notifications</span>
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
+                  <BellIcon className="size-6" aria-hidden="true" />
                 </button>
               </div>
               <div className="mt-3 space-y-1">

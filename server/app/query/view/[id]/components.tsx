@@ -11,9 +11,9 @@ export function HiddenSectionChevron({
   sectionHidden: boolean;
 }) {
   return sectionHidden ? (
-    <ChevronRightIcon className="h-4 mt-1" />
+    <ChevronRightIcon className="mt-1 h-4" />
   ) : (
-    <ChevronDownIcon className="h-4 mt-1" />
+    <ChevronDownIcon className="mt-1 h-4" />
   );
 }
 
@@ -88,7 +88,7 @@ export function LogViewer({
   return (
     <div
       className={clsx(
-        "w-full bg-white dark:bg-slate-950 overflow-y-scroll max-h-96 text-start text-wrap",
+        "max-h-96 w-full overflow-y-scroll text-wrap bg-white text-start dark:bg-slate-950",
         className,
       )}
     >
@@ -100,7 +100,7 @@ export function LogViewer({
               <div className="flex" key={index}>
                 <dt
                   className={clsx(
-                    "flex-none w-80 text-slate-900 dark:text-slate-100 text-xs",
+                    "w-80 flex-none text-xs text-slate-900 dark:text-slate-100",
                     sourceCodePro.className,
                   )}
                 >
@@ -108,7 +108,7 @@ export function LogViewer({
                 </dt>
                 <dd
                   className={clsx(
-                    "text-slate-900 dark:text-slate-100 text-xs",
+                    "text-xs text-slate-900 dark:text-slate-100",
                     sourceCodePro.className,
                   )}
                 >
@@ -120,7 +120,7 @@ export function LogViewer({
           <div
             key="last"
             className={clsx(
-              "text-slate-900 dark:text-slate-100 text-xs whitespace-pre-line animate-pulse",
+              "animate-pulse whitespace-pre-line text-xs text-slate-900 dark:text-slate-100",
               sourceCodePro.className,
             )}
           >
