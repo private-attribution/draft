@@ -45,6 +45,10 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     setStatsHidden(!statsHidden);
   }
 
+  const queryParams = Object.entries(
+    JSON.parse((query?.params as string) || "{}"),
+  );
+
   const kill = async (remoteServers: RemoteServersType) => {
     const query: Query = await getQuery(params.id);
 
@@ -150,9 +154,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             </dt>
             <dd className="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
               <ul className="divide-y divide-gray-200 rounded-md border border-gray-200">
-                {Object.entries(
-                  JSON.parse((query?.params as string) || "{}"),
-                ).map(([key, value]) => {
+                {queryParams.map(([key, value]) => {
                   return (
                     <li
                       className="flex items-center justify-between py-1 pl-4 pr-5 text-sm leading-6"
