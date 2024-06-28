@@ -22,6 +22,7 @@ import {
   initialRunTimeByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";
+import { JSONSafeParse } from "@/app/utils";
 import { getQuery, Query } from "@/data/query";
 
 export default function QueryPage({ params }: { params: { id: string } }) {
@@ -76,6 +77,10 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const queryParams = Object.entries(
+    JSONSafeParse((query?.params as string) || "{}"),
+  );
+
   const kill = async (remoteServers: RemoteServersType) => {
     const query: Query = await getQuery(params.id);
 
@@ -122,18 +127,73 @@ export default function QueryPage({ params }: { params: { id: string } }) {
 
   return (
     <>
-      <div className="inline-flex items-center">
-        <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
-          Query Details: {params.id}
-        </h2>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
+            Query Details
+          </h2>
+        </div>
+        <div>
+          <button
+            onClick={() => kill(IPARemoteServers)}
+            type="button"
+            className="ml-3 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          >
+            Kill Query
+          </button>
+        </div>
+      </div>
 
-        <button
-          onClick={() => kill(IPARemoteServers)}
-          type="button"
-          className="ml-3 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-        >
-          Kill Query
-        </button>
+      <div className="mt-6 border-t border-b border-gray-300 dark:border-gray-700">
+        <dl className="divide-y divide-gray-200 dark:divide-gray-800">
+          {[
+            ["Display name", params.id],
+            ["UUID", query?.uuid],
+            ["Created at", query?.createdAt],
+            ["Type", query?.type],
+          ].map(([name, value]) => {
+            return (
+              <div
+                className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"
+                key={name?.toLowerCase().replaceAll(" ", "_")}
+              >
+                <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+                  {name}:
+                </dt>
+                <dd className="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300 sm:col-span-2 sm:mt-0">
+                  {value}
+                </dd>
+              </div>
+            );
+          })}
+
+          <div className="px-4 py-2 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
+              Params:
+            </dt>
+            <dd className="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <ul className="divide-y divide-gray-200 rounded-md border border-gray-200">
+                {queryParams.map(([key, value]) => {
+                  return (
+                    <li
+                      className="flex items-center justify-between py-1 pl-4 pr-5 text-sm leading-6"
+                      key={key}
+                    >
+                      <div className="flex w-0 flex-1 items-center">
+                        <div className="ml-4 flex min-w-0 flex-1 gap-2">
+                          <span className="truncate font-medium"> {key}</span>
+                        </div>
+                      </div>
+                      <div className="ml-4 flex-shrink-0 font-medium text-sky-700">
+                        {value as string}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <div className="w-full text-left mx-auto max-w-7xl overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-950 shadow mt-10">
