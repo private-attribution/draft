@@ -1,7 +1,10 @@
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Form
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException
+from fastapi.responses import StreamingResponse
 
 from ..local_paths import Paths
 from ..query.base import Query
@@ -85,6 +88,38 @@ def get_ipa_helper_status(
     if query is None:
         return {"status": Status.NOT_FOUND.name}
     return {"status": query.status.name}
+
+
+@router.get("/{query_id}/log-file")
+def get_ipa_helper_log_file(
+    query_id: str,
+):
+    query = Query.get_from_query_id(query_id)
+    if query is None:
+        return HTTPException(status_code=404, detail="Query not found")
+
+    def iterfile():
+        with open(query.log_file_path, "rb") as f:
+            for line in f:
+                try:
+                    data = json.loads(line)
+                    d = datetime.fromtimestamp(
+                        float(data["record"]["time"]["timestamp"])
+                    )
+                    message = data["record"]["message"]
+                    yield f"{d.isoformat()} - {message}\n"
+                except (json.JSONDecodeError, KeyError):
+                    yield line
+
+    return StreamingResponse(
+        iterfile(),
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{query_id}-{settings.role.name.title()}.log"'
+            )
+        },
+        media_type="text/plain",
+    )
 
 
 @router.post("/ipa-query/{query_id}")

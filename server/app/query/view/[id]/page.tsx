@@ -11,6 +11,7 @@ import {
   Status,
   ServerLog,
   RemoteServer,
+  RemoteServerNames,
   RemoteServersType,
   IPARemoteServers, //hack until the queryId is stored in a DB
   StatusByRemoteServer,
@@ -27,8 +28,21 @@ export default function QueryPage({ params }: { params: { id: string } }) {
   // display controls
   const [logsHidden, setLogsHidden] = useState<boolean>(true);
   const [statsHidden, setStatsHidden] = useState<boolean>(true);
+  const [query, setQuery] = useState<Query | null>(null);
 
   const [logs, setLogs] = useState<ServerLog[]>([]);
+  const [selectedRemoteServerLogs, setSelectedRemoteServerLogs] = useState<
+    string[]
+  >(
+    Object.keys(RemoteServerNames).filter((item) => {
+      return isNaN(Number(item));
+    }),
+  );
+
+  const displayedLogs = logs.filter((item) =>
+    selectedRemoteServerLogs.includes(item.remoteServer.remoteServerNameStr),
+  );
+
   const [statusByRemoteServer, setStatusByRemoteServer] =
     useState<StatusByRemoteServer>(initialStatusByRemoteServer);
   const [statsByRemoteServer, setStatsByRemoteServer] =
@@ -42,6 +56,24 @@ export default function QueryPage({ params }: { params: { id: string } }) {
 
   function flipStatsHidden() {
     setStatsHidden(!statsHidden);
+  }
+
+  function handleCheckbox(e: React.ChangeEvent<HTMLInputElement>) {
+    const remoteServer = e.target.id;
+
+    if (e.target.checked) {
+      setSelectedRemoteServerLogs((prevSelectedRemoteServers) => [
+        ...prevSelectedRemoteServers,
+        remoteServer,
+      ]);
+    } else {
+      setSelectedRemoteServerLogs((prevSelectedRemoteServers) =>
+        prevSelectedRemoteServers.filter(
+          (prevSelectedRemoteServer) =>
+            prevSelectedRemoteServer !== remoteServer,
+        ),
+      );
+    }
   }
 
   const kill = async (remoteServers: RemoteServersType) => {
@@ -61,7 +93,11 @@ export default function QueryPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     (async () => {
       const query: Query = await getQuery(params.id);
+      setQuery(query);
       let webSockets: WebSocket[] = [];
+      // useEffect() gets called twice locally
+      // so this prevents the logs from being shown twice
+      setLogs([]);
       for (const remoteServer of Object.values(IPARemoteServers)) {
         const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
         const statusWs = remoteServer.openStatusSocket(
@@ -185,7 +221,58 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             </dl>
           </div>
         </button>
-        {!logsHidden && <LogViewer logs={logs} />}
+        {!logsHidden && (
+          <>
+            <form>
+              <div>
+                <ul
+                  role="list"
+                  className="divide-y divide-gray-100 dark:divide-gray-900 border-b border-gray-200 dark:border-gray-800"
+                >
+                  {Object.values(IPARemoteServers).map(
+                    (remoteServer: RemoteServer) => {
+                      return (
+                        <>
+                          <li className="flex items-center justify-between py-2 pl-4 pr-5 text-sm leading-6">
+                            <input
+                              id={remoteServer.remoteServerNameStr}
+                              type="checkbox"
+                              defaultChecked={true}
+                              onChange={handleCheckbox}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <div className="flex w-0 flex-1 items-center">
+                              <div className="ml-4 flex min-w-0 flex-1 gap-2">
+                                <span className="truncate font-medium">
+                                  {remoteServer.remoteServerNameStr}-
+                                  {query?.uuid}
+                                  .log
+                                </span>
+                              </div>
+                            </div>
+                            {query && (
+                              <div className="ml-4 flex-shrink-0">
+                                <a
+                                  href={remoteServer
+                                    .logURL(query.uuid)
+                                    .toString()}
+                                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                                >
+                                  Download
+                                </a>
+                              </div>
+                            )}
+                          </li>
+                        </>
+                      );
+                    },
+                  )}
+                </ul>
+              </div>
+            </form>
+            <LogViewer logs={displayedLogs} />
+          </>
+        )}
       </div>
     </>
   );
