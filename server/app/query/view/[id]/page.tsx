@@ -22,6 +22,7 @@ import {
   initialRunTimeByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";
+import { JSONSafeParse } from "@/app/utils";
 import { getQuery, Query } from "@/data/query";
 
 export default function QueryPage({ params }: { params: { id: string } }) {
@@ -58,11 +59,6 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     setStatsHidden(!statsHidden);
   }
 
-
-  const queryParams = Object.entries(
-    JSON.parse((query?.params as string) || "{}"),
-  );
-
   function handleCheckbox(e: React.ChangeEvent<HTMLInputElement>) {
     const remoteServer = e.target.id;
 
@@ -80,6 +76,10 @@ export default function QueryPage({ params }: { params: { id: string } }) {
       );
     }
   }
+
+  const queryParams = Object.entries(
+    JSONSafeParse((query?.params as string) || "{}"),
+  );
 
   const kill = async (remoteServers: RemoteServersType) => {
     const query: Query = await getQuery(params.id);
