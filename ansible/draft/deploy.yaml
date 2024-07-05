@@ -1,0 +1,49 @@
+- name: Deploy updates to Draft
+  hosts: all
+  tasks:
+
+    - name: Pull new commits from GitHub
+      git:
+        repo: 'https://github.com/private-attribution/draft.git'
+        dest: '{{ ansible_env.HOME }}/draft'
+        update: yes
+
+    - name: Checkout and pull main branch
+      command: git pull origin main
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft'
+
+    - name: Install packages based on package-lock.json via npm
+      npm:
+        path: '{{ ansible_env.HOME}}/draft/server'
+        state: present
+        ci: true
+
+    - name: Load .env file
+      shell: >
+        aws secretsmanager get-secret-value
+        --secret-id {{ secret_id }}
+        --region {{ aws_region }}
+        --query SecretString
+        --output text |
+        jq -r 'to_entries|map("\(.key)=\"\(.value|tostring)\"")|.[]' >
+        .env
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash
+
+
+    - name: Rebuild draft website
+      shell: >
+        npm run build
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash
+
+
+    - name: Restart draft website
+      shell: >
+        npm run pm2-restart
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash

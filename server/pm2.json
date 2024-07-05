@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "draft-website",
+      "script": "node_modules/next/dist/bin/next",
+      "args": "dev",
+      "cwd": "./"
+    }
+  ]
+}
