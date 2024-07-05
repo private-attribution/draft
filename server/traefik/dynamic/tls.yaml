@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: {{ env "CERT_DIR" }}/cert.pem
+      keyFile: {{ env "CERT_DIR" }}/key.pem
