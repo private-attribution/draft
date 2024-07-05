@@ -68,10 +68,10 @@ Once you know these:
 ### Run draft
 
 ```
-draft start-helper-sidecar --identity <identity> --root_domain example.com --config_path config
+draft start-helper-sidecar --identity <identity> --helper_domain helper.example.com --sidecar_domain sidecar.example.com --config_path config
 ```
 
-This will start the sidecar in the background. To confirm, visit `example.com/status`.
+This will start the sidecar in the background. To confirm, visit `sidecar.example.com/status`.
 
 
 ## Local Dev
