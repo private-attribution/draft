@@ -24,10 +24,10 @@ Host ipa
     User ec2-user
     IdentityFile ~/.ssh/<ssh_key.pem>
 ```
-4. Update the `draft/ansible/inventory.ini` file to only include a single host. (Unless you are running all 4 servers.)
-5. Provision your machine: `ansible-playbook -i ansible/inventory.ini ansible/provision.yaml`
+4. Update the `draft/ansible/sidecar/inventory.ini` file to only include a single host. (Unless you are running all 4 servers.)
+5. Provision your machine: `ansible-playbook -i ansible/sidecar/inventory.ini ansible/sidecar/provision.yaml`
 
-To deploy new changes in draft, run: `ansible-playbook -i ansible/inventory.ini ansible/deploy.yaml`
+To deploy new changes in draft, run: `ansible-playbook -i ansible/sidecar/inventory.ini ansible/sidecar/deploy.yaml`
 
 ### Generating TLS certs with Let's Encrypt
 
