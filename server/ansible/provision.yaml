@@ -48,7 +48,6 @@
       git:
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
-        version: self-host
 
     - name: Install packages based on package-lock.json via npm
       npm:
@@ -120,7 +119,7 @@
         chdir: '{{ ansible_env.HOME }}/cert'
         executable: /bin/bash
 
-    - name: start traefik
+    - name: start traefik and nextjs
       shell: >
         npm run pm2-start
       environment:

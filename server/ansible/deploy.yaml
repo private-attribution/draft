@@ -7,7 +7,6 @@
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
         update: yes
-        version: self-host
 
     - name: Install packages based on package-lock.json via npm
       npm:
