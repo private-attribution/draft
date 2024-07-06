@@ -6,4 +6,4 @@ entryPoints:
 
 providers:
   file:
-    directory: "server/traefik/dynamic"
+    directory: "traefik/dynamic"
