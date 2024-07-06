@@ -50,6 +50,12 @@
         dest: '{{ ansible_env.HOME }}/draft'
         version: self-host
 
+    - name: Install packages based on package-lock.json via npm
+      npm:
+        path: '{{ ansible_env.HOME}}/draft/server'
+        state: present
+        ci: true
+
     - name: Check if Traefik is installed
       command: '{{ ansible_env.HOME }}/draft/traefik version'
       register: traefik_installed
@@ -116,12 +122,12 @@
 
     - name: start traefik
       shell: >
-        systemd-run --user
-        --setenv=CERT_DIR={{ ansible_env.HOME }}/cert
-        --setenv=DRAFT_DOMAIN={{ draft_domain }}
-        --setenv=DRAFT_PORT={{ draft_port }}
-        {{ansible_env.HOME }}/draft/traefik
-        --configFile={{ ansible_env.HOME }}/draft/server/traefik/traefik.yaml
+        npm run pm2-start
+      environment:
+        CERT_DIR: '{{ ansible_env.HOME }}/cert/'
+        DRAFT_DOMAIN: '{{ draft_domain }}'
+        DRAFT_PORT: '{{ draft_port }}'
+
       args:
-        chdir: '{{ ansible_env.HOME }}/draft'
+        chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash

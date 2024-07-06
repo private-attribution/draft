@@ -9,11 +9,6 @@
         update: yes
         version: self-host
 
-    - name: Checkout and pull main branch
-      command: git pull origin main
-      args:
-        chdir: '{{ ansible_env.HOME }}/draft'
-
     - name: Install packages based on package-lock.json via npm
       npm:
         path: '{{ ansible_env.HOME}}/draft/server'

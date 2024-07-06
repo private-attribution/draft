@@ -5,6 +5,12 @@
       "script": "node_modules/next/dist/bin/next",
       "args": "start",
       "cwd": "./"
+    },
+    {
+      "name": "traefik",
+      "script": "../traefik",
+      "args": "--configFile=traefik/traefik.yaml",
+      "cwd": "./"
     }
   ]
 }
