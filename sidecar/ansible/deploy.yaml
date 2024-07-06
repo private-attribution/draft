@@ -14,10 +14,8 @@
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
         update: yes
-    - name: Checkout and pull main branch
-      command: git pull origin main
-      args:
-        chdir: '{{ ansible_env.HOME }}/draft'
+        version: main
+
     - name: Start helper sidecar
       shell: >
         source .venv/bin/activate &&
