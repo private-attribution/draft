@@ -31,19 +31,6 @@
       become: yes
       when: npm_installed.rc != 0
 
-    - name: Check if nginx is installed
-      command: nginx --version
-      register: nginx_installed
-      failed_when: false
-      changed_when: false
-
-    - name: Install nginx
-      yum:
-        name: nginx
-        state: latest
-      become: yes
-      when: nginx_installed.rc != 0
-
     - name: Check if Git is installed
       command: git --version
       register: git_installed

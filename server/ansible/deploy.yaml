@@ -22,7 +22,7 @@
     - name: Load .env file
       shell: >
         aws secretsmanager get-secret-value
-        --secret-id {{ secret_id }}
+        --secret-id {{ env_secret_id }}
         --region {{ aws_region }}
         --query SecretString
         --output text |
