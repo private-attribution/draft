@@ -198,6 +198,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
 
       <div className="mx-auto mt-10 w-full max-w-7xl overflow-hidden rounded-lg bg-slate-50 text-left shadow dark:bg-slate-950">
         <button
+          type="button"
           onClick={flipStatsHidden}
           className="size-full border-b border-gray-300 dark:border-gray-700"
         >
@@ -246,6 +247,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
           })}
 
         <button
+          type="button"
           onClick={flipLogsHidden}
           className="size-full border-b border-gray-300 dark:border-gray-700"
         >
