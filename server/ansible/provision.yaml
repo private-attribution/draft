@@ -48,7 +48,7 @@
       git:
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
-        update: no
+        version: self-host
 
     - name: Check if Traefik is installed
       command: '{{ ansible_env.HOME }}/draft/traefik version'
@@ -120,5 +120,8 @@
         --setenv=CERT_DIR={{ ansible_env.HOME }}/cert
         --setenv=DRAFT_DOMAIN={{ draft_domain }}
         --setenv=DRAFT_PORT={{ draft_port }}
-        {{ ansible_env.HOME }}/draft/traefik
-        --config_file={{ ansible_env.HOME }}/draft/server/traefik/traefik.yaml
+        {{ansible_env.HOME }}/draft/traefik
+        --configFile={{ ansible_env.HOME }}/draft/server/traefik/traefik.yaml
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft'
+        executable: /bin/bash
