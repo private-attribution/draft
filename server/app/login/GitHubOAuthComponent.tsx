@@ -33,6 +33,7 @@ export default function GitHubOAuthComponent() {
 
   return (
     <button
+      type="button"
       onClick={handleGitHubLogin}
       className="flex w-full items-center justify-center gap-3 rounded-md bg-[#24292F] px-3 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24292F]"
     >
