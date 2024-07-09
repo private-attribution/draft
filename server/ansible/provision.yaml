@@ -91,37 +91,16 @@
       command: 'setcap cap_net_bind_service=+ep {{ ansible_env.HOME }}/draft/traefik'
       become: yes
 
-    - name: Create cert directory
-      file:
-        path: '{{ ansible_env.HOME }}/cert'
-        state: directory
-
-    - name: Load cert.pem file
+    - name: Build draft website
       shell: >
-        aws secretsmanager get-secret-value
-        --secret-id cert.pem
-        --region {{ aws_region }}
-        --query SecretString
-        --output text > cert.pem
+        npm run build
       args:
-        chdir: '{{ ansible_env.HOME }}/cert'
-        executable: /bin/bash
-
-
-    - name: Load key.pem file
-      shell: >
-        aws secretsmanager get-secret-value
-        --secret-id key.pem
-        --region {{ aws_region }}
-        --query SecretString
-        --output text > key.pem
-      args:
-        chdir: '{{ ansible_env.HOME }}/cert'
+        chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash
 
     - name: start traefik and nextjs
       shell: >
-        npm run pm2-start
+        source ansible/load_secrets.sh && npm run pm2-start
       environment:
         CERT_DIR: '{{ ansible_env.HOME }}/cert/'
         DRAFT_DOMAIN: '{{ draft_domain }}'

@@ -14,31 +14,21 @@
         state: present
         ci: true
 
-    - name: Load .env file
-      shell: >
-        aws secretsmanager get-secret-value
-        --secret-id {{ env_secret_id }}
-        --region {{ aws_region }}
-        --query SecretString
-        --output text |
-        jq -r 'to_entries|map("\(.key)=\"\(.value|tostring)\"")|.[]' >
-        .env
-      args:
-        chdir: '{{ ansible_env.HOME }}/draft/server'
-        executable: /bin/bash
-
-
-    - name: Rebuild draft website
+    - name: Build draft website
       shell: >
         npm run build
       args:
         chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash
 
-
-    - name: Restart draft website
+    - name: start traefik and nextjs
       shell: >
-        npm run pm2-restart
+        source ansible/load_secrets.sh && npm run pm2-start
+      environment:
+        CERT_DIR: '{{ ansible_env.HOME }}/cert/'
+        DRAFT_DOMAIN: '{{ draft_domain }}'
+        DRAFT_PORT: '{{ draft_port }}'
+
       args:
         chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash
