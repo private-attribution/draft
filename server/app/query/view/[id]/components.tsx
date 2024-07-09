@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from "react";
 import { Source_Code_Pro } from "next/font/google";
 import clsx from "clsx";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
@@ -65,12 +66,34 @@ function secondsToTime(e: number) {
 
 export function RunTimePill({
   status,
-  runTime,
+  startTime,
+  endTime,
 }: {
   status: Status;
-  runTime: number | null;
+  startTime: number | null;
+  endTime: number | null;
 }) {
+  const [runTime, setRunTime] = useState<number>(0);
   const runTimeStr = runTime ? secondsToTime(runTime) : "N/A";
+  const intervalId = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (startTime !== null) {
+      if (endTime !== null && startTime !== null) {
+        setRunTime(endTime - startTime);
+      } else {
+        if (intervalId.current !== null) {
+          clearTimeout(intervalId.current);
+        }
+
+        let newIntervalId = setInterval(() => {
+          setRunTime(Date.now() / 1000 - startTime);
+        }, 1000);
+        intervalId.current = newIntervalId;
+      }
+    }
+  }, [startTime, endTime]);
+
   return (
     <div className={clsx(`rounded-full px-2`, StatusClassNameMixins[status])}>
       {runTimeStr}

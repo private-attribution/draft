@@ -59,11 +59,20 @@ export const initialStatsByRemoteServer: StatsByRemoteServer =
     Object.values(RemoteServerNames).map((serverName) => [[serverName], []]),
   );
 
-export type RunTimeByRemoteServer = {
+export type StartTimeByRemoteServer = {
   [key in RemoteServerNames]: number | null;
 };
 
-export const initialRunTimeByRemoteServer: RunTimeByRemoteServer =
+export type EndTimeByRemoteServer = {
+  [key in RemoteServerNames]: number | null;
+};
+
+export const initialStartTimeByRemoteServer: StartTimeByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
+  );
+
+export const initialEndTimeByRemoteServer: StartTimeByRemoteServer =
   Object.fromEntries(
     Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
   );
@@ -179,6 +188,8 @@ export class RemoteServer {
   openStatusSocket(
     id: string,
     setStatus: React.Dispatch<React.SetStateAction<StatusByRemoteServer>>,
+    setStartTime: React.Dispatch<React.SetStateAction<StartTimeByRemoteServer>>,
+    setEndTime: React.Dispatch<React.SetStateAction<EndTimeByRemoteServer>>,
   ): WebSocket {
     const ws = this.statusSocket(id);
 
@@ -189,8 +200,29 @@ export class RemoteServer {
       }));
     };
 
+    const updateStartTime = (runTime: number) => {
+      setStartTime((prevStartTime) => {
+        return {
+          ...prevStartTime,
+          [this.remoteServerName]: runTime,
+        };
+      });
+    };
+
+    const updateEndTime = (runTime: number) => {
+      setEndTime((prevEndTime) => {
+        return {
+          ...prevEndTime,
+          [this.remoteServerName]: runTime,
+        };
+      });
+    };
+
     ws.onmessage = (event) => {
-      const statusString: string = JSON.parse(event.data).status;
+      const eventData = JSON.parse(event.data);
+      updateStartTime(eventData.start_time);
+      updateEndTime(eventData.end_time ?? null);
+      const statusString: string = eventData.status;
       const status = getStatusFromString(statusString);
       updateStatus(status);
     };
@@ -207,7 +239,6 @@ export class RemoteServer {
   openStatsSocket(
     id: string,
     setStats: React.Dispatch<React.SetStateAction<StatsByRemoteServer>>,
-    setRunTime: React.Dispatch<React.SetStateAction<RunTimeByRemoteServer>>,
   ): WebSocket {
     const ws = this.statsSocket(id);
 
@@ -221,18 +252,8 @@ export class RemoteServer {
       });
     };
 
-    const updateRunTime = (runTime: number) => {
-      setRunTime((prevRunTime) => {
-        return {
-          ...prevRunTime,
-          [this.remoteServerName]: runTime,
-        };
-      });
-    };
-
     ws.onmessage = (event) => {
       const eventData = JSON.parse(event.data);
-      updateRunTime(eventData.run_time);
       const statsDataPoint: StatsDataPoint = {
         timestamp: eventData.timestamp,
         memoryRSSUsage: eventData.memory_rss_usage,

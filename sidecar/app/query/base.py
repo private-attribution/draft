@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from collections import namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,12 +23,14 @@ class QueryExistsError(Exception):
     pass
 
 
+StatusChangeEvent = namedtuple("StatusChangeEvent", ["status", "timestamp"])
+
+
 @dataclass
 class Query:
     # pylint: disable=too-many-instance-attributes
     query_id: str
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
-    _status: Status = field(init=False, default=Status.UNKNOWN)
     start_time: Optional[float] = field(init=False, default=None)
     end_time: Optional[float] = field(init=False, default=None)
     stopped: bool = field(init=False, default=False)
@@ -35,6 +38,9 @@ class Query:
     _logger_id: int = field(init=False, repr=False)
     step_classes: ClassVar[list[type[Step]]] = []
     _log_dir: Path = settings.root_path / Path("logs")
+    _status_history: list[StatusChangeEvent] = field(
+        init=False, default_factory=list, repr=True
+    )
     _status_dir: Path = settings.root_path / Path("status_semaphore")
 
     def __post_init__(self):
@@ -79,21 +85,48 @@ class Query:
             raise e
         if query.status_file_path.exists():
             with query.status_file_path.open("r") as f:
-                status_str = f.readline()
-                query.status = Status[status_str]
-                return query
+                for line in f:
+                    status_str, timestamp = line.split(",")
+                    query.add_status_event(
+                        status=Status[status_str], timestamp=float(timestamp)
+                    )
+            return query
         return None
 
     @property
+    def _last_status_event(self):
+        if not self._status_history:
+            return StatusChangeEvent(status=Status.UNKNOWN, timestamp=time.time())
+        return self._status_history[-1]
+
+    @property
+    def status_event_json(self):
+        status_event = {
+            "status": self._last_status_event.status.name,
+            "start_time": self._last_status_event.timestamp,
+        }
+        if self.status >= Status.COMPLETE and len(self._status_history) >= 2:
+            status_event["start_time"] = self._status_history[-2].timestamp
+            status_event["end_time"] = self._last_status_event.timestamp
+        return status_event
+
+    @property
     def status(self) -> Status:
-        return self._status
+        return self._last_status_event.status
 
     @status.setter
     def status(self, status: Status):
-        self._status = status
-        with self.status_file_path.open("w") as f:
-            self.logger.debug(f"setting status: {status=}")
-            f.write(str(status.name))
+        if self.status <= Status.COMPLETE:
+            now = time.time()
+            self.add_status_event(status, now)
+
+    def add_status_event(self, status: Status, timestamp: float):
+        self._status_history.append(
+            StatusChangeEvent(status=status, timestamp=timestamp)
+        )
+        with self.status_file_path.open("a") as f:
+            self.logger.debug(f"updating status: {status=}")
+            f.write(f"{status.name},{timestamp}\n")
 
     @property
     def running(self):
