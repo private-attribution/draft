@@ -21,9 +21,9 @@
         chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash
 
-    - name: start traefik and nextjs
+    - name: restart traefik and nextjs
       shell: >
-        source ansible/load_secrets.sh && npm run pm2-start
+        source ansible/load_secrets.sh && npm run pm2-restart
       environment:
         CERT_DIR: '{{ ansible_env.HOME }}/cert/'
         DRAFT_DOMAIN: '{{ draft_domain }}'
