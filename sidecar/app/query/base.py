@@ -8,8 +8,8 @@ from typing import ClassVar, Optional, TypeVar
 import loguru
 
 from ..helpers import Role
-from ..logger import logger
-from ..settings import settings
+from ..logger import get_logger
+from ..settings import get_settings
 from .status import Status, StatusHistory
 from .step import Step
 
@@ -27,17 +27,26 @@ class Query:
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
     logger: loguru.Logger = field(init=False, repr=False)
     _logger_id: int = field(init=False, repr=False)
+    log_file_path: Path = field(init=False, repr=False)
+    role: Role = field(init=False, repr=True)
     _status_history: StatusHistory = field(init=False, repr=True)
     step_classes: ClassVar[list[type[Step]]] = []
 
     def __post_init__(self):
+        settings = get_settings()
+        logger = get_logger()
+
         self.logger = logger.bind(task=self.query_id)
+        self.role = settings.role
+
         status_dir = settings.root_path / Path("status")
         status_dir.mkdir(exist_ok=True)
         status_file_path = status_dir / Path(f"{self.query_id}")
         self._status_history = StatusHistory(file_path=status_file_path, logger=logger)
 
-        self._log_dir.mkdir(exist_ok=True)
+        log_dir = settings.root_path / Path("logs")
+        self.log_file_path = log_dir / Path(f"{self.query_id}.log")
+        log_dir.mkdir(exist_ok=True)
         self._logger_id = logger.add(
             self.log_file_path,
             serialize=True,
@@ -48,14 +57,6 @@ class Query:
         if queries.get(self.query_id) is not None:
             raise QueryExistsError(f"{self.query_id} already exists")
         queries[self.query_id] = self
-
-    @property
-    def _log_dir(self) -> Path:
-        return settings.root_path / Path("logs")
-
-    @property
-    def role(self) -> Role:
-        return settings.role
 
     @property
     def started(self) -> bool:
@@ -98,10 +99,6 @@ class Query:
     @property
     def running(self):
         return self.started and not self.finished
-
-    @property
-    def log_file_path(self) -> Path:
-        return self._log_dir / Path(f"{self.query_id}.log")
 
     @property
     def steps(self) -> Iterable[Step]:
@@ -154,7 +151,7 @@ class Query:
     def _cleanup(self):
         self.current_step = None
         try:
-            logger.remove(self._logger_id)
+            self.logger.remove(self._logger_id)
         except ValueError:
             pass
         if queries.get(self.query_id) is not None:

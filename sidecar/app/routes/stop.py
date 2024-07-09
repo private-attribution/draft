@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..logger import logger
+from ..logger import get_logger
 from ..query.base import Query
 from ..query.status import Status
 
@@ -16,6 +16,7 @@ router = APIRouter(
 def finish(
     query_id: str,
 ):
+    logger = get_logger()
     query = Query.get_from_query_id(query_id)
     if query is None:
         return {"message": "Query not found", "query_id": query_id}
@@ -31,6 +32,7 @@ def finish(
 def kill(
     query_id: str,
 ):
+    logger = get_logger()
     logger.info(f"kill called for {query_id=}")
     query = Query.get_from_query_id(query_id)
     if query is None:

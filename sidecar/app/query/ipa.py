@@ -12,7 +12,7 @@ import loguru
 
 from ..helpers import Role
 from ..local_paths import Paths
-from ..settings import settings
+from ..settings import get_settings
 from .base import Query
 from .command import FileOutputCommand, LoggerOutputCommand
 from .step import CommandStep, LoggerOutputCommandStep, Status, Step
@@ -30,6 +30,7 @@ class IPAQuery(Query):
 
     def send_kill_signals(self):
         self.logger.info("sending kill signals")
+        settings = get_settings()
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
@@ -241,6 +242,7 @@ class IPACoordinatorWaitForHelpersStep(Step):
         )
 
     def run(self):
+        settings = get_settings()
         sidecar_urls = [
             helper.sidecar_url
             for helper in settings.helpers.values()
@@ -339,6 +341,7 @@ class IPACoordinatorQuery(IPAQuery):
 
     def send_terminate_signals(self):
         self.logger.info("sending terminate signals")
+        settings = get_settings()
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue

@@ -11,7 +11,7 @@ from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
 from ..query.status import Status
-from ..settings import settings
+from ..settings import get_settings
 
 router = APIRouter(
     prefix="/start",
@@ -49,6 +49,7 @@ def start_ipa_helper(
     background_tasks: BackgroundTasks,
 ):
     # pylint: disable=too-many-arguments
+    settings = get_settings()
     role = settings.role
     if not role or role == role.COORDINATOR:
         raise Exception("Cannot start helper without helper role.")
@@ -94,6 +95,7 @@ def get_ipa_helper_status(
 def get_ipa_helper_log_file(
     query_id: str,
 ):
+    settings = get_settings()
     query = Query.get_from_query_id(query_id)
     if query is None:
         return HTTPException(status_code=404, detail="Query not found")
@@ -133,6 +135,7 @@ def start_ipa_test_query(
     background_tasks: BackgroundTasks,
 ):
     # pylint: disable=too-many-arguments
+    settings = get_settings()
     role = settings.role
     if role != role.COORDINATOR:
         raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")

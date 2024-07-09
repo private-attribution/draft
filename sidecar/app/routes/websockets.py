@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
-from ..logger import logger
+from ..logger import get_logger
 from ..query.base import Query
 from ..query.status import Status
 
@@ -31,6 +31,8 @@ async def use_websocket(websocket):
 @router.websocket("/status/{query_id}")
 async def status_websocket(websocket: WebSocket, query_id: str):
     query = Query.get_from_query_id(query_id)
+    logger = get_logger()
+
     async with use_websocket(websocket) as websocket:
         if query is None:
             logger.warning(f"{query_id=} Status: {Status.NOT_FOUND.name}")
@@ -50,6 +52,7 @@ async def status_websocket(websocket: WebSocket, query_id: str):
 @router.websocket("/logs/{query_id}")
 async def logs_websocket(websocket: WebSocket, query_id: str):
     query = Query.get_from_query_id(query_id)
+    logger = get_logger()
 
     async with use_websocket(websocket) as websocket:
         if query is None:
@@ -76,6 +79,8 @@ async def logs_websocket(websocket: WebSocket, query_id: str):
 @router.websocket("/stats/{query_id}")
 async def stats_websocket(websocket: WebSocket, query_id: str):
     query = Query.get_from_query_id(query_id)
+    logger = get_logger()
+
     async with use_websocket(websocket) as websocket:
         if query is None or query.finished:
             logger.warning(f"{query_id=} is not running.")

@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -31,5 +32,6 @@ class Settings(BaseSettings):
         return self._helpers
 
 
-# pyre-ignore: https://pyre-check.org/docs/errors/#dataclass-like-classes
-settings = Settings()
+@lru_cache
+def get_settings():
+    return Settings()
