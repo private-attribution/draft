@@ -73,19 +73,22 @@ export function RunTimePill({
   startTime: number | null;
   endTime: number | null;
 }) {
-  const [runTime, setRunTime] = useState<number>(0);
+  const [runTime, setRunTime] = useState<number | null>(null);
   const runTimeStr = runTime ? secondsToTime(runTime) : "N/A";
   const intervalId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (startTime !== null) {
+    if (intervalId.current !== null) {
+      // any time startTime or endTime change, we remove the old setInterval
+      // which runs the timer. if a new one is needed, it's created.
+      clearTimeout(intervalId.current);
+    }
+    if (startTime === null) {
+      setRunTime(null);
+    } else {
       if (endTime !== null && startTime !== null) {
         setRunTime(endTime - startTime);
       } else {
-        if (intervalId.current !== null) {
-          clearTimeout(intervalId.current);
-        }
-
         let newIntervalId = setInterval(() => {
           setRunTime(Date.now() / 1000 - startTime);
         }, 1000);

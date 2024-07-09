@@ -83,15 +83,25 @@ class Query:
             if query:
                 return query
             raise e
-        if query.status_file_path.exists():
-            with query.status_file_path.open("r") as f:
+        query.load_history_from_file()
+        if query.status == Status.UNKNOWN:
+            return None
+        return query
+
+    def load_history_from_file(self):
+        if self.status_file_path.exists():
+            self.logger.debug(
+                f"Loading query {self.query_id} status history "
+                f"from file {self.status_file_path}"
+            )
+            with self.status_file_path.open("r") as f:
                 for line in f:
                     status_str, timestamp = line.split(",")
-                    query.add_status_event(
-                        status=Status[status_str], timestamp=float(timestamp)
+                    self._status_history.append(
+                        StatusChangeEvent(
+                            status=Status[status_str], timestamp=float(timestamp)
+                        )
                     )
-            return query
-        return None
 
     @property
     def _last_status_event(self):
@@ -118,15 +128,10 @@ class Query:
     def status(self, status: Status):
         if self.status <= Status.COMPLETE:
             now = time.time()
-            self.add_status_event(status, now)
-
-    def add_status_event(self, status: Status, timestamp: float):
-        self._status_history.append(
-            StatusChangeEvent(status=status, timestamp=timestamp)
-        )
-        with self.status_file_path.open("a") as f:
-            self.logger.debug(f"updating status: {status=}")
-            f.write(f"{status.name},{timestamp}\n")
+            self._status_history.append(StatusChangeEvent(status=status, timestamp=now))
+            with self.status_file_path.open("a") as f:
+                self.logger.debug(f"updating status: {status=}")
+                f.write(f"{status.name},{now}\n")
 
     @property
     def running(self):
