@@ -3,18 +3,16 @@
 # Check if the CERT_DIR environment variable is set
 if [ -z "$CERT_DIR" ]; then
   echo "Error: CERT_DIR environment variable is not set."
-  exit 1
+  return 1 2>/dev/null || exit 1  # return when sourced, exit otherwise
 fi
 
-# Directory where the cert files will be written
-CERT_DIR="$1"
 # Ensure the directory exists
 mkdir -p "$CERT_DIR"
 
 # load cert.pem file
 aws secretsmanager get-secret-value \
     --secret-id cert.pem \
-    --region {{ aws_region }} \
+    --region us-west-2 \
     --query SecretString \
     --output text \
     > "${CERT_DIR}"/cert.pem
@@ -22,15 +20,16 @@ aws secretsmanager get-secret-value \
 # load key.pem file
 aws secretsmanager get-secret-value \
     --secret-id key.pem \
-    --region {{ aws_region }} \
+    --region us-west-2 \
     --query SecretString \
     --output text \
     > ${CERT_DIR}/key.pem
 
 # set environmental variables
-aws secretsmanager get-secret-value \
-    --secret-id {{ env_secret_id }} \
-    --region {{ aws_region }} \
+env_vars=$(aws secretsmanager get-secret-value \
+    --secret-id prod-draft-env \
+    --region us-west-2 \
     --query SecretString \
-    | jq -r 'fromjson | to_entries | .[] | "export \(.key)=\(.value|tostring)"' \
-    | while read -r line; do eval "$line"; done
+    | jq -r 'fromjson | to_entries | .[] | "export \(.key)=\(.value|tostring)"')
+
+eval "$env_vars"
