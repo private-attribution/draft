@@ -3,7 +3,8 @@ from pathlib import Path
 
 import loguru
 import pytest
-from app.query.status import Status, StatusChangeEvent, StatusHistory
+
+from sidecar.app.query.status import Status, StatusChangeEvent, StatusHistory
 
 
 @pytest.fixture(name="status_history_fixture")
