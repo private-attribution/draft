@@ -11,13 +11,13 @@ import loguru
 
 class Status(IntEnum):
     UNKNOWN = auto()
+    NOT_FOUND = auto()
     STARTING = auto()
     COMPILING = auto()
     WAITING_TO_START = auto()
     IN_PROGRESS = auto()
     COMPLETE = auto()
     KILLED = auto()
-    NOT_FOUND = auto()
     CRASHED = auto()
 
 
@@ -29,7 +29,7 @@ StatusChangeEvent = NamedTuple(
 @dataclass
 class StatusHistory:
     file_path: Path = field(init=True, repr=False)
-    logger: loguru.Logger = field(init=True, repr=False)
+    logger: loguru.Logger = field(init=True, repr=False, compare=False)
     _status_history: list[StatusChangeEvent] = field(
         init=False, default_factory=list, repr=True
     )
@@ -46,7 +46,14 @@ class StatusHistory:
                         )
                     )
 
+    @property
+    def locking_status(self):
+        """Cannot add to history after this or higher status is reached"""
+        return Status.COMPLETE
+
     def add(self, status: Status, timestamp: float = time.time()):
+        assert status > self.current_status
+        assert self.current_status < self.locking_status
         self._status_history.append(
             StatusChangeEvent(status=status, timestamp=timestamp)
         )
@@ -55,22 +62,22 @@ class StatusHistory:
             f.write(f"{status.name},{timestamp}\n")
 
     @property
-    def last_status_event(self):
+    def current_status_event(self):
         if not self._status_history:
             return StatusChangeEvent(status=Status.UNKNOWN, timestamp=time.time())
         return self._status_history[-1]
 
     @property
     def current_status(self):
-        return self.last_status_event.status
+        return self.current_status_event.status
 
     @property
     def status_event_json(self):
         status_event = {
-            "status": self.last_status_event.status.name,
-            "start_time": self.last_status_event.timestamp,
+            "status": self.current_status_event.status.name,
+            "start_time": self.current_status_event.timestamp,
         }
         if self.current_status >= Status.COMPLETE and len(self._status_history) >= 2:
             status_event["start_time"] = self._status_history[-2].timestamp
-            status_event["end_time"] = self.last_status_event.timestamp
+            status_event["end_time"] = self.current_status_event.timestamp
         return status_event
