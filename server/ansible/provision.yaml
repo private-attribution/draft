@@ -1,37 +1,35 @@
-- name: Setup IPA Helper
+- name: Setup Draft frontend
   hosts: all
   tasks:
-    - name: Print HOME directory
+    - name: Store HOME directory
       debug:
         var: ansible_env.HOME
 
-    - name: Check if Python3.11 is installed
-      command: python3.11 --version
-      register: python_installed
+    - name: Check if Node.js is installed
+      command: node --version
+      register: node_installed
       failed_when: false
       changed_when: false
 
-    - name: Install Python3.11
+    - name: Install Node.js Package Manager
       yum:
-        name: python3.11
+        name: nodejs
         state: latest
       become: yes
-      when: python_installed.rc != 0
+      when: node_installed.rc != 0
 
-    - name: Check if rust toolchain is installed
-      command: rustup --version
-      register: rustup_installed
+    - name: Check if npm is installed
+      command: npm --version
+      register: npm_installed
       failed_when: false
       changed_when: false
 
-    - name: Install Rustup
-      shell: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-      args:
-        executable: /bin/bash
-      when: rustup_installed.rc != 0
-
-    - name: Update Rust to 1.77
-      command: rustup update 1.77.0
+    - name: Install Node.js Package Manager
+      yum:
+        name: npm
+        state: latest
+      become: yes
+      when: npm_installed.rc != 0
 
     - name: Check if Git is installed
       command: git --version
@@ -46,31 +44,16 @@
       become: yes
       when: git_installed.rc != 0
 
-    - name: Install pip3
-      command: python3.11 -m ensurepip
-      become: yes
-    - name: Upgrade pip3
-      command: python3.11 -m pip install --upgrade pip
-      become: yes
-
     - name: Clone repository if it doesn't exist
       git:
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
-        update: no
 
-    - name: Create virtualenv if it doesn't exist
-      command: python3.11 -m venv .venv
-      args:
-        chdir: '{{ ansible_env.HOME }}/draft'
-        creates: '{{ ansible_env.HOME }}/draft/.venv'
-
-    - name: Install package in editable mode
-      pip:
-        name: '{{ ansible_env.HOME }}/draft'
-        editable: yes
-        virtualenv: '{{ ansible_env.HOME }}/draft/.venv'
-        virtualenv_python: python3.11
+    - name: Install packages based on package-lock.json via npm
+      npm:
+        path: '{{ ansible_env.HOME}}/draft/server'
+        state: present
+        ci: true
 
     - name: Check if Traefik is installed
       command: '{{ ansible_env.HOME }}/draft/traefik version'
@@ -108,14 +91,21 @@
       command: 'setcap cap_net_bind_service=+ep {{ ansible_env.HOME }}/draft/traefik'
       become: yes
 
-    - name: Start helper sidecar
+    - name: Build draft website
       shell: >
-        source .venv/bin/activate &&
-        draft start-helper-sidecar
-        --identity {{ identity }}
-        --helper_domain {{ helper_domain }}
-        --sidecar_domain {{ sidecar_domain }}
-        --config_path {{ ansible_env.HOME }}/draft/config
+        npm run build
       args:
-        chdir: '{{ ansible_env.HOME }}/draft'
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash
+
+    - name: start traefik and nextjs
+      shell: >
+        source ansible/load_secrets.sh && npm run pm2-start
+      environment:
+        CERT_DIR: '{{ ansible_env.HOME }}/cert/'
+        DRAFT_DOMAIN: '{{ draft_domain }}'
+        DRAFT_PORT: '{{ draft_port }}'
+
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
         executable: /bin/bash

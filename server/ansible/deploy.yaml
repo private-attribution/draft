@@ -1,0 +1,35 @@
+- name: Deploy updates to Draft
+  hosts: all
+  tasks:
+
+    - name: Pull new commits from GitHub
+      git:
+        repo: 'https://github.com/private-attribution/draft.git'
+        dest: '{{ ansible_env.HOME }}/draft'
+        update: yes
+        version: main
+
+    - name: Install packages based on package-lock.json via npm
+      npm:
+        path: '{{ ansible_env.HOME}}/draft/server'
+        state: present
+        ci: true
+
+    - name: Build draft website
+      shell: >
+        npm run build
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash
+
+    - name: restart traefik and nextjs
+      shell: >
+        source ansible/load_secrets.sh && npm run pm2-restart
+      environment:
+        CERT_DIR: '{{ ansible_env.HOME }}/cert/'
+        DRAFT_DOMAIN: '{{ draft_domain }}'
+        DRAFT_PORT: '{{ draft_port }}'
+
+      args:
+        chdir: '{{ ansible_env.HOME }}/draft/server'
+        executable: /bin/bash

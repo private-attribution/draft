@@ -1,0 +1,14 @@
+http:
+  routers:
+    draft-router:
+      entryPoints:
+        - "web"
+        - "web-secure"
+      rule: "Host(`{{ env "DRAFT_DOMAIN"}}`)"
+      service: "draft-service"
+      tls: {}
+  services:
+    draft-service:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ env "DRAFT_PORT"}}"

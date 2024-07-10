@@ -10,7 +10,8 @@ coverage/*
 next.config.js
 tsconfig.json
 babel.config.js
-
+traefik/*
+ansible/*
 
 # Not JS
 README.md
