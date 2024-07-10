@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import time
-from collections import namedtuple
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar, Optional, TypeVar
+from typing import ClassVar, NamedTuple, Optional, TypeVar
 
 import loguru
 
@@ -23,7 +22,59 @@ class QueryExistsError(Exception):
     pass
 
 
-StatusChangeEvent = namedtuple("StatusChangeEvent", ["status", "timestamp"])
+StatusChangeEvent = NamedTuple(
+    "StatusChangeEvent", [("status", Status), ("timestamp", float)]
+)
+
+
+@dataclass
+class StatusHistory:
+    file_path: Path = field(init=True, repr=False)
+    logger: loguru.Logger = field(init=True, repr=False)
+    _status_history: list[StatusChangeEvent] = field(
+        init=False, default_factory=list, repr=True
+    )
+
+    def __post_init__(self):
+        if self.file_path.exists():
+            self.logger.debug(f"Loading status history from file {self.file_path}")
+            with self.file_path.open("r", encoding="utf8") as f:
+                for line in f:
+                    status_str, timestamp = line.split(",")
+                    self._status_history.append(
+                        StatusChangeEvent(
+                            status=Status[status_str], timestamp=float(timestamp)
+                        )
+                    )
+
+    def add(self, status: Status, timestamp: float = time.time()):
+        self._status_history.append(
+            StatusChangeEvent(status=status, timestamp=timestamp)
+        )
+        with self.file_path.open("a", encoding="utf8") as f:
+            self.logger.debug(f"updating status: {status=}")
+            f.write(f"{status.name},{timestamp}\n")
+
+    @property
+    def last_status_event(self):
+        if not self._status_history:
+            return StatusChangeEvent(status=Status.UNKNOWN, timestamp=time.time())
+        return self._status_history[-1]
+
+    @property
+    def current_status(self):
+        return self.last_status_event.status
+
+    @property
+    def status_event_json(self):
+        status_event = {
+            "status": self.last_status_event.status.name,
+            "start_time": self.last_status_event.timestamp,
+        }
+        if self.current_status >= Status.COMPLETE and len(self._status_history) >= 2:
+            status_event["start_time"] = self._status_history[-2].timestamp
+            status_event["end_time"] = self.last_status_event.timestamp
+        return status_event
 
 
 @dataclass
@@ -31,22 +82,21 @@ class Query:
     # pylint: disable=too-many-instance-attributes
     query_id: str
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
-    start_time: Optional[float] = field(init=False, default=None)
-    end_time: Optional[float] = field(init=False, default=None)
-    stopped: bool = field(init=False, default=False)
     logger: loguru.Logger = field(init=False, repr=False)
     _logger_id: int = field(init=False, repr=False)
-    step_classes: ClassVar[list[type[Step]]] = []
     _log_dir: Path = settings.root_path / Path("logs")
-    _status_history: list[StatusChangeEvent] = field(
-        init=False, default_factory=list, repr=True
-    )
+    _status_history: StatusHistory = field(init=False, repr=True)
     _status_dir: Path = settings.root_path / Path("status_semaphore")
+    step_classes: ClassVar[list[type[Step]]] = []
 
     def __post_init__(self):
         self.logger = logger.bind(task=self.query_id)
+        status_dir = settings.root_path / Path("status_semaphore")
+        status_dir.mkdir(exist_ok=True)
+        status_file_path = status_dir / Path(f"{self.query_id}")
+        self._status_history = StatusHistory(file_path=status_file_path, logger=logger)
+
         self._log_dir.mkdir(exist_ok=True)
-        self._status_dir.mkdir(exist_ok=True)
         self._logger_id = logger.add(
             self.log_file_path,
             serialize=True,
@@ -64,11 +114,11 @@ class Query:
 
     @property
     def started(self) -> bool:
-        return self.start_time is not None
+        return self.status >= Status.STARTING
 
     @property
     def finished(self) -> bool:
-        return self.end_time is not None
+        return self.status >= Status.COMPLETE
 
     @classmethod
     def get_from_query_id(cls, query_id) -> Optional["Query"]:
@@ -83,55 +133,22 @@ class Query:
             if query:
                 return query
             raise e
-        query.load_history_from_file()
         if query.status == Status.UNKNOWN:
             return None
         return query
 
-    def load_history_from_file(self):
-        if self.status_file_path.exists():
-            self.logger.debug(
-                f"Loading query {self.query_id} status history "
-                f"from file {self.status_file_path}"
-            )
-            with self.status_file_path.open("r") as f:
-                for line in f:
-                    status_str, timestamp = line.split(",")
-                    self._status_history.append(
-                        StatusChangeEvent(
-                            status=Status[status_str], timestamp=float(timestamp)
-                        )
-                    )
-
-    @property
-    def _last_status_event(self):
-        if not self._status_history:
-            return StatusChangeEvent(status=Status.UNKNOWN, timestamp=time.time())
-        return self._status_history[-1]
-
-    @property
-    def status_event_json(self):
-        status_event = {
-            "status": self._last_status_event.status.name,
-            "start_time": self._last_status_event.timestamp,
-        }
-        if self.status >= Status.COMPLETE and len(self._status_history) >= 2:
-            status_event["start_time"] = self._status_history[-2].timestamp
-            status_event["end_time"] = self._last_status_event.timestamp
-        return status_event
-
     @property
     def status(self) -> Status:
-        return self._last_status_event.status
+        return self._status_history.current_status
 
     @status.setter
     def status(self, status: Status):
-        if self.status <= Status.COMPLETE:
-            now = time.time()
-            self._status_history.append(StatusChangeEvent(status=status, timestamp=now))
-            with self.status_file_path.open("a") as f:
-                self.logger.debug(f"updating status: {status=}")
-                f.write(f"{status.name},{now}\n")
+        if self.status != status and self.status <= Status.COMPLETE:
+            self._status_history.add(status)
+
+    @property
+    def status_event_json(self):
+        return self._status_history.status_event_json
 
     @property
     def running(self):
@@ -142,17 +159,11 @@ class Query:
         return self._log_dir / Path(f"{self.query_id}.log")
 
     @property
-    def status_file_path(self) -> Path:
-        return self._status_dir / Path(f"{self.query_id}")
-
-    @property
     def steps(self) -> Iterable[Step]:
         for step_class in self.step_classes:
-            if not self.stopped:
-                yield step_class.build_from_query(self)
+            yield step_class.build_from_query(self)
 
     def start(self):
-        self.start_time = time.time()
         try:
             for step in self.steps:
                 if self.finished:
@@ -180,36 +191,29 @@ class Query:
         self._cleanup()
 
     def kill(self):
-        self.status = Status.KILLED
-        self.logger.info(f"Killing: {self=}")
-        if self.current_step:
-            self.current_step.terminate()
+        if self.running:
+            self.status = Status.KILLED
+            self.logger.info(f"Killing: {self=}")
+            if self.current_step:
+                self.current_step.terminate()
         self._cleanup()
 
     def crash(self):
-        self.status = Status.CRASHED
-        self.logger.info(f"CRASHING! {self=}")
-        if self.current_step:
-            self.current_step.kill()
+        if self.running:
+            self.status = Status.CRASHED
+            self.logger.info(f"CRASHING! {self=}")
+            if self.current_step:
+                self.current_step.kill()
         self._cleanup()
 
     def _cleanup(self):
         self.current_step = None
-        self.end_time = time.time()
         try:
             logger.remove(self._logger_id)
         except ValueError:
             pass
         if queries.get(self.query_id) is not None:
             del queries[self.query_id]
-
-    @property
-    def run_time(self):
-        if not self.start_time:
-            return 0
-        if not self.end_time:
-            return time.time() - self.start_time
-        return self.end_time - self.start_time
 
     @property
     def cpu_usage_percent(self) -> float:
