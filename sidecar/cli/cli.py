@@ -77,14 +77,11 @@ def start_helper_sidecar_command(
 # pylint: disable=too-many-arguments
 def start_traefik_command(
     config_path: Path,
-    root_domain: str,
-    helper_domain: str | None,
-    sidecar_domain: str | None,
+    helper_domain: str,
+    sidecar_domain: str,
     helper_port: int,
     sidecar_port: int,
 ):
-    sidecar_domain = sidecar_domain or f"sidecar.{root_domain}"
-    helper_domain = helper_domain or f"helper.{root_domain}"
     env = {
         **os.environ,
         "SIDECAR_DOMAIN": sidecar_domain,
@@ -136,18 +133,16 @@ def start_traefik_local_command(
     show_default=True,
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=None)
-@click.option("--root_domain", type=str, default="ipa-helper.dev")
-@click.option("--helper_domain", type=str, default=None)
-@click.option("--sidecar_domain", type=str, default=None)
+@click.option("--helper_domain", required=True, type=str)
+@click.option("--sidecar_domain", required=True, type=str)
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
 def run_helper_sidecar(
     config_path: Path,
     root_path: Path,
-    root_domain: str,
-    helper_domain: str | None,
-    sidecar_domain: str | None,
+    helper_domain: str,
+    sidecar_domain: str,
     helper_port: int,
     sidecar_port: int,
     identity: int,
@@ -161,7 +156,6 @@ def run_helper_sidecar(
     )
     traefik_command = start_traefik_command(
         config_path=config_path,
-        root_domain=root_domain,
         helper_domain=helper_domain,
         sidecar_domain=sidecar_domain,
         helper_port=helper_port,
@@ -179,16 +173,14 @@ def run_helper_sidecar(
     show_default=True,
 )
 @click.option("--root_path", type=click_pathlib.Path(), default=Path("."))
-@click.option("--root_domain", type=str, default="ipa-helper.dev")
-@click.option("--helper_domain", type=str, default="")
-@click.option("--sidecar_domain", type=str, default="")
+@click.option("--helper_domain", required=True, type=str)
+@click.option("--sidecar_domain", required=True, type=str)
 @click.option("--helper_port", type=int, default=7430)
 @click.option("--sidecar_port", type=int, default=17430)
 @click.option("--identity", required=True, type=int)
 def start_helper_sidecar(
     config_path: Path,
     root_path: Path,
-    root_domain: str,
     helper_domain: str,
     sidecar_domain: str,
     helper_port: int,
@@ -205,8 +197,10 @@ def start_helper_sidecar(
     script_path = root_path / Path("etc/start_helper_sidecar.sh")
 
     start_command = Command(
-        cmd=f"{script_path} {config_path} {root_path} {root_domain} "
-        f"{helper_domain} {sidecar_domain} {helper_port} {sidecar_port} {identity}",
+        cmd=(
+            f"{script_path} {config_path} {root_path} {helper_domain} {sidecar_domain} "
+            f"{helper_port} {sidecar_port} {identity}"
+        ),
     )
     start_command.run_blocking_no_output_capture()
     print("draft helper_sidecar started")
