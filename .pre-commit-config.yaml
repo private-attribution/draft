@@ -25,6 +25,7 @@ repos:
       entry: pytest
       types: [python]
       pass_filenames: false
+      args: [--cov=sidecar]
     - id : pytest-coverage
       name: coverage
       language: python
