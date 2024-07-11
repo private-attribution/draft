@@ -3,11 +3,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from ..local_paths import Paths
-from ..query.base import Query
+from ..query.base import Query, query_runner
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
 from ..query.status import Status
@@ -21,7 +21,12 @@ router = APIRouter(
 )
 
 
-@router.post("/demo-logger/{query_id}")
+@router.get("/capacity_available")
+def capacity_available():
+    return {"capacity_available": query_runner.capacity_available}
+
+
+@router.post("/demo-logger/{query_id}", status_code=status.HTTP_201_CREATED)
 def demo_logger(
     query_id: str,
     num_lines: Annotated[int, Form()],
@@ -33,9 +38,11 @@ def demo_logger(
         num_lines=num_lines,
         total_runtime=total_runtime,
     )
-    background_tasks.add_task(query.start)
 
-    return {"message": "Process started successfully", "query_id": query_id}
+    if query_runner.capacity_available:
+        background_tasks.add_task(query_runner.run_query, query)
+        return {"message": "Process started successfully", "query_id": query_id}
+    return HTTPException(status_code=503, detail="Capacity unavailable")
 
 
 @router.post("/ipa-helper/{query_id}")
@@ -76,9 +83,10 @@ def start_ipa_helper(
         disable_metrics=disable_metrics,
         port=settings.helper_port,
     )
-    background_tasks.add_task(query.start)
-
-    return {"message": "Process started successfully", "query_id": query_id}
+    if query_runner.capacity_available:
+        background_tasks.add_task(query_runner.run_query, query)
+        return {"message": "Process started successfully", "query_id": query_id}
+    return HTTPException(status_code=503, detail="Capacity unavailable")
 
 
 @router.get("/ipa-helper/{query_id}/status")
@@ -156,6 +164,8 @@ def start_ipa_test_query(
         max_trigger_value=max_trigger_value,
         per_user_credit_cap=per_user_credit_cap,
     )
-    background_tasks.add_task(query.start)
 
-    return {"message": "Process started successfully", "query_id": query_id}
+    if query_runner.capacity_available:
+        background_tasks.add_task(query_runner.run_query, query)
+        return {"message": "Process started successfully", "query_id": query_id}
+    return HTTPException(status_code=503, detail="Capacity unavailable")

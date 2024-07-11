@@ -174,3 +174,30 @@ class Query:
 
 
 QueryTypeT = TypeVar("QueryTypeT", bound=Query)
+
+
+class MaxQueriesRunningError(Exception):
+    pass
+
+
+@dataclass
+class QueryRunner:
+    max_parallel_queries: int = field(init=True, repr=False, default=1)
+    running_queries: set[Query] = field(init=False, repr=False, default_factory=set)
+
+    def run_query(self, query: Query):
+        if len(self.running_queries) >= self.max_parallel_queries:
+            raise MaxQueriesRunningError(
+                f"Only {self.max_parallel_queries} allowed. Currently running {self}"
+            )
+
+        self.running_queries.add(query)
+        query.start()
+        self.running_queries.remove(query)
+
+    @property
+    def capacity_available(self):
+        return len(self.running_queries) < self.max_parallel_queries
+
+
+query_runner = QueryRunner(max_parallel_queries=1)
