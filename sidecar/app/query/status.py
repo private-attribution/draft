@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import loguru
 
@@ -51,7 +51,9 @@ class StatusHistory:
         """Cannot add to history after this or higher status is reached"""
         return Status.COMPLETE
 
-    def add(self, status: Status, timestamp: float = time.time()):
+    def add(self, status: Status, timestamp: Optional[float] = None):
+        if timestamp is None:
+            timestamp = time.time()
         assert status > self.current_status
         assert self.current_status < self.locking_status
         self._status_history.append(

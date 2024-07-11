@@ -80,6 +80,8 @@ class Query:
                 return query
             raise e
         if query.status == Status.UNKNOWN:
+            # pylint: disable=protected-access
+            query._cleanup()
             return None
         return query
 
