@@ -8,7 +8,7 @@ tmp/
 IGNORE-ME*
 .pyre/*
 .draft
-.coverage
+.coverage*
 
 # local env files
 .env*.local
