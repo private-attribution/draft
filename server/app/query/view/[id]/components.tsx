@@ -86,7 +86,7 @@ export function RunTimePill({
     if (startTime === null) {
       setRunTime(null);
     } else {
-      if (endTime !== null && startTime !== null) {
+      if (endTime !== null) {
         setRunTime(endTime - startTime);
       } else {
         let newIntervalId = setInterval(() => {

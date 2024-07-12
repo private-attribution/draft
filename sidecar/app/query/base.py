@@ -21,6 +21,9 @@ class QueryExistsError(Exception):
     pass
 
 
+StatusChangeEvent = namedtuple("StatusChangeEvent", ["status", "timestamp"])
+
+
 @dataclass
 class Query:
     query_id: str
