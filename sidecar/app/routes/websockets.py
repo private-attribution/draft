@@ -34,15 +34,17 @@ async def status_websocket(websocket: WebSocket, query_id: str):
     async with use_websocket(websocket) as websocket:
         if query is None:
             logger.warning(f"{query_id=} Status: {Status.NOT_FOUND.name}")
-            await websocket.send_json({"status": Status.NOT_FOUND.name})
+            await websocket.send_json(
+                {"status": Status.NOT_FOUND.name, "start_time": time.time()}
+            )
         else:
             while query.running:
                 logger.debug(f"{query_id=} Status: {query.status.name}")
-                await websocket.send_json({"status": query.status.name})
+                await websocket.send_json(query.status_event_json)
                 await asyncio.sleep(1)
 
             logger.debug(f"{query_id=} Status: {query.status.name}")
-            await websocket.send_json({"status": query.status.name})
+            await websocket.send_json(query.status_event_json)
 
 
 @router.websocket("/logs/{query_id}")
@@ -81,7 +83,6 @@ async def stats_websocket(websocket: WebSocket, query_id: str):
         while query.running:
             await websocket.send_json(
                 {
-                    "run_time": query.run_time,
                     "cpu_percent": query.cpu_usage_percent,
                     "memory_rss_usage": query.memory_rss_usage,
                     "timestamp": time.time(),

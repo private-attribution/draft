@@ -16,10 +16,12 @@ import {
   IPARemoteServers, //hack until the queryId is stored in a DB
   StatusByRemoteServer,
   StatsByRemoteServer,
-  RunTimeByRemoteServer,
+  StartTimeByRemoteServer,
+  EndTimeByRemoteServer,
   initialStatusByRemoteServer,
   initialStatsByRemoteServer,
-  initialRunTimeByRemoteServer,
+  initialStartTimeByRemoteServer,
+  initialEndTimeByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";
 import { JSONSafeParse } from "@/app/utils";
@@ -48,8 +50,10 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     useState<StatusByRemoteServer>(initialStatusByRemoteServer);
   const [statsByRemoteServer, setStatsByRemoteServer] =
     useState<StatsByRemoteServer>(initialStatsByRemoteServer);
-  const [runTimeByRemoteServer, setRunTimeByRemoteServer] =
-    useState<RunTimeByRemoteServer>(initialRunTimeByRemoteServer);
+  const [startTimeByRemoteServer, setStartTimeByRemoteServer] =
+    useState<StartTimeByRemoteServer>(initialStartTimeByRemoteServer);
+  const [endTimeByRemoteServer, setEndTimeByRemoteServer] =
+    useState<EndTimeByRemoteServer>(initialEndTimeByRemoteServer);
 
   function flipLogsHidden() {
     setLogsHidden(!logsHidden);
@@ -108,11 +112,12 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         const statusWs = remoteServer.openStatusSocket(
           query.uuid,
           setStatusByRemoteServer,
+          setStartTimeByRemoteServer,
+          setEndTimeByRemoteServer,
         );
         const statsWs = remoteServer.openStatsSocket(
           query.uuid,
           setStatsByRemoteServer,
-          setRunTimeByRemoteServer,
         );
         webSockets = [...webSockets, loggingWs, statusWs, statsWs];
       }
@@ -212,8 +217,11 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {Object.values(IPARemoteServers).map(
                 (remoteServer: RemoteServer) => {
-                  const runTime =
-                    runTimeByRemoteServer[remoteServer.remoteServerName];
+                  const startTime =
+                    startTimeByRemoteServer[remoteServer.remoteServerName];
+                  const endTime =
+                    endTimeByRemoteServer[remoteServer.remoteServerName];
+
                   const status =
                     statusByRemoteServer[remoteServer.remoteServerName] ??
                     Status.UNKNOWN;
@@ -227,7 +235,11 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                         {remoteServer.toString()} Run Time
                       </dt>
                       <dd>
-                        <RunTimePill status={status} runTime={runTime} />
+                        <RunTimePill
+                          status={status}
+                          startTime={startTime}
+                          endTime={endTime}
+                        />
                       </dd>
                     </div>
                   );

@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef } from "react";
 import { Source_Code_Pro } from "next/font/google";
 import clsx from "clsx";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
@@ -65,12 +66,37 @@ function secondsToTime(e: number) {
 
 export function RunTimePill({
   status,
-  runTime,
+  startTime,
+  endTime,
 }: {
   status: Status;
-  runTime: number | null;
+  startTime: number | null;
+  endTime: number | null;
 }) {
+  const [runTime, setRunTime] = useState<number | null>(null);
   const runTimeStr = runTime ? secondsToTime(runTime) : "N/A";
+  const intervalId = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (intervalId.current !== null) {
+      // any time startTime or endTime change, we remove the old setInterval
+      // which runs the timer. if a new one is needed, it's created.
+      clearTimeout(intervalId.current);
+    }
+    if (startTime === null) {
+      setRunTime(null);
+    } else {
+      if (endTime !== null) {
+        setRunTime(endTime - startTime);
+      } else {
+        let newIntervalId = setInterval(() => {
+          setRunTime(Date.now() / 1000 - startTime);
+        }, 1000);
+        intervalId.current = newIntervalId;
+      }
+    }
+  }, [startTime, endTime]);
+
   return (
     <div className={clsx(`rounded-full px-2`, StatusClassNameMixins[status])}>
       {runTimeStr}
