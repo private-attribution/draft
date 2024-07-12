@@ -32,7 +32,7 @@ repos:
       entry: coverage report
       types: [python]
       pass_filenames: false
-      args: [--fail-under=9] # increase this over time
+      args: [--fail-under=60] # increase this over time, goal=80
     - id: pyre-check
       name: pyre-check
       entry: pyre check

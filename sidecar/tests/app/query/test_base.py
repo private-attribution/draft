@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from sidecar.app.query.base import Query, queries
+from sidecar.app.query.base import MaxQueriesRunningError, Query, QueryManager
 from sidecar.app.query.status import Status
 
 
@@ -22,13 +22,12 @@ def mock_settings_env_vars(tmp_path):
         yield
 
 
-def test_queries_storage():
-    query_id = str(uuid4())
-    query = Query(query_id)
-    assert queries[query_id] == query
-    assert Query.get_from_query_id(query_id) == query
-    assert Query.get_from_query_id("foo") is None
-    assert "foo" not in queries
+def test_query_files():
+    query = Query(str(uuid4()))
+    assert not query.status_file_path.exists()
+    assert query.log_file_path.exists()
+    query.status = Status.STARTING
+    assert query.status_file_path.exists()
 
 
 def test_query_started():
@@ -70,3 +69,53 @@ def test_query_running():
             assert query.running
         else:
             assert not query.running
+
+
+def test_query_manager():
+    query_manager = QueryManager(max_parallel_queries=1)
+    query = Query(str(uuid4()))
+    assert query_manager.get_from_query_id(Query, query.query_id) is None
+    query.status = Status.STARTING
+    assert query_manager.get_from_query_id(Query, query.query_id) == query
+
+
+def test_query_manager_capacity_available():
+    query_manager = QueryManager(max_parallel_queries=1)
+    assert query_manager.capacity_available
+    query = Query(str(uuid4()))
+    query_manager.running_queries.add(query.query_id)
+    assert not query_manager.capacity_available
+    query_manager.running_queries.remove(query.query_id)
+    assert query_manager.capacity_available
+
+
+def test_query_manger_run_query():
+    query_manager = QueryManager(max_parallel_queries=1)
+    query = Query(str(uuid4()))
+
+    def fake_start():
+        assert query.query_id in query_manager.running_queries
+
+    with mock.patch(
+        "sidecar.app.query.base.Query.start", side_effect=fake_start
+    ) as mock_start:
+        query_manager.run_query(query)
+        mock_start.assert_called_once()
+
+    assert query.query_id not in query_manager.running_queries
+
+
+def test_query_manger_run_query_at_capacity():
+    query_manager = QueryManager(max_parallel_queries=1)
+    query = Query(str(uuid4()))
+    query2 = Query(str(uuid4()))
+
+    def fake_start():
+        with pytest.raises(MaxQueriesRunningError):
+            query_manager.run_query(query2)
+
+    with mock.patch(
+        "sidecar.app.query.base.Query.start", side_effect=fake_start
+    ) as mock_start:
+        query_manager.run_query(query)
+        mock_start.assert_called_once()

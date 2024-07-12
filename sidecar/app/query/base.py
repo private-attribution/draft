@@ -13,12 +13,19 @@ from ..settings import get_settings
 from .status import Status, StatusHistory
 from .step import Step
 
-# Dictionary to store queries
-queries: dict[str, "Query"] = {}
-
 
 class QueryExistsError(Exception):
     pass
+
+
+def status_file_path(query_id: str) -> Path:
+    settings = get_settings()
+    return settings.status_dir_path / Path(query_id)
+
+
+def log_file_path(query_id: str) -> Path:
+    settings = get_settings()
+    return settings.log_dir_path / Path(query_id)
 
 
 @dataclass
@@ -26,38 +33,38 @@ class Query:
     # pylint: disable=too-many-instance-attributes
     query_id: str
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
-    logger: loguru.Logger = field(init=False, repr=False)
-    _logger_id: int = field(init=False, repr=False)
-    log_file_path: Path = field(init=False, repr=False)
+    logger: loguru.Logger = field(init=False, repr=False, compare=False)
+    _logger_id: int = field(init=False, repr=False, compare=False)
     role: Role = field(init=False, repr=True)
     _status_history: StatusHistory = field(init=False, repr=True)
     step_classes: ClassVar[list[type[Step]]] = []
 
     def __post_init__(self):
         settings = get_settings()
-        logger = get_logger()
+        _logger = get_logger()
 
-        self.logger = logger.bind(task=self.query_id)
+        self.logger = _logger.bind(task=self.query_id)
         self.role = settings.role
 
-        status_dir = settings.root_path / Path("status")
-        status_dir.mkdir(exist_ok=True)
-        status_file_path = status_dir / Path(f"{self.query_id}")
-        self._status_history = StatusHistory(file_path=status_file_path, logger=logger)
+        self._status_history = StatusHistory(
+            file_path=self.status_file_path, logger=self.logger
+        )
 
-        log_dir = settings.root_path / Path("logs")
-        self.log_file_path = log_dir / Path(f"{self.query_id}.log")
-        log_dir.mkdir(exist_ok=True)
-        self._logger_id = logger.add(
+        self._logger_id = self.logger.add(
             self.log_file_path,
             serialize=True,
             filter=lambda record: record["extra"].get("task") == self.query_id,
             enqueue=True,
         )
         self.logger.debug(f"adding new Query {self}.")
-        if queries.get(self.query_id) is not None:
-            raise QueryExistsError(f"{self.query_id} already exists")
-        queries[self.query_id] = self
+
+    @property
+    def status_file_path(self) -> Path:
+        return status_file_path(self.query_id)
+
+    @property
+    def log_file_path(self) -> Path:
+        return log_file_path(self.query_id)
 
     @property
     def started(self) -> bool:
@@ -66,25 +73,6 @@ class Query:
     @property
     def finished(self) -> bool:
         return self.status >= Status.COMPLETE
-
-    @classmethod
-    def get_from_query_id(cls, query_id) -> Optional["Query"]:
-        query = queries.get(query_id)
-        if query:
-            return query
-        try:
-            query = cls(query_id)
-        except QueryExistsError as e:
-            # avoid race condition on queries
-            query = queries.get(query_id)
-            if query:
-                return query
-            raise e
-        if query.status == Status.UNKNOWN:
-            # pylint: disable=protected-access
-            query._cleanup()
-            return None
-        return query
 
     @property
     def status(self) -> Status:
@@ -157,8 +145,6 @@ class Query:
             self.logger.remove(self._logger_id)
         except ValueError:
             pass
-        if queries.get(self.query_id) is not None:
-            del queries[self.query_id]
 
     @property
     def cpu_usage_percent(self) -> float:
@@ -181,23 +167,26 @@ class MaxQueriesRunningError(Exception):
 
 
 @dataclass
-class QueryRunner:
+class QueryManager:
     max_parallel_queries: int = field(init=True, repr=False, default=1)
-    running_queries: set[Query] = field(init=False, repr=False, default_factory=set)
+    running_queries: set[str] = field(init=False, repr=True, default_factory=set)
+
+    def get_from_query_id(self, cls, query_id: str) -> Optional[Query]:
+        if status_file_path(query_id).exists():
+            return cls(query_id)
+        return None
 
     def run_query(self, query: Query):
-        if len(self.running_queries) >= self.max_parallel_queries:
+        print("run called")
+        if not self.capacity_available:
             raise MaxQueriesRunningError(
                 f"Only {self.max_parallel_queries} allowed. Currently running {self}"
             )
 
-        self.running_queries.add(query)
+        self.running_queries.add(query.query_id)
         query.start()
-        self.running_queries.remove(query)
+        self.running_queries.remove(query.query_id)
 
     @property
     def capacity_available(self):
         return len(self.running_queries) < self.max_parallel_queries
-
-
-query_runner = QueryRunner(max_parallel_queries=1)

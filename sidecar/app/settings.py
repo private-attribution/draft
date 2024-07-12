@@ -31,7 +31,18 @@ class Settings(BaseSettings):
     def helpers(self):
         return self._helpers
 
+    @property
+    def status_dir_path(self):
+        return self.root_path / Path("status")
+
+    @property
+    def log_dir_path(self):
+        return self.root_path / Path("logs")
+
 
 @lru_cache
 def get_settings():
-    return Settings()
+    settings = Settings()
+    settings.status_dir_path.mkdir(exist_ok=True)
+    settings.log_dir_path.mkdir(exist_ok=True)
+    return settings
