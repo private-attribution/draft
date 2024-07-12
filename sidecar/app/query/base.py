@@ -23,6 +23,7 @@ class QueryExistsError(Exception):
 
 @dataclass
 class Query:
+    # pylint: disable=too-many-instance-attributes
     query_id: str
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
     logger: loguru.Logger = field(init=False, repr=False)
