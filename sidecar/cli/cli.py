@@ -9,8 +9,8 @@ from typing import Optional
 import click
 import click_pathlib
 
-from ..app.command import Command, start_commands_parallel
-from ..app.helpers import Role
+from sidecar.app.command import Command, start_commands_parallel
+from sidecar.app.helpers import Role
 
 
 @click.group()

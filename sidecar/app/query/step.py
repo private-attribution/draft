@@ -3,27 +3,15 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import IntEnum, auto
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 import loguru
 
 from .command import Command
+from .status import Status
 
 if TYPE_CHECKING:
     from .base import QueryTypeT
-
-
-class Status(IntEnum):
-    UNKNOWN = auto()
-    STARTING = auto()
-    COMPILING = auto()
-    WAITING_TO_START = auto()
-    IN_PROGRESS = auto()
-    COMPLETE = auto()
-    KILLED = auto()
-    NOT_FOUND = auto()
-    CRASHED = auto()
 
 
 @dataclass(kw_only=True)

@@ -7,7 +7,7 @@ from websockets import ConnectionClosedError, ConnectionClosedOK
 
 from ..logger import logger
 from ..query.base import Query
-from ..query.step import Status
+from ..query.status import Status
 
 router = APIRouter(
     prefix="/ws",

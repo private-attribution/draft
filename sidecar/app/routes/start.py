@@ -10,7 +10,7 @@ from ..local_paths import Paths
 from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
-from ..query.step import Status
+from ..query.status import Status
 from ..settings import settings
 
 router = APIRouter(

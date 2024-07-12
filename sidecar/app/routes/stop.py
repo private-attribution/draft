@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from ..logger import logger
 from ..query.base import Query
-from ..query.step import Status
+from ..query.status import Status
 
 router = APIRouter(
     prefix="/stop",

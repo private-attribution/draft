@@ -25,6 +25,8 @@ dependencies=[
   "pre-commit",
   "cryptography",
   "httpx",
+  "pytest",
+  "pytest-cov",
 ]
 
 [project.scripts]
@@ -50,6 +52,15 @@ disable = [
   # "R0913",
 ]
 
+[tool.pylint.main]
+source-roots = ["sidecar"]
+
 [tool.black]
 target-version = ["py311", ]
 include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+pythonpath = "sidecar"
