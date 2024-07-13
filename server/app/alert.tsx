@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/20/solid";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/20/solid";
 
-export default function QueryStartedAlert({ queryId }: { queryId: string }) {
+export function QueryStartedAlert({ queryId }: { queryId: string }) {
   return (
-    <div className="rounded-md bg-green-50 p-4">
+    <div className="-mt-16 mb-4 rounded-md bg-green-50 p-4">
       <div className="flex">
         <div className="shrink-0">
           <CheckCircleIcon
@@ -19,16 +22,25 @@ export default function QueryStartedAlert({ queryId }: { queryId: string }) {
             </Link>.{" "}
           </p>
         </div>
-        <div className="ml-auto pl-3">
-          <div className="-m-1.5">
-            <button
-              type="button"
-              className="inline-flex rounded-md bg-green-50 p-1.5 text-green-500 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 focus:ring-offset-green-50"
-            >
-              <span className="sr-only">Dismiss</span>
-              <XMarkIcon className="size-5" aria-hidden="true" />
-            </button>
-          </div>
+      </div>
+    </div>
+  );
+}
+
+export function QueryFailedToStartAlert({ queryId }: { queryId: string }) {
+  return (
+    <div className="-mt-16 mb-4 rounded-md bg-red-50 p-4">
+      <div className="flex">
+        <div className="shrink-0">
+          <ExclamationTriangleIcon
+            className="size-5 text-red-400"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium text-red-800">
+            Failed to started Query: {queryId}.
+          </p>
         </div>
       </div>
     </div>

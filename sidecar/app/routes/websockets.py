@@ -2,7 +2,7 @@ import asyncio
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
 from ..query.base import Query
@@ -30,9 +30,8 @@ async def use_websocket(websocket):
 async def status_websocket(
     websocket: WebSocket,
     query_id: str,
-    request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
+    query_manager = websocket.app.state.QUERY_MANAGER
     query = query_manager.get_from_query_id(Query, query_id)
     if query is None:
         raise HTTPException(status_code=404, detail="Query not found")
@@ -51,9 +50,8 @@ async def status_websocket(
 async def logs_websocket(
     websocket: WebSocket,
     query_id: str,
-    request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
+    query_manager = websocket.app.state.QUERY_MANAGER
     query = query_manager.get_from_query_id(Query, query_id)
     if query is None:
         raise HTTPException(status_code=404, detail="Query not found")
@@ -80,9 +78,8 @@ async def logs_websocket(
 async def stats_websocket(
     websocket: WebSocket,
     query_id: str,
-    request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
+    query_manager = websocket.app.state.QUERY_MANAGER
     query = query_manager.get_from_query_id(Query, query_id)
     if query is None:
         raise HTTPException(status_code=404, detail="Query not found")

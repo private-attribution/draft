@@ -169,9 +169,13 @@ class MaxQueriesRunningError(Exception):
 @dataclass
 class QueryManager:
     max_parallel_queries: int = field(init=True, repr=False, default=1)
-    running_queries: set[str] = field(init=False, repr=True, default_factory=set)
+    running_queries: dict[str, Query] = field(
+        init=False, repr=True, default_factory=dict
+    )
 
     def get_from_query_id(self, cls, query_id: str) -> Optional[Query]:
+        if query_id in self.running_queries:
+            return self.running_queries[query_id]
         if status_file_path(query_id).exists():
             return cls(query_id)
         return None
@@ -183,9 +187,9 @@ class QueryManager:
                 f"Only {self.max_parallel_queries} allowed. Currently running {self}"
             )
 
-        self.running_queries.add(query.query_id)
+        self.running_queries[query.query_id] = query
         query.start()
-        self.running_queries.remove(query.query_id)
+        del self.running_queries[query.query_id]
 
     @property
     def capacity_available(self):

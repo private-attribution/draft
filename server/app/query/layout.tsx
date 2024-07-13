@@ -7,7 +7,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto min-h-full max-w-7xl bg-slate-100 py-10 sm:px-6 lg:px-8 dark:bg-slate-900">
+    <div className="mx-auto min-h-full max-w-7xl bg-slate-100 py-20 sm:px-6 lg:px-8 dark:bg-slate-900">
       {children}
     </div>
   );

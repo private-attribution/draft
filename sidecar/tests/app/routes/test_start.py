@@ -27,10 +27,10 @@ def _mock_role():
 def _running_query():
     query = Query(str(uuid4()))
     query_manager = app.state.QUERY_MANAGER
-    query_manager.running_queries.add(query.query_id)
+    query_manager.running_queries[query.query_id] = query
     query.status = Status.STARTING
     yield query
-    query_manager.running_queries.remove(query.query_id)
+    del query_manager.running_queries[query.query_id]
 
 
 def test_capacity_available():

@@ -37,7 +37,7 @@ def running_queries(
     request: Request,
 ):
     query_manager = request.app.state.QUERY_MANAGER
-    return {"running_queries": query_manager.running_queries}
+    return {"running_queries": list(query_manager.running_queries.keys())}
 
 
 @router.post("/demo-logger/{query_id}", status_code=status.HTTP_201_CREATED)

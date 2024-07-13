@@ -83,9 +83,9 @@ def test_query_manager_capacity_available():
     query_manager = QueryManager(max_parallel_queries=1)
     assert query_manager.capacity_available
     query = Query(str(uuid4()))
-    query_manager.running_queries.add(query.query_id)
+    query_manager.running_queries[query.query_id] = query
     assert not query_manager.capacity_available
-    query_manager.running_queries.remove(query.query_id)
+    del query_manager.running_queries[query.query_id]
     assert query_manager.capacity_available
 
 
