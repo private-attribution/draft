@@ -11,6 +11,7 @@ from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import get_settings
+from .http_helpers import get_query_from_query_id
 
 router = APIRouter(
     prefix="/start",
@@ -79,7 +80,9 @@ def start_ipa_helper(
     settings = get_settings()
     role = settings.role
     if not role or role == role.COORDINATOR:
-        raise IncorrectRoleError("Cannot start helper without helper role.")
+        raise IncorrectRoleError(
+            f"Cannot start helper without helper role. Currently running {role=}."
+        )
 
     compiled_id = (
         f"{commit_hash}_{gate_type}"
@@ -112,10 +115,7 @@ def get_ipa_helper_status(
     query_id: str,
     request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
     return {"status": query.status.name}
 
 
@@ -124,11 +124,7 @@ def get_ipa_helper_log_file(
     query_id: str,
     request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
-
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
     settings = get_settings()
 
     def iterfile():
@@ -175,7 +171,8 @@ def start_ipa_query(
     role = settings.role
     if role != role.COORDINATOR:
         raise IncorrectRoleError(
-            f"Sidecar {role}: Cannot start query without coordinator role."
+            f"Attempting to start query with {role=}: "
+            "Cannot start query without coordinator role."
         )
 
     paths = Paths(

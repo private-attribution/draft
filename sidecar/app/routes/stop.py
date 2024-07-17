@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 
 from ..query.base import Query
 from ..query.status import Status
+from .http_helpers import get_query_from_query_id
 
 router = APIRouter(
     prefix="/stop",
@@ -16,10 +17,7 @@ def finish(
     query_id: str,
     request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
 
     query.logger.info(f"{query=}")
     if query.status < Status.COMPLETE:
@@ -34,10 +32,7 @@ def kill(
     query_id: str,
     request: Request,
 ):
-    query_manager = request.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
 
     query.logger.info(f"kill called for {query_id=}")
     if query.status < Status.COMPLETE:

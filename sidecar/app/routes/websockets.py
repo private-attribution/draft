@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
 from ..query.base import Query
+from .http_helpers import get_query_from_query_id
 
 router = APIRouter(
     prefix="/ws",
@@ -51,10 +52,7 @@ async def logs_websocket(
     websocket: WebSocket,
     query_id: str,
 ):
-    query_manager = websocket.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(websocket.app.state.QUERY_MANAGER, Query, query_id)
 
     async with use_websocket(websocket) as websocket:
         with open(query.log_file_path, "r", encoding="utf8") as log_file:
@@ -79,10 +77,7 @@ async def stats_websocket(
     websocket: WebSocket,
     query_id: str,
 ):
-    query_manager = websocket.app.state.QUERY_MANAGER
-    query = query_manager.get_from_query_id(Query, query_id)
-    if query is None:
-        raise HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(websocket.app.state.QUERY_MANAGER, Query, query_id)
 
     async with use_websocket(websocket) as websocket:
         if query.finished:
