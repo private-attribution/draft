@@ -29,6 +29,14 @@ def log_file_path(query_id: str) -> Path:
 
 @dataclass
 class Query:
+    """
+    Query is the base class, used to implement a list of steps to be run by this server.
+    The server has a role, obtained from get_settings().
+
+    Steps implement a `build_from_query` method,
+    which allows them to utilize data stored on the query.
+    """
+
     # pylint: disable=too-many-instance-attributes
     query_id: str
     current_step: Optional[Step] = field(init=False, default=None, repr=True)
@@ -166,6 +174,14 @@ class MaxQueriesRunningError(Exception):
 
 @dataclass
 class QueryManager:
+    """
+    The QueryManager allows for a fixed number of queries to run at once,
+    and stores those queries in a dictionary.
+
+    Accessing running queries allows the finish and kill methods to be called
+    from another caller (typically a route handler in the HTTP layer.
+    """
+
     max_parallel_queries: int = field(init=True, repr=False, default=1)
     running_queries: dict[str, Query] = field(
         init=False, repr=True, default_factory=dict
