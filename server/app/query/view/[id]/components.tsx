@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Source_Code_Pro } from "next/font/google";
 import clsx from "clsx";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { Status, ServerLog } from "@/app/query/servers";
+import { Status, StatusEvent, ServerLog } from "@/app/query/servers";
 
 const sourceCodePro = Source_Code_Pro({ subsets: ["latin"] });
 
@@ -64,15 +64,7 @@ function secondsToTime(e: number) {
   return h + ":" + m + ":" + s;
 }
 
-export function RunTimePill({
-  status,
-  startTime,
-  endTime,
-}: {
-  status: Status;
-  startTime: number | null;
-  endTime: number | null;
-}) {
+export function RunTimePill({ statusEvent }: { statusEvent: StatusEvent }) {
   const [runTime, setRunTime] = useState<number | null>(null);
   const runTimeStr = runTime ? secondsToTime(runTime) : "N/A";
   const intervalId = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,22 +75,27 @@ export function RunTimePill({
       // which runs the timer. if a new one is needed, it's created.
       clearTimeout(intervalId.current);
     }
-    if (startTime === null) {
+    if (statusEvent?.startTime === null) {
       setRunTime(null);
     } else {
-      if (endTime !== null) {
-        setRunTime(endTime - startTime);
+      if (statusEvent?.endTime !== null) {
+        setRunTime(statusEvent.endTime - statusEvent.startTime);
       } else {
         let newIntervalId = setInterval(() => {
-          setRunTime(Date.now() / 1000 - startTime);
+          setRunTime(Date.now() / 1000 - statusEvent.startTime);
         }, 1000);
         intervalId.current = newIntervalId;
       }
     }
-  }, [startTime, endTime]);
+  }, [statusEvent]);
 
   return (
-    <div className={clsx(`rounded-full px-2`, StatusClassNameMixins[status])}>
+    <div
+      className={clsx(
+        `rounded-full px-2`,
+        StatusClassNameMixins[statusEvent.status],
+      )}
+    >
       {runTimeStr}
     </div>
   );

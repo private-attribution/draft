@@ -5,23 +5,17 @@ import Link from "next/link";
 
 import { StatusPill, RunTimePill } from "@/app/query/view/[id]/components";
 import {
-  Status,
+  StatusEvent,
   RemoteServer,
   RemoteServerNames,
   IPARemoteServers, //hack until the queryId is stored in a DB
-  StatusByRemoteServer,
-  StartTimeByRemoteServer,
-  EndTimeByRemoteServer,
-  initialStatusByRemoteServer,
-  initialStartTimeByRemoteServer,
-  initialEndTimeByRemoteServer,
+  StatusEventByRemoteServer,
+  initialStatusEventByRemoteServer,
 } from "@/app/query/servers";
 import { getQueryByUUID, Query } from "@/data/query";
 
 type QueryData = {
-  status: StatusByRemoteServer;
-  startTime: StartTimeByRemoteServer;
-  endTime: EndTimeByRemoteServer;
+  statusEvent: StatusEventByRemoteServer;
   query: Query;
 };
 type DataByQuery = {
@@ -35,8 +29,7 @@ export default function Page() {
   const updateData = (
     query: Query,
     remoteServer: RemoteServer,
-    key: keyof QueryData,
-    value: Status | number,
+    statusEvent: StatusEvent,
   ) => {
     setDataByQuery((prev) => {
       let _prev = prev;
@@ -46,9 +39,7 @@ export default function Page() {
         _prev = {
           ..._prev,
           [query.uuid]: {
-            status: initialStatusByRemoteServer,
-            startTime: initialStartTimeByRemoteServer,
-            endTime: initialEndTimeByRemoteServer,
+            statusEvent: initialStatusEventByRemoteServer,
             query: query,
           },
         };
@@ -58,9 +49,9 @@ export default function Page() {
         ..._prev,
         [query.uuid]: {
           ..._prev[query.uuid],
-          [key]: {
-            ..._prev[query.uuid][key],
-            [remoteServer.remoteServerName]: value,
+          statusEvent: {
+            ..._prev[query.uuid].statusEvent,
+            [remoteServer.remoteServerName]: statusEvent,
           },
         },
       };
@@ -82,37 +73,25 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      let webSockets: WebSocket[] = [];
-
-      // remove queries when no longer running
-      const filteredDataByQuery = Object.fromEntries(
-        Object.keys(dataByQuery)
-          .filter((queryID) => queryIDs.includes(queryID))
-          .map((queryID) => [queryID, dataByQuery[queryID]]),
-      );
-      setDataByQuery(filteredDataByQuery);
+      setDataByQuery((prev) => {
+        return Object.fromEntries(
+          Object.keys(prev)
+            .filter((queryID) => queryIDs.includes(queryID))
+            .map((queryID) => [queryID, prev[queryID]]),
+        );
+      });
 
       for (const queryID of queryIDs) {
         const query: Query = await getQueryByUUID(queryID);
 
         for (const remoteServer of Object.values(IPARemoteServers)) {
-          const statusWs = remoteServer.openStatusSocket(
-            queryID,
-            (status) => updateData(query, remoteServer, "status", status),
-            (startTime) =>
-              updateData(query, remoteServer, "startTime", startTime),
-            (endTime) => updateData(query, remoteServer, "endTime", endTime),
-          );
-          webSockets = [...webSockets, statusWs];
+          const statusEvent: StatusEvent =
+            await remoteServer.queryStatus(queryID);
+          updateData(query, remoteServer, statusEvent);
         }
       }
-      return () => {
-        for (const ws of webSockets) {
-          ws.close();
-        }
-      };
     })();
-  }, [queryIDs, dataByQuery]);
+  }, [queryIDs]);
 
   return (
     <>
@@ -122,10 +101,14 @@ export default function Page() {
             Current Queries
           </h2>
 
+          {Object.keys(dataByQuery).length == 0 && (
+            <h3 className="text-lg font-bold leading-7 text-gray-900 sm:truncate sm:text-xl sm:tracking-tight">
+              None currently running.
+            </h3>
+          )}
+
           {Object.entries(dataByQuery).map(([queryID, queryData]) => {
-            const statusByRemoteServer = queryData.status;
-            const startTimeByRemoteServer = queryData.startTime;
-            const endTimeByRemoteServer = queryData.endTime;
+            const statusEventByRemoteServer = queryData.statusEvent;
             const query = queryData.query;
 
             return (
@@ -142,19 +125,16 @@ export default function Page() {
                       <dl className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         {Object.values(IPARemoteServers).map(
                           (remoteServer: RemoteServer) => {
-                            const startTime =
-                              startTimeByRemoteServer[
+                            const statusEvent: StatusEvent | null =
+                              statusEventByRemoteServer[
                                 remoteServer.remoteServerName
                               ];
-                            const endTime =
-                              endTimeByRemoteServer[
-                                remoteServer.remoteServerName
-                              ];
-
-                            const status =
-                              statusByRemoteServer[
-                                remoteServer.remoteServerName
-                              ] ?? Status.UNKNOWN;
+                            if (statusEvent === null) {
+                              return <></>;
+                            }
+                            const status = statusEvent.status;
+                            const startTime = statusEvent.startTime;
+                            const endTime = statusEvent.endTime;
 
                             return (
                               <div
@@ -165,11 +145,7 @@ export default function Page() {
                                   {remoteServer.toString()} Run Time
                                 </dt>
                                 <dd>
-                                  <RunTimePill
-                                    status={status}
-                                    startTime={startTime}
-                                    endTime={endTime}
-                                  />
+                                  <RunTimePill statusEvent={statusEvent} />
                                 </dd>
                               </div>
                             );
@@ -181,10 +157,14 @@ export default function Page() {
                       <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         {Object.values(IPARemoteServers).map(
                           (remoteServer: RemoteServer) => {
-                            const status =
-                              statusByRemoteServer[
+                            const statusEvent: StatusEvent | null =
+                              statusEventByRemoteServer[
                                 remoteServer.remoteServerName
-                              ] ?? Status.UNKNOWN;
+                              ];
+                            if (statusEvent === null) {
+                              return <></>;
+                            }
+                            const status = statusEvent.status;
 
                             return (
                               <div

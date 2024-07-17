@@ -35,10 +35,18 @@ function getStatusFromString(statusString: string): Status {
   }
 }
 
-export interface StatsDataPoint {
-  timestamp: string;
-  memoryRSSUsage: number;
-  cpuUsage: number;
+export interface StatusEvent {
+  status: Status;
+  startTime: number;
+  endTime: number | null;
+}
+
+function buildStatusEventFromJSON(statusJSON: any): StatusEvent {
+  return {
+    status: getStatusFromString(statusJSON.status),
+    startTime: statusJSON.start_time,
+    endTime: statusJSON.end_time ?? null,
+  };
 }
 
 export type StatusByRemoteServer = {
@@ -50,21 +58,16 @@ export const initialStatusByRemoteServer: StatusByRemoteServer =
     Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
   );
 
-export type StatsByRemoteServer = {
-  [key in RemoteServerNames]: StatsDataPoint[];
-};
-
-export const initialStatsByRemoteServer: StatsByRemoteServer =
-  Object.fromEntries(
-    Object.values(RemoteServerNames).map((serverName) => [[serverName], []]),
-  );
-
 export type StartTimeByRemoteServer = {
   [key in RemoteServerNames]: number | null;
 };
 
 export type EndTimeByRemoteServer = {
   [key in RemoteServerNames]: number | null;
+};
+
+export type StatusEventByRemoteServer = {
+  [key in RemoteServerNames]: StatusEvent | null;
 };
 
 export const initialStartTimeByRemoteServer: StartTimeByRemoteServer =
@@ -75,6 +78,26 @@ export const initialStartTimeByRemoteServer: StartTimeByRemoteServer =
 export const initialEndTimeByRemoteServer: StartTimeByRemoteServer =
   Object.fromEntries(
     Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
+  );
+
+export const initialStatusEventByRemoteServer: StatusEventByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], null]),
+  );
+
+export interface StatsDataPoint {
+  timestamp: string;
+  memoryRSSUsage: number;
+  cpuUsage: number;
+}
+
+export type StatsByRemoteServer = {
+  [key in RemoteServerNames]: StatsDataPoint[];
+};
+
+export const initialStatsByRemoteServer: StatsByRemoteServer =
+  Object.fromEntries(
+    Object.values(RemoteServerNames).map((serverName) => [[serverName], []]),
   );
 
 export class RemoteServer {
@@ -96,6 +119,16 @@ export class RemoteServer {
     throw new Error("Not Implemented");
   }
 
+  queryStatusURL(id: string): URL {
+    return new URL(`/start/${id}/status`, this.baseURL);
+  }
+
+  async queryStatus(id: string): Promise<StatusEvent> {
+    const status_response = await fetch(this.queryStatusURL(id));
+    const statusJSON = await status_response.json();
+    return buildStatusEventFromJSON(statusJSON);
+  }
+
   runningQueriesURL(): URL {
     return new URL(`/start/running-queries`, this.baseURL);
   }
@@ -103,7 +136,7 @@ export class RemoteServer {
   async runningQueries(): Promise<string[]> {
     const queries_response = await fetch(this.runningQueriesURL());
     const queriesJSON = await queries_response.json();
-    return queriesJSON["running_queries"];
+    return queriesJSON.running_queries;
   }
 
   logURL(id: string): URL {
@@ -197,31 +230,13 @@ export class RemoteServer {
 
   openStatusSocket(
     id: string,
-    setStatus: (status: Status) => void,
-    setStartTime: (startTime: number) => void,
-    setEndTime: (endTime: number) => void,
+    setStatusEvent: (statusEvent: StatusEvent) => void,
   ): WebSocket {
     const ws = this.statusSocket(id);
 
-    const updateStatus = (status: Status) => {
-      setStatus(status);
-    };
-
-    const updateStartTime = (startTime: number) => {
-      setStartTime(startTime);
-    };
-
-    const updateEndTime = (endTime: number) => {
-      setEndTime(endTime);
-    };
-
     ws.onmessage = (event) => {
-      const eventData = JSON.parse(event.data);
-      updateStartTime(eventData.start_time);
-      updateEndTime(eventData.end_time ?? null);
-      const statusString: string = eventData.status;
-      const status = getStatusFromString(statusString);
-      updateStatus(status);
+      const statusEvent = buildStatusEventFromJSON(JSON.parse(event.data));
+      setStatusEvent(statusEvent);
     };
 
     ws.onclose = (event) => {
