@@ -8,7 +8,6 @@ from typing import ClassVar, Optional, TypeVar
 import loguru
 
 from ..helpers import Role
-from ..logger import get_logger
 from ..settings import get_settings
 from .status import Status, StatusHistory
 from .step import Step
@@ -41,9 +40,8 @@ class Query:
 
     def __post_init__(self):
         settings = get_settings()
-        _logger = get_logger()
 
-        self.logger = _logger.bind(task=self.query_id)
+        self.logger = settings.logger.bind(task=self.query_id)
         self.role = settings.role
 
         self._status_history = StatusHistory(
