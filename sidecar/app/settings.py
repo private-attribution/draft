@@ -3,14 +3,16 @@ from __future__ import annotations
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
-import loguru
 from loguru import logger
 from pydantic.functional_validators import BeforeValidator
 from pydantic_settings import BaseSettings
 
 from .helpers import Helper, Role, load_helpers_from_network_config
+
+if TYPE_CHECKING:
+    from loguru import Logger
 
 
 def gen_path(v: Any) -> Path:
@@ -24,7 +26,7 @@ class Settings(BaseSettings):
     role: Role
     helper_port: int
     _helpers: dict[Role, Helper]
-    _logger: Any  # cannot use loguru.Logger here because pydantic tries to import it
+    _logger: "Logger"  # underscore prevents Pydantic from attempting to load this
 
     def model_post_init(self, __context) -> None:
         self._helpers = load_helpers_from_network_config(self.network_config_path)
@@ -46,7 +48,7 @@ class Settings(BaseSettings):
         )
 
     @property
-    def logger(self) -> loguru.Logger:
+    def logger(self) -> "Logger":
         return self._logger
 
     @property
