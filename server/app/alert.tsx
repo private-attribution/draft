@@ -39,7 +39,7 @@ export function QueryFailedToStartAlert({ queryId }: { queryId: string }) {
         </div>
         <div className="ml-3">
           <p className="text-sm font-medium text-red-800">
-            Failed to started Query: {queryId}.
+            Failed to start a query: {queryId}.
           </p>
         </div>
       </div>
