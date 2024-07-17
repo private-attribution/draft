@@ -181,7 +181,6 @@ class QueryManager:
         return None
 
     def run_query(self, query: Query):
-        print("run called")
         if not self.capacity_available:
             raise MaxQueriesRunningError(
                 f"Only {self.max_parallel_queries} allowed. Currently running {self}"
