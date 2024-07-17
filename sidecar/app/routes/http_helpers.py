@@ -14,3 +14,17 @@ def get_query_from_query_id(
     if query is None:
         raise HTTPException(status_code=404, detail=f"Query<{query_id}> not found")
     return query
+
+
+def check_capacity(
+    query_manager: QueryManager,
+) -> None:
+    if not query_manager.capacity_available:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Capacity unavailable. Currently running "
+                f"{len(query_manager.running_queries)} of "
+                f"{query_manager.max_parallel_queries} queries."
+            ),
+        )

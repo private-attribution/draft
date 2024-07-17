@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Form, Request, status
 from fastapi.responses import StreamingResponse
 
 from ..local_paths import Paths
@@ -11,7 +11,7 @@ from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
 from ..settings import get_settings
-from .http_helpers import get_query_from_query_id
+from .http_helpers import check_capacity, get_query_from_query_id
 
 router = APIRouter(
     prefix="/start",
@@ -50,8 +50,8 @@ def demo_logger(
     request: Request,
 ):
     query_manager = request.app.state.QUERY_MANAGER
-    if not query_manager.capacity_available:
-        raise HTTPException(status_code=503, detail="Capacity unavailable")
+    check_capacity(query_manager)
+
     query = DemoLoggerQuery(
         query_id=query_id,
         num_lines=num_lines,
@@ -74,8 +74,7 @@ def start_ipa_helper(
 ):
     # pylint: disable=too-many-arguments
     query_manager = request.app.state.QUERY_MANAGER
-    if not query_manager.capacity_available:
-        raise HTTPException(status_code=503, detail="Capacity unavailable")
+    check_capacity(query_manager)
 
     settings = get_settings()
     role = settings.role
@@ -164,8 +163,7 @@ def start_ipa_query(
 ):
     # pylint: disable=too-many-arguments
     query_manager = request.app.state.QUERY_MANAGER
-    if not query_manager.capacity_available:
-        raise HTTPException(status_code=503, detail="Capacity unavailable")
+    check_capacity(query_manager)
 
     settings = get_settings()
     role = settings.role
