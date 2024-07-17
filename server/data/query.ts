@@ -55,6 +55,28 @@ export async function getQuery(displayId: string): Promise<Query> {
   throw new Error(`${displayId} not found.`);
 }
 
+export async function getQueryByUUID(uuid: string): Promise<Query> {
+  const supabase = await buildSupabaseServerClient();
+
+  const { status, data, error } = await supabase
+    .from("queries")
+    .select("*")
+    .eq("uuid", uuid)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(error);
+  } else if (status === 200) {
+    if (data) {
+      return processQueryData(data);
+    } else {
+      notFound();
+    }
+  }
+  throw new Error(`${uuid} not found.`);
+}
+
 export async function createNewQuery(
   params: FormData,
   queryType: QueryType,

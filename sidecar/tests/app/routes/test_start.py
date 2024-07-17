@@ -34,20 +34,20 @@ def _running_query():
 
 
 def test_capacity_available():
-    response = client.get("/start/capacity_available")
+    response = client.get("/start/capacity-available")
     assert response.status_code == 200
     assert response.json() == {"capacity_available": True}
 
 
 def test_not_capacity_available(running_query):
     assert running_query.query_id in app.state.QUERY_MANAGER.running_queries
-    response = client.get("/start/capacity_available")
+    response = client.get("/start/capacity-available")
     assert response.status_code == 200
     assert response.json() == {"capacity_available": False}
 
 
 def test_running_queries(running_query):
-    response = client.get("/start/running_queries")
+    response = client.get("/start/running-queries")
     assert response.status_code == 200
     assert response.json() == {"running_queries": [running_query.query_id]}
 

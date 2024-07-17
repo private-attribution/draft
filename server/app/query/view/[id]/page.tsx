@@ -55,6 +55,31 @@ export default function QueryPage({ params }: { params: { id: string } }) {
   const [endTimeByRemoteServer, setEndTimeByRemoteServer] =
     useState<EndTimeByRemoteServer>(initialEndTimeByRemoteServer);
 
+  const updateStatus = (remoteServer: RemoteServer, status: Status) => {
+    setStatusByRemoteServer((prevStatus) => ({
+      ...prevStatus,
+      [remoteServer.remoteServerName]: status,
+    }));
+  };
+
+  const updateStartTime = (remoteServer: RemoteServer, runTime: number) => {
+    setStartTimeByRemoteServer((prevStartTime) => {
+      return {
+        ...prevStartTime,
+        [remoteServer.remoteServerName]: runTime,
+      };
+    });
+  };
+
+  const updateEndTime = (remoteServer: RemoteServer, runTime: number) => {
+    setEndTimeByRemoteServer((prevEndTime) => {
+      return {
+        ...prevEndTime,
+        [remoteServer.remoteServerName]: runTime,
+      };
+    });
+  };
+
   function flipLogsHidden() {
     setLogsHidden(!logsHidden);
   }
@@ -111,9 +136,9 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
         const statusWs = remoteServer.openStatusSocket(
           query.uuid,
-          setStatusByRemoteServer,
-          setStartTimeByRemoteServer,
-          setEndTimeByRemoteServer,
+          (status) => updateStatus(remoteServer, status),
+          (startTime) => updateStartTime(remoteServer, startTime),
+          (endTime) => updateEndTime(remoteServer, endTime),
         );
         const statsWs = remoteServer.openStatsSocket(
           query.uuid,

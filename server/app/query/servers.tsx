@@ -96,6 +96,16 @@ export class RemoteServer {
     throw new Error("Not Implemented");
   }
 
+  runningQueriesURL(): URL {
+    return new URL(`/start/running-queries`, this.baseURL);
+  }
+
+  async runningQueries(): Promise<string[]> {
+    const queries_response = await fetch(this.runningQueriesURL());
+    const queriesJSON = await queries_response.json();
+    return queriesJSON["running_queries"];
+  }
+
   logURL(id: string): URL {
     return new URL(`/start/${id}/log-file`, this.baseURL);
   }
@@ -187,35 +197,22 @@ export class RemoteServer {
 
   openStatusSocket(
     id: string,
-    setStatus: React.Dispatch<React.SetStateAction<StatusByRemoteServer>>,
-    setStartTime: React.Dispatch<React.SetStateAction<StartTimeByRemoteServer>>,
-    setEndTime: React.Dispatch<React.SetStateAction<EndTimeByRemoteServer>>,
+    setStatus: (status: Status) => void,
+    setStartTime: (startTime: number) => void,
+    setEndTime: (endTime: number) => void,
   ): WebSocket {
     const ws = this.statusSocket(id);
 
     const updateStatus = (status: Status) => {
-      setStatus((prevStatus) => ({
-        ...prevStatus,
-        [this.remoteServerName]: status,
-      }));
+      setStatus(status);
     };
 
-    const updateStartTime = (runTime: number) => {
-      setStartTime((prevStartTime) => {
-        return {
-          ...prevStartTime,
-          [this.remoteServerName]: runTime,
-        };
-      });
+    const updateStartTime = (startTime: number) => {
+      setStartTime(startTime);
     };
 
-    const updateEndTime = (runTime: number) => {
-      setEndTime((prevEndTime) => {
-        return {
-          ...prevEndTime,
-          [this.remoteServerName]: runTime,
-        };
-      });
+    const updateEndTime = (endTime: number) => {
+      setEndTime(endTime);
     };
 
     ws.onmessage = (event) => {

@@ -25,7 +25,7 @@ class IncorrectRoleError(Exception):
     pass
 
 
-@router.get("/capacity_available")
+@router.get("/capacity-available")
 def capacity_available(
     request: Request,
 ):
@@ -33,7 +33,7 @@ def capacity_available(
     return {"capacity_available": query_manager.capacity_available}
 
 
-@router.get("/running_queries")
+@router.get("/running-queries")
 def running_queries(
     request: Request,
 ):
