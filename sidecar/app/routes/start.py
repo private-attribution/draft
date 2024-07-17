@@ -3,15 +3,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Form, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Form, Request, status
 from fastapi.responses import StreamingResponse
 
 from ..local_paths import Paths
 from ..query.base import Query
 from ..query.demo_logger import DemoLoggerQuery
 from ..query.ipa import GateType, IPACoordinatorQuery, IPAHelperQuery
-from ..query.status import Status
-from ..settings import settings
+from ..settings import get_settings
+from .http_helpers import check_capacity, get_query_from_query_id
 
 router = APIRouter(
     prefix="/start",
@@ -21,20 +21,43 @@ router = APIRouter(
 )
 
 
-@router.post("/demo-logger/{query_id}")
+class IncorrectRoleError(Exception):
+    pass
+
+
+@router.get("/capacity_available")
+def capacity_available(
+    request: Request,
+):
+    query_manager = request.app.state.QUERY_MANAGER
+    return {"capacity_available": query_manager.capacity_available}
+
+
+@router.get("/running_queries")
+def running_queries(
+    request: Request,
+):
+    query_manager = request.app.state.QUERY_MANAGER
+    return {"running_queries": list(query_manager.running_queries.keys())}
+
+
+@router.post("/demo-logger/{query_id}", status_code=status.HTTP_201_CREATED)
 def demo_logger(
     query_id: str,
     num_lines: Annotated[int, Form()],
     total_runtime: Annotated[int, Form()],
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
+    query_manager = request.app.state.QUERY_MANAGER
+    check_capacity(query_manager)
+
     query = DemoLoggerQuery(
         query_id=query_id,
         num_lines=num_lines,
         total_runtime=total_runtime,
     )
-    background_tasks.add_task(query.start)
-
+    background_tasks.add_task(query_manager.run_query, query)
     return {"message": "Process started successfully", "query_id": query_id}
 
 
@@ -47,11 +70,18 @@ def start_ipa_helper(
     multi_threading: Annotated[bool, Form()],
     disable_metrics: Annotated[bool, Form()],
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
     # pylint: disable=too-many-arguments
+    query_manager = request.app.state.QUERY_MANAGER
+    check_capacity(query_manager)
+
+    settings = get_settings()
     role = settings.role
     if not role or role == role.COORDINATOR:
-        raise Exception("Cannot start helper without helper role.")
+        raise IncorrectRoleError(
+            f"Cannot start helper without helper role. Currently running {role=}."
+        )
 
     compiled_id = (
         f"{commit_hash}_{gate_type}"
@@ -75,28 +105,26 @@ def start_ipa_helper(
         disable_metrics=disable_metrics,
         port=settings.helper_port,
     )
-    background_tasks.add_task(query.start)
-
+    background_tasks.add_task(query_manager.run_query, query)
     return {"message": "Process started successfully", "query_id": query_id}
 
 
 @router.get("/ipa-helper/{query_id}/status")
 def get_ipa_helper_status(
     query_id: str,
+    request: Request,
 ):
-    query = Query.get_from_query_id(query_id)
-    if query is None:
-        return {"status": Status.NOT_FOUND.name}
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
     return {"status": query.status.name}
 
 
 @router.get("/{query_id}/log-file")
 def get_ipa_helper_log_file(
     query_id: str,
+    request: Request,
 ):
-    query = Query.get_from_query_id(query_id)
-    if query is None:
-        return HTTPException(status_code=404, detail="Query not found")
+    query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
+    settings = get_settings()
 
     def iterfile():
         with open(query.log_file_path, "rb") as f:
@@ -123,7 +151,7 @@ def get_ipa_helper_log_file(
 
 
 @router.post("/ipa-query/{query_id}")
-def start_ipa_test_query(
+def start_ipa_query(
     query_id: str,
     commit_hash: Annotated[str, Form()],
     size: Annotated[int, Form()],
@@ -131,11 +159,19 @@ def start_ipa_test_query(
     max_trigger_value: Annotated[int, Form()],
     per_user_credit_cap: Annotated[int, Form()],
     background_tasks: BackgroundTasks,
+    request: Request,
 ):
     # pylint: disable=too-many-arguments
+    query_manager = request.app.state.QUERY_MANAGER
+    check_capacity(query_manager)
+
+    settings = get_settings()
     role = settings.role
     if role != role.COORDINATOR:
-        raise Exception(f"Sidecar {role}: Cannot start query without coordinator role.")
+        raise IncorrectRoleError(
+            f"Attempting to start query with {role=}: "
+            "Cannot start query without coordinator role."
+        )
 
     paths = Paths(
         repo_path=settings.root_path / Path("ipa"),
@@ -153,6 +189,6 @@ def start_ipa_test_query(
         max_trigger_value=max_trigger_value,
         per_user_credit_cap=per_user_credit_cap,
     )
-    background_tasks.add_task(query.start)
 
+    background_tasks.add_task(query_manager.run_query, query)
     return {"message": "Process started successfully", "query_id": query_id}

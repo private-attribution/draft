@@ -9,7 +9,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { useRouter } from "next/navigation";
 import { ExclamationCircleIcon } from "@heroicons/react/20/solid";
-import QueryStartedAlert from "@/app/alert";
+import { QueryStartedAlert, QueryFailedToStartAlert } from "@/app/alert";
 import {
   DemoLoggerRemoteServers,
   IPARemoteServers,
@@ -23,6 +23,9 @@ type QueryType = Database["public"]["Enums"]["query_type"];
 
 export default function Page() {
   const [queryId, setQueryId] = useState<string | null>(null);
+  const [querySubmitSuccess, setQuerySubmitSuccess] = useState<boolean | null>(
+    null,
+  );
   const router = useRouter();
 
   const handleFormSubmit = async (
@@ -43,9 +46,14 @@ export default function Page() {
           method: "POST",
           body: params,
         });
-        const _data = await response.json();
+        if (!response.ok) {
+          setQuerySubmitSuccess(false);
+          const error_message = await response.text();
+          throw new Error(error_message);
+        }
       }
 
+      setQuerySubmitSuccess(true);
       await new Promise((f) => setTimeout(f, 1000));
 
       // Redirect to /query/view/<newQueryId>
@@ -67,7 +75,12 @@ export default function Page() {
 
   return (
     <>
-      {queryId && <QueryStartedAlert queryId={queryId} />}
+      {queryId && querySubmitSuccess === true && (
+        <QueryStartedAlert queryId={queryId} />
+      )}
+      {queryId && querySubmitSuccess === false && (
+        <QueryFailedToStartAlert queryId={queryId} />
+      )}
       <div className="md:flex md:items-start md:justify-between">
         <DemoLogsForm handleDemoLogsFormSubmit={handleDemoLogsFormSubmit} />
         <IPAForm handleIPAFormSubmit={handleIPAFormSubmit} />

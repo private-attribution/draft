@@ -2,12 +2,11 @@ import asyncio
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from websockets import ConnectionClosedError, ConnectionClosedOK
 
-from ..logger import logger
 from ..query.base import Query
-from ..query.status import Status
+from .http_helpers import get_query_from_query_id
 
 router = APIRouter(
     prefix="/ws",
@@ -29,40 +28,40 @@ async def use_websocket(websocket):
 
 
 @router.websocket("/status/{query_id}")
-async def status_websocket(websocket: WebSocket, query_id: str):
-    query = Query.get_from_query_id(query_id)
-    async with use_websocket(websocket) as websocket:
-        if query is None:
-            logger.warning(f"{query_id=} Status: {Status.NOT_FOUND.name}")
-            await websocket.send_json(
-                {"status": Status.NOT_FOUND.name, "start_time": time.time()}
-            )
-        else:
-            while query.running:
-                logger.debug(f"{query_id=} Status: {query.status.name}")
-                await websocket.send_json(query.status_event_json)
-                await asyncio.sleep(1)
+async def status_websocket(
+    websocket: WebSocket,
+    query_id: str,
+):
+    query_manager = websocket.app.state.QUERY_MANAGER
+    query = query_manager.get_from_query_id(Query, query_id)
+    if query is None:
+        raise HTTPException(status_code=404, detail="Query not found")
 
-            logger.debug(f"{query_id=} Status: {query.status.name}")
+    async with use_websocket(websocket) as websocket:
+        while query.running:
+            query.logger.debug(f"{query_id=} Status: {query.status.name}")
             await websocket.send_json(query.status_event_json)
+            await asyncio.sleep(1)
+
+        query.logger.debug(f"{query_id=} Status: {query.status.name}")
+        await websocket.send_json(query.status_event_json)
 
 
 @router.websocket("/logs/{query_id}")
-async def logs_websocket(websocket: WebSocket, query_id: str):
-    query = Query.get_from_query_id(query_id)
+async def logs_websocket(
+    websocket: WebSocket,
+    query_id: str,
+):
+    query = get_query_from_query_id(websocket.app.state.QUERY_MANAGER, Query, query_id)
 
     async with use_websocket(websocket) as websocket:
-        if query is None:
-            logger.warning(f"{query_id=} does not exist.")
-            return
-
         with open(query.log_file_path, "r", encoding="utf8") as log_file:
             if query.finished:
-                logger.info(f"{query_id=} complete. sending all logs.")
+                query.logger.info(f"{query_id=} complete. sending all logs.")
                 for line in log_file:
                     await websocket.send_text(line)
             else:
-                logger.info(f"{query_id=} running. tailing log file.")
+                query.logger.info(f"{query_id=} running. tailing log file.")
                 while query.running:
                     line = log_file.readline()
                     if not line:
@@ -74,11 +73,15 @@ async def logs_websocket(websocket: WebSocket, query_id: str):
 
 
 @router.websocket("/stats/{query_id}")
-async def stats_websocket(websocket: WebSocket, query_id: str):
-    query = Query.get_from_query_id(query_id)
+async def stats_websocket(
+    websocket: WebSocket,
+    query_id: str,
+):
+    query = get_query_from_query_id(websocket.app.state.QUERY_MANAGER, Query, query_id)
+
     async with use_websocket(websocket) as websocket:
-        if query is None or query.finished:
-            logger.warning(f"{query_id=} is not running.")
+        if query.finished:
+            query.logger.warning(f"{query_id=} is finished.")
             return
         while query.running:
             await websocket.send_json(
