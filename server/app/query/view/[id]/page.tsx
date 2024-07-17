@@ -8,22 +8,15 @@ import {
   LogViewer,
 } from "@/app/query/view/[id]/components";
 import {
-  Status,
   StatusEvent,
   ServerLog,
   RemoteServer,
   RemoteServerNames,
   RemoteServersType,
   IPARemoteServers, //hack until the queryId is stored in a DB
-  StatusByRemoteServer,
   StatsByRemoteServer,
-  StartTimeByRemoteServer,
-  EndTimeByRemoteServer,
   StatusEventByRemoteServer,
-  initialStatusByRemoteServer,
   initialStatsByRemoteServer,
-  initialStartTimeByRemoteServer,
-  initialEndTimeByRemoteServer,
   initialStatusEventByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";

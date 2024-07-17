@@ -33,7 +33,7 @@ export default function Page() {
   ) => {
     setDataByQuery((prev) => {
       let _prev = prev;
-      if (!prev.hasOwnProperty(query.uuid)) {
+      if (!Object.hasOwn(prev, query.uuid)) {
         // if queryID not in dataByQuery yet,
         // add initial status before updating value
         _prev = {
@@ -132,9 +132,6 @@ export default function Page() {
                             if (statusEvent === null) {
                               return <></>;
                             }
-                            const status = statusEvent.status;
-                            const startTime = statusEvent.startTime;
-                            const endTime = statusEvent.endTime;
 
                             return (
                               <div
@@ -164,7 +161,6 @@ export default function Page() {
                             if (statusEvent === null) {
                               return <></>;
                             }
-                            const status = statusEvent.status;
 
                             return (
                               <div
@@ -175,7 +171,7 @@ export default function Page() {
                                   {remoteServer.remoteServerNameStr} Status
                                 </dt>
                                 <dd>
-                                  <StatusPill status={status} />
+                                  <StatusPill status={statusEvent.status} />
                                 </dd>
                               </div>
                             );

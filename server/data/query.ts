@@ -45,6 +45,9 @@ export async function getQuery(displayId: string): Promise<Query> {
 
   if (error) {
     console.error(error);
+    throw new Error(
+      `Error fetching query with displayId= ${displayId}: ${error.message}`,
+    );
   } else if (status === 200) {
     if (data) {
       return processQueryData(data);
@@ -67,6 +70,9 @@ export async function getQueryByUUID(uuid: string): Promise<Query> {
 
   if (error) {
     console.error(error);
+    throw new Error(
+      `Error fetching query with UUID= ${uuid}: ${error.message}`,
+    );
   } else if (status === 200) {
     if (data) {
       return processQueryData(data);
