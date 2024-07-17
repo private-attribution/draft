@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         self._helpers = load_helpers_from_network_config(self.network_config_path)
         self._logger = logger
+        self._configure_logger()
+
+    def _configure_logger(self):
         self._logger.remove()
         max_role_str_len = max(len(role.name) for role in Role)
         role_str = f"{self.role.name.replace('_', ' ').title():>{max_role_str_len}}"
