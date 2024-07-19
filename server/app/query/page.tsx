@@ -35,7 +35,10 @@ export default function Page() {
       let _prev = prev;
       if (!Object.hasOwn(prev, query.uuid)) {
         // if queryID not in dataByQuery yet,
-        // add initial status before updating value
+        // add initial status before updating value.
+        // otherwise prev[query.uuid][statusEvent][remteServer.ServerName]
+        // doesn't exist, and cannot be updated. we need to fill in the
+        // nested structure, which `initialStatusEventByRemoteServer` does.
         _prev = {
           ..._prev,
           [query.uuid]: {
@@ -81,15 +84,18 @@ export default function Page() {
         );
       });
 
-      for (const queryID of queryIDs) {
+      const promises = queryIDs.map(async (queryID) => {
         const query: Query = await getQueryByUUID(queryID);
-
-        for (const remoteServer of Object.values(IPARemoteServers)) {
-          const statusEvent: StatusEvent =
-            await remoteServer.queryStatus(queryID);
-          updateData(query, remoteServer, statusEvent);
-        }
-      }
+        const remoteServerPromises = Object.values(IPARemoteServers).map(
+          async (remoteServer) => {
+            const statusEvent: StatusEvent =
+              await remoteServer.queryStatus(queryID);
+            updateData(query, remoteServer, statusEvent);
+          },
+        );
+        await Promise.all(remoteServerPromises);
+      });
+      await Promise.all(promises);
     })();
   }, [queryIDs]);
 
