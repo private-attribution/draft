@@ -25,7 +25,7 @@ class IncorrectRoleError(Exception):
     pass
 
 
-@router.get("/capacity_available")
+@router.get("/capacity-available")
 def capacity_available(
     request: Request,
 ):
@@ -33,7 +33,7 @@ def capacity_available(
     return {"capacity_available": query_manager.capacity_available}
 
 
-@router.get("/running_queries")
+@router.get("/running-queries")
 def running_queries(
     request: Request,
 ):
@@ -109,13 +109,13 @@ def start_ipa_helper(
     return {"message": "Process started successfully", "query_id": query_id}
 
 
-@router.get("/ipa-helper/{query_id}/status")
-def get_ipa_helper_status(
+@router.get("/{query_id}/status")
+def get_query_status(
     query_id: str,
     request: Request,
 ):
     query = get_query_from_query_id(request.app.state.QUERY_MANAGER, Query, query_id)
-    return {"status": query.status.name}
+    return query.status_event_json
 
 
 @router.get("/{query_id}/log-file")

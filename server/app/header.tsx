@@ -7,7 +7,7 @@ import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import beerTap from "@/public/beer-tap.png";
 
-const navigation = [{ name: "Dashboard", href: "/query", current: true }];
+const navigation = [{ name: "Queries", href: "/query", current: true }];
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" },

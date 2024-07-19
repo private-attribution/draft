@@ -8,20 +8,16 @@ import {
   LogViewer,
 } from "@/app/query/view/[id]/components";
 import {
-  Status,
+  StatusEvent,
   ServerLog,
   RemoteServer,
   RemoteServerNames,
   RemoteServersType,
   IPARemoteServers, //hack until the queryId is stored in a DB
-  StatusByRemoteServer,
   StatsByRemoteServer,
-  StartTimeByRemoteServer,
-  EndTimeByRemoteServer,
-  initialStatusByRemoteServer,
+  StatusEventByRemoteServer,
   initialStatsByRemoteServer,
-  initialStartTimeByRemoteServer,
-  initialEndTimeByRemoteServer,
+  initialStatusEventByRemoteServer,
 } from "@/app/query/servers";
 import { StatsComponent } from "@/app/query/view/[id]/charts";
 import { JSONSafeParse } from "@/app/utils";
@@ -46,14 +42,20 @@ export default function QueryPage({ params }: { params: { id: string } }) {
     selectedRemoteServerLogs.includes(item.remoteServer.remoteServerNameStr),
   );
 
-  const [statusByRemoteServer, setStatusByRemoteServer] =
-    useState<StatusByRemoteServer>(initialStatusByRemoteServer);
   const [statsByRemoteServer, setStatsByRemoteServer] =
     useState<StatsByRemoteServer>(initialStatsByRemoteServer);
-  const [startTimeByRemoteServer, setStartTimeByRemoteServer] =
-    useState<StartTimeByRemoteServer>(initialStartTimeByRemoteServer);
-  const [endTimeByRemoteServer, setEndTimeByRemoteServer] =
-    useState<EndTimeByRemoteServer>(initialEndTimeByRemoteServer);
+  const [statusEventByRemoteServer, setStatusEventByRemoteServer] =
+    useState<StatusEventByRemoteServer>(initialStatusEventByRemoteServer);
+
+  const updateStatusEvent = (
+    remoteServer: RemoteServer,
+    statusEvent: StatusEvent,
+  ) => {
+    setStatusEventByRemoteServer((prevStatus) => ({
+      ...prevStatus,
+      [remoteServer.remoteServerName]: statusEvent,
+    }));
+  };
 
   function flipLogsHidden() {
     setLogsHidden(!logsHidden);
@@ -111,9 +113,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
         const loggingWs = remoteServer.openLogSocket(query.uuid, setLogs);
         const statusWs = remoteServer.openStatusSocket(
           query.uuid,
-          setStatusByRemoteServer,
-          setStartTimeByRemoteServer,
-          setEndTimeByRemoteServer,
+          (statusEvent) => updateStatusEvent(remoteServer, statusEvent),
         );
         const statsWs = remoteServer.openStatsSocket(
           query.uuid,
@@ -217,14 +217,11 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {Object.values(IPARemoteServers).map(
                 (remoteServer: RemoteServer) => {
-                  const startTime =
-                    startTimeByRemoteServer[remoteServer.remoteServerName];
-                  const endTime =
-                    endTimeByRemoteServer[remoteServer.remoteServerName];
-
-                  const status =
-                    statusByRemoteServer[remoteServer.remoteServerName] ??
-                    Status.UNKNOWN;
+                  const statusEvent: StatusEvent | null =
+                    statusEventByRemoteServer[remoteServer.remoteServerName];
+                  if (statusEvent === null) {
+                    return <div key={remoteServer.remoteServerName}></div>;
+                  }
 
                   return (
                     <div
@@ -235,11 +232,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                         {remoteServer.toString()} Run Time
                       </dt>
                       <dd>
-                        <RunTimePill
-                          status={status}
-                          startTime={startTime}
-                          endTime={endTime}
-                        />
+                        <RunTimePill statusEvent={statusEvent} />
                       </dd>
                     </div>
                   );
@@ -273,9 +266,11 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {Object.values(IPARemoteServers).map(
                 (remoteServer: RemoteServer) => {
-                  const status =
-                    statusByRemoteServer[remoteServer.remoteServerName] ??
-                    Status.UNKNOWN;
+                  const statusEvent: StatusEvent | null =
+                    statusEventByRemoteServer[remoteServer.remoteServerName];
+                  if (statusEvent === null) {
+                    return <div key={remoteServer.remoteServerName}></div>;
+                  }
 
                   return (
                     <div
@@ -286,7 +281,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
                         {remoteServer.remoteServerNameStr} Status
                       </dt>
                       <dd>
-                        <StatusPill status={status} />
+                        <StatusPill status={statusEvent.status} />
                       </dd>
                     </div>
                   );

@@ -34,20 +34,20 @@ def _running_query():
 
 
 def test_capacity_available():
-    response = client.get("/start/capacity_available")
+    response = client.get("/start/capacity-available")
     assert response.status_code == 200
     assert response.json() == {"capacity_available": True}
 
 
 def test_not_capacity_available(running_query):
     assert running_query.query_id in app.state.QUERY_MANAGER.running_queries
-    response = client.get("/start/capacity_available")
+    response = client.get("/start/capacity-available")
     assert response.status_code == 200
     assert response.json() == {"capacity_available": False}
 
 
 def test_running_queries(running_query):
-    response = client.get("/start/running_queries")
+    response = client.get("/start/running-queries")
     assert response.status_code == 200
     assert response.json() == {"running_queries": [running_query.query_id]}
 
@@ -130,16 +130,29 @@ def test_start_ipa_query_as_helper(mock_role):
                 )
 
 
-def test_get_ipa_helper_status_not_found():
+def test_get_status_not_found():
     query_id = str(uuid4())
-    response = client.get(f"/start/ipa-helper/{query_id}/status")
+    response = client.get(f"/start/{query_id}/status")
     assert response.status_code == 404
 
 
-def test_get_ipa_helper_status(running_query):
-    response = client.get(f"/start/ipa-helper/{running_query.query_id}/status")
+def test_get_status_running(running_query):
+    response = client.get(f"/start/{running_query.query_id}/status")
     assert response.status_code == 200
-    assert response.json() == {"status": str(Status.STARTING.name)}
+    status_event_json = response.json()
+    assert status_event_json["status"] == str(Status.STARTING.name)
+    assert "start_time" in status_event_json
+    assert "end_time" not in status_event_json
+
+
+def test_get_status_complete(running_query):
+    running_query.status = Status.COMPLETE
+    response = client.get(f"/start/{running_query.query_id}/status")
+    assert response.status_code == 200
+    status_event_json = response.json()
+    assert status_event_json["status"] == str(Status.COMPLETE.name)
+    assert "start_time" in status_event_json
+    assert "end_time" in status_event_json
 
 
 def test_get_ipa_helper_log_file_not_found():
