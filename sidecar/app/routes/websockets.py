@@ -39,11 +39,9 @@ async def status_websocket(
 
     async with use_websocket(websocket) as websocket:
         while query.running:
-            query.logger.debug(f"{query_id=} Status: {query.status.name}")
             await websocket.send_json(query.status_event_json)
             await asyncio.sleep(1)
 
-        query.logger.debug(f"{query_id=} Status: {query.status.name}")
         await websocket.send_json(query.status_event_json)
 
 
