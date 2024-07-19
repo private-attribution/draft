@@ -81,6 +81,7 @@ export function RunTimePill({ statusEvent }: { statusEvent: StatusEvent }) {
       if (statusEvent?.endTime !== null) {
         setRunTime(statusEvent.endTime - statusEvent.startTime);
       } else {
+        setRunTime(Date.now() / 1000 - statusEvent.startTime);
         let newIntervalId = setInterval(() => {
           setRunTime(Date.now() / 1000 - statusEvent.startTime);
         }, 1000);
