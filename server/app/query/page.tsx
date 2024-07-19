@@ -130,7 +130,9 @@ export default function Page() {
                                 remoteServer.remoteServerName
                               ];
                             if (statusEvent === null) {
-                              return <></>;
+                              return (
+                                <div key={remoteServer.remoteServerName}></div>
+                              );
                             }
 
                             return (
@@ -159,7 +161,9 @@ export default function Page() {
                                 remoteServer.remoteServerName
                               ];
                             if (statusEvent === null) {
-                              return <></>;
+                              return (
+                                <div key={remoteServer.remoteServerName}></div>
+                              );
                             }
 
                             return (
