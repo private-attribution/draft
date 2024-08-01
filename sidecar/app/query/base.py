@@ -24,7 +24,7 @@ def status_file_path(query_id: str) -> Path:
 
 def log_file_path(query_id: str) -> Path:
     settings = get_settings()
-    return settings.log_dir_path / Path(query_id)
+    return settings.log_dir_path / Path(f"{query_id}.log")
 
 
 @dataclass
