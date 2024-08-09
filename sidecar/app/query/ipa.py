@@ -158,6 +158,7 @@ class IPACorrdinatorCompileStep(LoggerOutputCommandStep):
         )
 
 
+# pylint: disable=R0902
 @dataclass(kw_only=True)
 class IPAHelperCompileStep(LoggerOutputCommandStep):
     manifest_path: Path
