@@ -166,6 +166,7 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
     stall_detection: bool
     multi_threading: bool
     disable_metrics: bool
+    reveal_aggregation: bool
     logger: loguru.Logger = field(repr=False)
     status: ClassVar[Status] = Status.COMPILING
 
@@ -176,6 +177,7 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
         stall_detection = query.stall_detection
         multi_threading = query.multi_threading
         disable_metrics = query.disable_metrics
+        reveal_aggregation = query.reveal_aggregation
         return cls(
             manifest_path=manifest_path,
             target_path=query.paths.target_path,
@@ -183,6 +185,7 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
             stall_detection=stall_detection,
             multi_threading=multi_threading,
             disable_metrics=disable_metrics,
+            reveal_aggregation=reveal_aggregation,
             logger=query.logger,
         )
 
@@ -192,6 +195,7 @@ class IPAHelperCompileStep(LoggerOutputCommandStep):
             f'--features="web-app real-world-infra {self.gate_type}'
             f"{' stall-detection' if self.stall_detection else ''}"
             f"{' multi-threading' if self.multi_threading else ''}"
+            f"{' reveal-aggregation' if self.reveal_aggregation else ''}"
             f"{' disable-metrics' if self.disable_metrics else ''}\" "
             f"--no-default-features --target-dir={self.target_path} "
             f"--release",
@@ -410,6 +414,7 @@ class IPAHelperQuery(IPAQuery):
     stall_detection: bool
     multi_threading: bool
     disable_metrics: bool
+    reveal_aggregation: bool
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,

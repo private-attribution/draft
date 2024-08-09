@@ -69,6 +69,7 @@ def start_ipa_helper(
     stall_detection: Annotated[bool, Form()],
     multi_threading: Annotated[bool, Form()],
     disable_metrics: Annotated[bool, Form()],
+    reveal_aggregation: Annotated[bool, Form()],
     background_tasks: BackgroundTasks,
     request: Request,
 ):
@@ -88,6 +89,7 @@ def start_ipa_helper(
         f"{'_stall-detection' if stall_detection else ''}"
         f"{'_multi-threading' if multi_threading else ''}"
         f"{'_disable-metrics' if disable_metrics else ''}"
+        f"{'_reveal-aggregation' if reveal_aggregation else ''}"
     )
 
     paths = Paths(
@@ -103,6 +105,7 @@ def start_ipa_helper(
         stall_detection=stall_detection,
         multi_threading=multi_threading,
         disable_metrics=disable_metrics,
+        reveal_aggregation=reveal_aggregation,
         port=settings.helper_port,
     )
     background_tasks.add_task(query_manager.run_query, query)
