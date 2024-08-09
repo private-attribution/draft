@@ -148,7 +148,8 @@ function IPAForm({
   const [stallDetectionEnabled, setStallDetectionEnabled] = useState(true);
   const [multiThreadingEnabled, setMultiThreadingEnabled] = useState(true);
   const [disableMetricsEnabled, setDisableMetricsEnabled] = useState(false);
-  const [revealAggregationEnabled, setRevealAggregationEnabled] = useState(false);
+  const [revealAggregationEnabled, setRevealAggregationEnabled] =
+    useState(false);
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
   const filteredCommitHashes =
