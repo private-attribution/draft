@@ -103,11 +103,6 @@ Requirements:
 4. Docker
 
 
-#### Pre-commit Hooks
-
-Github is set up to run pre-commit hooks specified in .pre-commit-config.yaml. If you want to use it locally, in the virtual environment, run `pre-commit install`.
-
-
 #### macOS install prerequisites
 
 `brew install python3 node supabase/tap/supabase traefik`
@@ -178,6 +173,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install --editable .
 ```
+
+#### Pre-commit Hooks
+
+Github is set up to run pre-commit hooks specified in .pre-commit-config.yaml. If you want to use it locally, in the virtual environment, run `pre-commit install`.
 
 ## Appendix
 
