@@ -67,6 +67,7 @@ def test_start_ipa_helper(mock_role):
                     "stall_detection": True,
                     "multi_threading": True,
                     "disable_metrics": True,
+                    "reveal_aggregation": True,
                 },
             )
             assert response.status_code == 200
@@ -87,6 +88,7 @@ def test_start_ipa_helper_as_coordinator(mock_role):
                         "stall_detection": True,
                         "multi_threading": True,
                         "disable_metrics": True,
+                        "reveal_aggregation": True,
                     },
                 )
 

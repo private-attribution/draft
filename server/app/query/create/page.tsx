@@ -148,6 +148,8 @@ function IPAForm({
   const [stallDetectionEnabled, setStallDetectionEnabled] = useState(true);
   const [multiThreadingEnabled, setMultiThreadingEnabled] = useState(true);
   const [disableMetricsEnabled, setDisableMetricsEnabled] = useState(false);
+  const [revealAggregationEnabled, setRevealAggregationEnabled] =
+    useState(false);
   const disableBranch = commitSpecifier != CommitSpecifier.BRANCH;
   const disableCommitHash = commitSpecifier != CommitSpecifier.COMMIT_HASH;
   const filteredCommitHashes =
@@ -431,6 +433,32 @@ function IPAForm({
             type="hidden"
             name="disable_metrics"
             value={disableMetricsEnabled.toString()}
+          />
+        </div>
+      </div>
+
+      <div className="items-center pt-4">
+        <div className="block text-sm font-medium leading-6 text-gray-900">
+          Use Breakdown Reveal Aggregation
+        </div>
+        <div className="block pt-1 text-sm font-medium leading-6 text-gray-900">
+          <Switch
+            checked={revealAggregationEnabled}
+            onChange={setRevealAggregationEnabled}
+            className={`${
+              revealAggregationEnabled ? "bg-blue-600" : "bg-gray-200"
+            } relative inline-flex size-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          >
+            <span
+              className={`${
+                revealAggregationEnabled ? "translate-x-6" : "translate-x-1"
+              } inline-block size-4 rounded-full bg-white transition-transform`}
+            />
+          </Switch>
+          <input
+            type="hidden"
+            name="reveal_aggregation"
+            value={revealAggregationEnabled.toString()}
           />
         </div>
       </div>
