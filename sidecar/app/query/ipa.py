@@ -318,7 +318,7 @@ class IPACoordinatorStartStep(LoggerOutputCommandStep):
     def build_command(self) -> LoggerOutputCommand:
         return LoggerOutputCommand(
             cmd=f"{self.report_collector_binary_path} --network {self.network_config} "
-            f"--input-file {self.test_data_path} oprf-ipa "
+            f"--input-file {self.test_data_path} semi-honest-oprf-ipa-test "
             f"--max-breakdown-key {self.max_breakdown_key} "
             f"--per-user-credit-cap {self.per_user_credit_cap} --plaintext-match-keys ",
             logger=self.logger,
