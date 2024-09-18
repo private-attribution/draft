@@ -108,6 +108,7 @@ def test_start_ipa_query(mock_role):
                     "max_breakdown_key": 16,
                     "max_trigger_value": 10,
                     "per_user_credit_cap": 5,
+                    "malicious_security": True,
                 },
             )
             assert response.status_code == 200
@@ -128,6 +129,7 @@ def test_start_ipa_query_as_helper(mock_role):
                         "max_breakdown_key": 16,
                         "max_trigger_value": 10,
                         "per_user_credit_cap": 5,
+                        "malicious_security": True,
                     },
                 )
 

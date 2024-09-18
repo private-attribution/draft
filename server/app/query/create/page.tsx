@@ -145,6 +145,8 @@ function IPAForm({
   const [commitSpecifier, setCommitSpecifier] = useState<CommitSpecifier>(
     CommitSpecifier.BRANCH,
   );
+  const [maliciousSecurityEnabled, setMaliciousSecurityEnabled] =
+    useState(true);
   const [stallDetectionEnabled, setStallDetectionEnabled] = useState(true);
   const [multiThreadingEnabled, setMultiThreadingEnabled] = useState(true);
   const [disableMetricsEnabled, setDisableMetricsEnabled] = useState(false);
@@ -358,6 +360,33 @@ function IPAForm({
         options={["compact", "descriptive"]}
         defaultValue="compact"
       />
+      <div className="items-center pt-4">
+        <div className="block text-sm font-medium leading-6 text-gray-900">
+          Malicious Security
+        </div>
+        <div className="block pt-1 text-sm font-medium leading-6 text-gray-900">
+          <Switch
+            checked={maliciousSecurityEnabled}
+            onChange={setMaliciousSecurityEnabled}
+            className={`${
+              maliciousSecurityEnabled ? "bg-blue-600" : "bg-gray-200"
+            } relative inline-flex size-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          >
+            <span
+              className={`${
+                maliciousSecurityEnabled ? "translate-x-6" : "translate-x-1"
+              } inline-block size-4 rounded-full bg-white transition-transform`}
+            />
+          </Switch>
+          {/* Hidden input to ensure the field is always included in the form data */}
+          <input
+            type="hidden"
+            name="malicious_security"
+            value={maliciousSecurityEnabled.toString()}
+          />
+        </div>
+      </div>
+
       <div className="items-center pt-4">
         <div className="block text-sm font-medium leading-6 text-gray-900">
           Stall detection

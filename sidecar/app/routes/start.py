@@ -161,6 +161,7 @@ def start_ipa_query(
     max_breakdown_key: Annotated[int, Form()],
     max_trigger_value: Annotated[int, Form()],
     per_user_credit_cap: Annotated[int, Form()],
+    malicious_security: Annotated[bool, Form()],
     background_tasks: BackgroundTasks,
     request: Request,
 ):
@@ -191,6 +192,7 @@ def start_ipa_query(
         max_breakdown_key=max_breakdown_key,
         max_trigger_value=max_trigger_value,
         per_user_credit_cap=per_user_credit_cap,
+        malicious_security=malicious_security,
     )
 
     background_tasks.add_task(query_manager.run_query, query)
