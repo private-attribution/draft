@@ -301,6 +301,7 @@ class IPACoordinatorStartStep(LoggerOutputCommandStep):
     max_breakdown_key: int
     max_trigger_value: int
     per_user_credit_cap: int
+    malicious_security: bool
     status: ClassVar[Status] = Status.IN_PROGRESS
 
     @classmethod
@@ -312,13 +313,19 @@ class IPACoordinatorStartStep(LoggerOutputCommandStep):
             max_breakdown_key=query.max_breakdown_key,
             max_trigger_value=query.max_trigger_value,
             per_user_credit_cap=query.per_user_credit_cap,
+            malicious_security=query.malicious_security,
             logger=query.logger,
         )
 
     def build_command(self) -> LoggerOutputCommand:
+        query_type = (
+            "malicious-oprf-ipa-test"
+            if self.malicious_security
+            else "semi-honest-oprf-ipa-test"
+        )
         return LoggerOutputCommand(
             cmd=f"{self.report_collector_binary_path} --network {self.network_config} "
-            f"--input-file {self.test_data_path} semi-honest-oprf-ipa-test "
+            f"--input-file {self.test_data_path} {query_type} "
             f"--max-breakdown-key {self.max_breakdown_key} "
             f"--per-user-credit-cap {self.per_user_credit_cap} --plaintext-match-keys ",
             logger=self.logger,
@@ -332,6 +339,7 @@ class IPACoordinatorQuery(IPAQuery):
     max_breakdown_key: int
     max_trigger_value: int
     per_user_credit_cap: int
+    malicious_security: bool
 
     step_classes: ClassVar[list[type[Step]]] = [
         IPACloneStep,
