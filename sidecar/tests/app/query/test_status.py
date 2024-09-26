@@ -113,3 +113,19 @@ def test_status_history_status_event_json(
         "start_time": now,
         "end_time": now2,
     }
+
+
+def test_status_from_json():
+    # matching string
+    status = Status.from_json({"status": "STARTING"})
+    assert status == Status.STARTING
+    status = Status.from_json({"status": "UNKNOWN"})
+    assert status == Status.UNKNOWN
+
+    # non-mathcing string
+    status = Status.from_json({"status": "not-a-status"})
+    assert status == Status.UNKNOWN
+
+    # empty json
+    status = Status.from_json({})
+    assert status == Status.UNKNOWN

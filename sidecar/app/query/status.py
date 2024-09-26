@@ -25,7 +25,7 @@ class Status(IntEnum):
         status_str = response.get("status", "")
         try:
             return cls[status_str]
-        except ValueError:
+        except KeyError:
             return cls.UNKNOWN
 
 
