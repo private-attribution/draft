@@ -124,7 +124,7 @@ def start_traefik_local_command(
     return Command(cmd=cmd, env=env)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 @cli.command
 @click.option(
     "--config_path",
@@ -164,7 +164,7 @@ def run_helper_sidecar(
     start_commands_parallel([sidecar_command, traefik_command])
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 @cli.command
 @click.option(
     "--config_path",

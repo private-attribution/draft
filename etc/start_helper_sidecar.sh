@@ -15,4 +15,5 @@ helper_port=$5
 sidecar_port=$6
 identity=$7
 
-nohup draft run-helper-sidecar --config_path "$config_path" --root_path "$root_path" --helper_domain "$helper_domain" --sidecar_domain "$sidecar_domain" --helper_port "$helper_port" --sidecar_port "$sidecar_port" --identity "$identity" > .draft/logs/helper_sidecar.log 2>&1 & echo $! > $pid_file
+log_file=".draft/logs/helper_sidecar_$(date "+%Y-%m-%d_%H-%M-%S").log"
+nohup draft run-helper-sidecar --config_path "$config_path" --root_path "$root_path" --helper_domain "$helper_domain" --sidecar_domain "$sidecar_domain" --helper_port "$helper_port" --sidecar_port "$sidecar_port" --identity "$identity" > "$log_file" 2>&1 & echo $! > $pid_file

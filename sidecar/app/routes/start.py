@@ -61,6 +61,8 @@ def demo_logger(
     return {"message": "Process started successfully", "query_id": query_id}
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 @router.post("/ipa-helper/{query_id}")
 def start_ipa_helper(
     query_id: str,
@@ -73,7 +75,6 @@ def start_ipa_helper(
     background_tasks: BackgroundTasks,
     request: Request,
 ):
-    # pylint: disable=too-many-arguments
     query_manager = request.app.state.QUERY_MANAGER
     check_capacity(query_manager)
 
@@ -153,6 +154,8 @@ def get_ipa_helper_log_file(
     )
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 @router.post("/ipa-query/{query_id}")
 def start_ipa_query(
     query_id: str,
@@ -165,7 +168,6 @@ def start_ipa_query(
     background_tasks: BackgroundTasks,
     request: Request,
 ):
-    # pylint: disable=too-many-arguments
     query_manager = request.app.state.QUERY_MANAGER
     check_capacity(query_manager)
 
