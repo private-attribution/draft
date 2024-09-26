@@ -119,3 +119,22 @@ def test_query_manger_run_query_at_capacity():
     ) as mock_start:
         query_manager.run_query(query)
         mock_start.assert_called_once()
+
+
+def test_query_manger_run_query_exception():
+    query_manager = QueryManager(max_parallel_queries=1)
+    query = Query(str(uuid4()))
+
+    def mock_exception():
+        raise Exception
+
+    with mock.patch(
+        "sidecar.app.query.base.Query.start", side_effect=mock_exception
+    ) as mock_start:
+        with pytest.raises(Exception):
+            query_manager.run_query(query)
+
+        mock_start.assert_called_once()
+
+    assert query.query_id not in query_manager.running_queries
+    assert query_manager.capacity_available
