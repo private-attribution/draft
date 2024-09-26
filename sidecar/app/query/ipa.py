@@ -5,12 +5,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar
-from urllib.parse import urlunparse
 
-import httpx
 import loguru
 
-from ..helpers import Role
 from ..local_paths import Paths
 from ..settings import get_settings
 from .base import Query
@@ -31,28 +28,9 @@ class IPAQuery(Query):
     def send_kill_signals(self):
         self.logger.info("sending kill signals")
         settings = get_settings()
-        for helper in settings.helpers.values():
-            if helper.role == self.role:
-                continue
-            status_url = urlunparse(
-                helper.sidecar_url._replace(
-                    scheme="https", path=f"/start/{self.query_id}/status"
-                ),
-            )
-            r = httpx.get(status_url).json()
-            status = Status.from_json(r)
-            self.logger.info(
-                f"Helper {helper.role} status for query {self.query_id}: {status.name}"
-            )
-            if status < Status.COMPLETE:
-                finish_url = urlunparse(
-                    helper.sidecar_url._replace(
-                        scheme="https", path=f"/stop/kill/{self.query_id}"
-                    ),
-                )
-
-                r = httpx.post(finish_url)
-                self.logger.info(f"sent post request: {r.text}")
+        for helper in settings.other_helpers:
+            response = helper.kill_query(self.query_id)
+            self.logger.info(response)
 
     def crash(self):
         super().crash()
@@ -259,26 +237,31 @@ class IPACoordinatorWaitForHelpersStep(Step):
 
     def run(self):
         settings = get_settings()
-        sidecar_urls = [
-            helper.sidecar_url
-            for helper in settings.helpers.values()
-            if helper.role != Role.COORDINATOR
-        ]
-        for sidecar_url in sidecar_urls:
-            url = urlunparse(
-                sidecar_url._replace(
-                    scheme="https", path=f"/start/{self.query_id}/status"
-                ),
-            )
+        for helper in settings.other_helpers:
+            max_unknonwn_status_wait_time = 100
+            current_unknown_status_wait_time = 0
+            loop_wait_time = 1
             while True:
-                r = httpx.get(url).json()
-                status = Status.from_json(r)
+                status = helper.get_current_query_status(self.query_id)
                 match status:
                     case Status.IN_PROGRESS:
                         break
                     case Status.KILLED | Status.NOT_FOUND | Status.CRASHED:
                         self.success = False
                         return
+                    case Status.STARTING | Status.COMPILING | Status.WAITING_TO_START:
+                        # keep waiting while it's in a startup state
+                        continue
+                    case Status.UNKNOWN | Status.NOT_FOUND:
+                        # eventually fail if the status is unknown or not found
+                        # for ~100 seconds
+                        current_unknown_status_wait_time += loop_wait_time
+                        if (
+                            current_unknown_status_wait_time
+                            >= max_unknonwn_status_wait_time
+                        ):
+                            self.success = False
+                            return
 
                 time.sleep(1)
         time.sleep(3)  # allow enough time for the command to start
@@ -357,24 +340,16 @@ class IPACoordinatorQuery(IPAQuery):
         IPACoordinatorStartStep,
     ]
 
-    def send_terminate_signals(self):
-        self.logger.info("sending terminate signals")
+    def send_finish_signals(self):
+        self.logger.info("sending finish signals")
         settings = get_settings()
-        for helper in settings.helpers.values():
-            if helper.role == self.role:
-                continue
-            finish_url = urlunparse(
-                helper.sidecar_url._replace(
-                    scheme="https", path=f"/stop/finish/{self.query_id}"
-                ),
-            )
-
-            r = httpx.post(finish_url)
-            self.logger.info(f"sent post request: {finish_url}: {r.text}")
+        for helper in settings.other_helpers:
+            resp = helper.finish_query(self.query_id)
+            self.logger.info(resp)
 
     def finish(self):
         super().finish()
-        self.send_terminate_signals()
+        self.send_finish_signals()
 
 
 @dataclass(kw_only=True)

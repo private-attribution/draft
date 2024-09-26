@@ -39,6 +39,8 @@ py-modules = ["sidecar",]
 profile = "black"
 py_version=39
 skip_glob=["server"]
+extra_standard_library = ["tomllib"]
+
 
 [tool.pylint.format]
 max-line-length = "88"

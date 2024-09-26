@@ -115,17 +115,15 @@ def test_status_history_status_event_json(
     }
 
 
-def test_status_from_json():
-    # matching string
-    status = Status.from_json({"status": "STARTING"})
-    assert status == Status.STARTING
-    status = Status.from_json({"status": "UNKNOWN"})
-    assert status == Status.UNKNOWN
-
-    # non-mathcing string
-    status = Status.from_json({"status": "not-a-status"})
-    assert status == Status.UNKNOWN
-
-    # empty json
-    status = Status.from_json({})
-    assert status == Status.UNKNOWN
+@pytest.mark.parametrize(
+    "json_input,expected_status",
+    [
+        ({"status": "STARTING"}, Status.STARTING),
+        ({"status": "UNKNOWN"}, Status.UNKNOWN),
+        ({"status": "not-a-status"}, Status.UNKNOWN),
+        ({}, Status.UNKNOWN),  # Empty JSON
+        ({"other_key": "value"}, Status.UNKNOWN),  # Missing "status" key
+    ],
+)
+def test_status_from_json(json_input, expected_status):
+    assert Status.from_json(json_input) == expected_status
