@@ -20,6 +20,14 @@ class Status(IntEnum):
     KILLED = auto()
     CRASHED = auto()
 
+    @classmethod
+    def from_json(cls, response: dict[str, str]):
+        status_str = response.get("status", "")
+        try:
+            return cls[status_str]
+        except ValueError:
+            return cls.UNKNOWN
+
 
 StatusChangeEvent = NamedTuple(
     "StatusChangeEvent", [("status", Status), ("timestamp", float)]

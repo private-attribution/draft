@@ -34,14 +34,25 @@ class IPAQuery(Query):
         for helper in settings.helpers.values():
             if helper.role == self.role:
                 continue
-            finish_url = urlunparse(
+            status_url = urlunparse(
                 helper.sidecar_url._replace(
-                    scheme="https", path=f"/stop/kill/{self.query_id}"
+                    scheme="https", path=f"/start/{self.query_id}/status"
                 ),
             )
+            r = httpx.get(status_url).json()
+            status = Status.from_json(r)
+            self.logger.info(
+                f"Helper {helper.role} status for query {self.query_id}: {status.name}"
+            )
+            if status < Status.COMPLETE:
+                finish_url = urlunparse(
+                    helper.sidecar_url._replace(
+                        scheme="https", path=f"/stop/kill/{self.query_id}"
+                    ),
+                )
 
-            r = httpx.post(finish_url)
-            self.logger.info(f"sent post request: {r.text}")
+                r = httpx.post(finish_url)
+                self.logger.info(f"sent post request: {r.text}")
 
     def crash(self):
         super().crash()
@@ -261,17 +272,11 @@ class IPACoordinatorWaitForHelpersStep(Step):
             )
             while True:
                 r = httpx.get(url).json()
-                status = r.get("status")
+                status = Status.from_json(r)
                 match status:
-                    case Status.IN_PROGRESS.name:
+                    case Status.IN_PROGRESS:
                         break
-                    case Status.KILLED.name:
-                        self.success = False
-                        return
-                    case Status.NOT_FOUND.name:
-                        self.success = False
-                        return
-                    case Status.CRASHED.name:
+                    case Status.KILLED | Status.NOT_FOUND | Status.CRASHED:
                         self.success = False
                         return
 
