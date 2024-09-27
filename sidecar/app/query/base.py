@@ -201,8 +201,11 @@ class QueryManager:
             )
 
         self.running_queries[query.query_id] = query
-        query.start()
-        del self.running_queries[query.query_id]
+        try:
+            query.start()
+        finally:
+            # always remove this
+            del self.running_queries[query.query_id]
 
     @property
     def capacity_available(self):
