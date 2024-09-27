@@ -121,7 +121,7 @@ def test_query_manger_run_query_at_capacity():
         mock_start.assert_called_once()
 
 
-def test_query_manger_run_query_exception():
+def test_query_manager_run_query_exception():
     query_manager = QueryManager(max_parallel_queries=1)
     query = Query(str(uuid4()))
 
