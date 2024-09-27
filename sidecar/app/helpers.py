@@ -55,7 +55,7 @@ class Helper:
 
     def get_current_query_status(self, query_id: str) -> Status:
         try:
-            r = httpx.get(self.query_kill_url(query_id))
+            r = httpx.get(self.query_status_url(query_id))
         except httpx.RequestError:
             return Status.UNKNOWN
         try:
