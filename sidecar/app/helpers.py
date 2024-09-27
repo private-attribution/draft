@@ -1,11 +1,15 @@
+import tomllib
 from dataclasses import dataclass
 from enum import IntEnum
+from json import JSONDecodeError
 from pathlib import Path
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import ParseResult, urlparse, urlunparse
 
-import tomllib
+import httpx
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.x509 import load_pem_x509_certificate
+
+from .query.step import Status
 
 
 class Role(IntEnum):
@@ -21,6 +25,67 @@ class Helper:
     helper_url: ParseResult
     sidecar_url: ParseResult
     public_key: EllipticCurvePublicKey
+
+    def query_status_url(self, query_id: str) -> str:
+        return str(
+            urlunparse(
+                self.sidecar_url._replace(
+                    scheme="https", path=f"/start/{query_id}/status"
+                ),
+            )
+        )
+
+    def query_finish_url(self, query_id: str) -> str:
+        return str(
+            urlunparse(
+                self.sidecar_url._replace(
+                    scheme="https", path=f"/stop/finish/{query_id}"
+                ),
+            )
+        )
+
+    def query_kill_url(self, query_id: str) -> str:
+        return str(
+            urlunparse(
+                self.sidecar_url._replace(
+                    scheme="https", path=f"/stop/kill/{query_id}"
+                ),
+            )
+        )
+
+    def get_current_query_status(self, query_id: str) -> Status:
+        try:
+            r = httpx.get(self.query_status_url(query_id))
+        except httpx.RequestError:
+            return Status.UNKNOWN
+        try:
+            j = r.json()
+        except JSONDecodeError:
+            return Status.UNKNOWN
+
+        return Status.from_json(j)
+
+    def kill_query(self, query_id: str) -> str:
+        status = self.get_current_query_status(query_id)
+        if status >= Status.COMPLETE:
+            return (
+                f"not sending kill signal. helper {self.role} "
+                f"already has status {status}"
+            )
+        r = httpx.post(self.query_kill_url(query_id))
+        return f"sent kill signal for query({query_id}) to helper {self.role}: {r.text}"
+
+    def finish_query(self, query_id: str) -> str:
+        status = self.get_current_query_status(query_id)
+        if status >= Status.COMPLETE:
+            return (
+                f"not sending finish signal. helper {self.role} "
+                f"already has status {status}"
+            )
+        r = httpx.post(self.query_finish_url(query_id))
+        return (
+            f"sent finish signal for query({query_id}) to helper {self.role}: {r.text}"
+        )
 
 
 def load_helpers_from_network_config(network_config_path: Path) -> dict[Role, Helper]:

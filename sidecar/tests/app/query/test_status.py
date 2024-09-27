@@ -113,3 +113,17 @@ def test_status_history_status_event_json(
         "start_time": now,
         "end_time": now2,
     }
+
+
+@pytest.mark.parametrize(
+    "json_input,expected_status",
+    [
+        ({"status": "STARTING"}, Status.STARTING),
+        ({"status": "UNKNOWN"}, Status.UNKNOWN),
+        ({"status": "not-a-status"}, Status.UNKNOWN),
+        ({}, Status.UNKNOWN),  # Empty JSON
+        ({"other_key": "value"}, Status.UNKNOWN),  # Missing "status" key
+    ],
+)
+def test_status_from_json(json_input, expected_status):
+    assert Status.from_json(json_input) == expected_status

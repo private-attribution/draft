@@ -63,6 +63,10 @@ class Settings(BaseSettings):
         return self._helpers
 
     @property
+    def other_helpers(self) -> list[Helper]:
+        return [helper for helper in self._helpers.values() if helper.role != self.role]
+
+    @property
     def status_dir_path(self) -> Path:
         return self.root_path / Path("status")
 
