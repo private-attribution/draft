@@ -176,7 +176,7 @@ export default function QueryPage({ params }: { params: { id: string } }) {
             <dt className="text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
               Params:
             </dt>
-            <dd className="mt-2 text-sm text-gray-900 dark:text-gray-100 sm:col-span-2 sm:mt-0">
+            <dd className="mt-2 text-sm text-gray-900 sm:col-span-2 sm:mt-0 dark:text-gray-100">
               <ul className="divide-y divide-gray-200 rounded-md border border-gray-200">
                 {queryParams.map(([key, value]) => {
                   return (
