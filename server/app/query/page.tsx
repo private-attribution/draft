@@ -103,12 +103,12 @@ export default function Page() {
     <>
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-2xl font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-3xl sm:tracking-tight">
             Current Queries
           </h2>
 
           {Object.keys(dataByQuery).length == 0 && (
-            <h3 className="text-lg font-bold leading-7 text-gray-900 sm:truncate sm:text-xl sm:tracking-tight">
+            <h3 className="text-lg font-bold leading-7 text-gray-900 dark:text-gray-100 sm:truncate sm:text-xl sm:tracking-tight">
               None currently running.
             </h3>
           )}
