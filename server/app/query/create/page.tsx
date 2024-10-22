@@ -351,7 +351,7 @@ function IPAForm({
       <SelectMenu
         id="per_user_credit_cap"
         label="Per User Credit Cap"
-        options={["16", "32", "64", "128", "256"]}
+        options={["1", "2", "3", "4", "8", "16", "32", "64", "128"]}
         defaultValue="64"
       />
       <SelectMenu
