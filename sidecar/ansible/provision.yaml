@@ -30,11 +30,11 @@
         executable: /bin/bash
       when: rustup_installed.rc != 0
 
-    - name: Update Rust to 1.80
-      command: rustup update 1.80.0
+    - name: Update Rust to 1.82
+      command: rustup update 1.82.0
 
-    - name: Set default to 1.80
-      command: rustup default 1.80.0
+    - name: Set default to 1.82
+      command: rustup default 1.82.0
 
     - name: Check if Git is installed
       command: git --version
