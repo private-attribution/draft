@@ -56,7 +56,7 @@ Once you know these:
     1. Replace `helper0.draft.test` and `sidecar0.draft.test` with the respective domains for party with identity=0.
     2. Repeat for identity= 1, 2, and 3.
     3. Replace respective certificates with their public keys.
-4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem key.pem`
+4. Move your Let's Encrypt key and cert into place: `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/fullchain.pem config/cert.pem` and `sudo ln -s /etc/letsencrypt/live/sidecar.example.com/privkey.pem config/key.pem`
 5. Generate IPA-specific keys:
     1. Compile `ipa` with `cargo build --bin helper --features="web-app real-world-infra compact-gate stall-detection multi-threading" --no-default-features --release`
     2. Make the keys with `target/release/helper keygen --name localhost --tls-key h1.key --tls-cert h1.pem --mk-public-key h1_mk.pub --mk-private-key h1_mk.key` (replace h1 with for each helper)
