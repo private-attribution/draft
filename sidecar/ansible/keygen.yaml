@@ -59,7 +59,7 @@
         - "pub/h{{ identity }}.pem"
         - "pub/h{{ identity }}_mk.pub"
     - name: Generate new keys
-      command: "{{ target_dir }}/release/helper keygen --name {{ helper_domain }} --tls-cert {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}.pem --tls-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}.key --mk-public-key {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}_mk.pub --mk-private-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}_mk.key"
+      command: "{{ target_dir }}/release/helper keygen --name {{ helper_domain }} --tls-cert {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}.pem --tls-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}.key --mk-public-key {{ ansible_env.HOME }}/draft/config/pub/h{{ identity }}_mk.pub --mk-private-key {{ ansible_env.HOME }}/draft/config/h{{ identity }}_mk.key --tls-valid-days 2000"
       args:
         chdir: "{{ ipa_path }}"
     - name: Fetch the newly created files
