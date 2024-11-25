@@ -56,11 +56,25 @@
       command: python3.11 -m pip install --upgrade pip
       become: yes
 
+    - name: Check if directory is a git repository
+      stat:
+        path: '{{ ansible_env.HOME }}/draft/.git'
+      register: git_repo
+
     - name: Clone repository if it doesn't exist
       git:
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
-        update: no
+      when: not git_repo.stat.exists
+
+
+    - name: Pull repository if it does exist
+      git:
+        repo: 'https://github.com/private-attribution/draft.git'
+        dest: '{{ ansible_env.HOME }}/draft'
+        clone: false
+        version: main
+      when: git_repo.stat.exists
 
     - name: Create virtualenv if it doesn't exist
       command: python3.11 -m venv .venv
