@@ -8,11 +8,13 @@
       args:
         chdir: '{{ ansible_env.HOME }}/draft'
         executable: /bin/bash
+      ignore_errors: true
 
     - name: Pull new commits from GitHub
       git:
         repo: 'https://github.com/private-attribution/draft.git'
         dest: '{{ ansible_env.HOME }}/draft'
+        clone: false
         update: yes
         version: main
 
